@@ -7,7 +7,8 @@ class Submission(BaseModel):
     submitter_name: str = Field(min_length=1, max_length=120)
     submitter_email: EmailStr
     language: str = Field(pattern="^[a-z]{2}$")
-    entities: list[str] = Field(min_length=1, max_length=100)
+    entities: list[str] = Field(default_factory=list, max_length=100)
+    models: list[str] | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("submitter_name")
     @classmethod
@@ -37,6 +38,7 @@ class JobStatus(BaseModel):
     queue_position: int | None
     language: str
     entities: list[str]
+    models: list[str] = Field(default_factory=list)
     created_at: str
     started_at: str | None
     completed_at: str | None

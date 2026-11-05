@@ -12,7 +12,7 @@ from app.persistence.progress import ProgressRepository
 from app.services.incremental_export import package_publications
 from app.services.inference import NerLabSession, merge_predictions
 from app.services.publication import publish, read_publication
-from app.services.registry import Registry, statistics_reference
+from app.services.registry import Registry, model_snapshot, statistics_reference
 from app.services.statistics import StreamingStatistics, statistics
 from app.storage import LocalStorage, StorageBudget, directory_bytes
 
@@ -26,21 +26,8 @@ def process_job(
     root = storage.job(job["id"])
     payload = json.loads(job["payload"])
     registry = registry_factory(s)
-    models = registry.select(payload["language"], payload["entities"])
-    snapshot = [
-        {
-            k: m.get(k)
-            for k in (
-                "model_id",
-                "version",
-                "model_dir",
-                "checkpoint_sha256",
-                "min_score",
-                "batch_size",
-            )
-        }
-        for m in models
-    ]
+    models = registry.select(payload["language"], payload["entities"], payload.get("models"))
+    snapshot = model_snapshot(models, legacy=payload.get("catalog_version", 1) < 2)
     if snapshot != payload["selected_models"]:
         raise ValueError("Model registry changed; resubmit with current model versions")
     rows = progress.rows(job["id"])
@@ -131,13 +118,22 @@ def process_job(
                 metadata = []
                 ordered = (
                     models
-                    if (offset // s.inference_document_batch_size) % 2 == 0
+                    if any(m.get("requires") for m in models)
+                    or (offset // s.inference_document_batch_size) % 2 == 0
                     else list(reversed(models))
                 )
                 for i, model in enumerate(ordered):
-                    spans, meta = engine.predict(
-                        model, texts, root / "building" / f"model-{i}", s.device
-                    )
+                    if model.get("task", "ner") != "ner" or model.get("requires"):
+                        # Never feed an annotation-dependent classifier raw text alone.
+                        if not hasattr(engine, "classify"):
+                            raise ValueError("No audited adapter for the selected dependent task")
+                        upstream = {m["model_id"]: spans for m, spans in predictions}
+                        inputs = {key: upstream[key] for key in model["requires"]}
+                        spans, meta = engine.classify(model, texts, inputs, s.device)
+                    else:
+                        spans, meta = engine.predict(
+                            model, texts, root / "building" / f"model-{i}", s.device
+                        )
                     predictions.append((model, spans))
                     metadata.append(meta)
                 merged = merge_predictions(texts, predictions)

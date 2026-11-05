@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from app.errors import ServiceError
 from app.persistence.progress import ProgressRepository
 from app.services.documents import ingest
-from app.services.registry import statistics_reference
+from app.services.registry import model_snapshot, statistics_reference
 
 
 def iso(value):
@@ -27,7 +27,7 @@ class JobService:
         return self.submit_streams(form, [(name, io.BytesIO(data)) for name, data in uploaded], ip)
 
     def submit_streams(self, form, streams, ip, source_type="TXT_UPLOAD", lease=None):
-        selected = self.registry.select(form.language, form.entities)
+        selected = self.registry.select(form.language, form.entities, form.models)
         reference, reference_digest = statistics_reference(
             self.registry.languages[form.language], selected
         )
@@ -61,20 +61,11 @@ class JobService:
                 "document_references": references,
                 "statistics_reference": reference,
                 "statistics_reference_sha256": reference_digest,
-                "selected_models": [
-                    {
-                        k: m.get(k)
-                        for k in (
-                            "model_id",
-                            "version",
-                            "model_dir",
-                            "checkpoint_sha256",
-                            "min_score",
-                            "batch_size",
-                        )
-                    }
-                    for m in selected
-                ],
+                "catalog_version": 2,
+                "entities": sorted(
+                    {label for m in selected for label in m["label_mapping"].values()}
+                ),
+                "selected_models": model_snapshot(selected),
             }
             staging.rename(self.storage.job(job_id))
             self.db.accept(job_id, token, payload, len(references), ip, lease=lease)
@@ -128,6 +119,7 @@ class JobService:
             "queue_position": position,
             "language": payload["language"],
             "entities": payload["entities"],
+            "models": [m["model_id"] for m in payload["selected_models"]],
             **{k: iso(job[k]) for k in ("created_at", "started_at", "completed_at", "expires_at")},
             "summary": json.loads(job["summary"]) if job["summary"] else None,
             "downloads_available": job["status"] in ("COMPLETED", "COMPLETED_WITH_ERRORS"),

@@ -13,32 +13,58 @@ def merge_predictions(
 ) -> list[dict]:
     spans = {}
     for model, rows in batches:
+        mapping = model.get("label_mapping", {model["label"]: model["label"]})
         for row in rows:
-            filename, label = str(row["filename"]), str(row["label"])
+            filename, original = str(row["filename"]), str(row["label"])
+            label = mapping.get(original)
             start, end = row["start_span"], row["end_span"]
-            if label != model["label"]:
+            if label is None:
                 raise ValueError("Unexpected prediction label")
             if filename not in documents or int(start) != start or int(end) != end:
                 raise ValueError("Unknown document or non-integer offset")
             start, end = int(start), int(end)
-            text = documents[filename]
-            validate_surface(text, start, end, row["text"])
+            validate_surface(documents[filename], start, end, row["text"])
             score = row.get("score")
             if score is not None and (not math.isfinite(float(score)) or not 0 <= score <= 1):
                 raise ValueError("Invalid confidence")
-            item = {
-                **row,
-                "start_span": start,
-                "end_span": end,
-                "score": score,
+            source = {
                 "model_id": model["model_id"],
-                "model_version": model.get("version"),
+                "model_version": str(model["version"])
+                if model.get("version") is not None
+                else None,
+                "original_label": original,
+                "score": score,
             }
             key = (filename, label, start, end)
-            if key not in spans or (score if score is not None else -1) > (
-                spans[key]["score"] if spans[key]["score"] is not None else -1
-            ):
-                spans[key] = item
+            if key not in spans:
+                spans[key] = {
+                    **row,
+                    "label": label,
+                    "start_span": start,
+                    "end_span": end,
+                    "sources": [],
+                }
+            if source not in spans[key]["sources"]:
+                spans[key]["sources"].append(source)
+    for item in spans.values():
+        item["sources"].sort(
+            key=lambda s: (
+                s["model_id"],
+                s["original_label"],
+                -(s["score"] if s["score"] is not None else -1),
+            )
+        )
+        representative = min(
+            item["sources"],
+            key=lambda s: (
+                -(s["score"] if s["score"] is not None else -1),
+                s["model_id"],
+                s["original_label"],
+            ),
+        )
+        item.update({k: representative[k] for k in ("score", "model_id", "model_version")})
+        item["model_ids"] = sorted({s["model_id"] for s in item["sources"]})
+        item["original_labels"] = sorted({s["original_label"] for s in item["sources"]})
     return [spans[key] for key in sorted(spans, key=lambda k: (k[0], k[2], k[3], k[1]))]
 
 

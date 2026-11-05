@@ -78,6 +78,9 @@ class DocumentRepository:
                     int(span["end_span"]),
                 )
                 span["score"] = float(span["score"]) if span.get("score") else None
+                for key in ("model_ids", "original_labels", "sources"):
+                    if span.get(key):
+                        span[key] = json.loads(span[key])
             with (root / "output" / "document_statistics.tsv").open(
                 encoding="utf-8", newline=""
             ) as f:

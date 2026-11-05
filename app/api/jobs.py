@@ -26,6 +26,7 @@ def router(service):
                                 "submitter_email": {"type": "string", "format": "email"},
                                 "language": {"type": "string"},
                                 "entities": {"type": "array", "items": {"type": "string"}},
+                                "models": {"type": "array", "items": {"type": "string"}},
                                 "input_mode": {
                                     "type": "string",
                                     "enum": ["PASTED_TEXT", "TXT_UPLOAD", "ZIP_ENTRY"],
@@ -42,7 +43,6 @@ def router(service):
                                 "submitter_name",
                                 "submitter_email",
                                 "language",
-                                "entities",
                             ],
                         }
                     }
@@ -66,6 +66,7 @@ def router(service):
                     submitter_email=data.get("submitter_email", ""),
                     language=data.get("language", ""),
                     entities=data.getlist("entities"),
+                    models=data.getlist("models") if "models" in data else None,
                 )
             except ValidationError:
                 raise ServiceError(

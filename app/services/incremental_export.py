@@ -6,7 +6,7 @@ import shutil
 import time
 import zipfile
 
-from app.services.export import COLUMNS
+from app.services.export import COLUMNS, annotation_row
 from app.services.exports.tsv import write_tsv
 
 
@@ -41,10 +41,14 @@ def package_publications(root, rows, payload, stats, manifest, budget=None):
                 folder / "document.ann", text.with_suffix(".ann")
             )
             for span in record["spans"]:
-                record_row = {
-                    **span,
-                    **{k: payload[k] for k in ("language", "submitter_name", "submitter_email")},
-                }
+                record_row = annotation_row(
+                    {
+                        **span,
+                        **{
+                            k: payload[k] for k in ("language", "submitter_name", "submitter_email")
+                        },
+                    }
+                )
                 if budget:
                     import io
 

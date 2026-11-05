@@ -3,6 +3,13 @@
 from pydantic import BaseModel, Field
 
 
+class AnnotationSource(BaseModel):
+    model_id: str
+    model_version: str | None = None
+    original_label: str
+    score: float | None = Field(default=None, ge=0, le=1)
+
+
 class Annotation(BaseModel):
     id: str
     document_id: str
@@ -13,6 +20,9 @@ class Annotation(BaseModel):
     score: float | None = Field(default=None, ge=0, le=1)
     model_id: str | None = None
     model_version: str | None = None
+    model_ids: list[str] = Field(default_factory=list)
+    original_labels: list[str] = Field(default_factory=list)
+    sources: list[AnnotationSource] = Field(default_factory=list)
 
 
 def validate_surface(text: str, start: int, end: int, surface: str) -> None:
@@ -33,6 +43,9 @@ def canonical_annotations(document_id: str, text: str, spans: list[dict]) -> lis
                 end=row["end_span"],
                 text=row["text"],
                 score=row.get("score"),
+                model_ids=row.get("model_ids", []),
+                original_labels=row.get("original_labels", []),
+                sources=row.get("sources", []),
                 model_id=row.get("model_id"),
                 model_version=str(row["model_version"])
                 if row.get("model_version") is not None

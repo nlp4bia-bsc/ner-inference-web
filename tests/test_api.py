@@ -11,7 +11,17 @@ from tests.conftest import submit
 def test_catalog_and_unconfigured_model(settings):
     with TestClient(create_app(settings)) as c:
         assert c.get("/").status_code == 200
-        assert {x["code"] for x in c.get("/api/languages").json()} == {"es", "en"}
+        assert {x["code"] for x in c.get("/api/languages").json()} == {
+            "es",
+            "en",
+            "ca",
+            "el",
+            "ro",
+            "it",
+            "cs",
+            "sv",
+            "nl",
+        }
         assert not any(x["available"] for x in c.get("/api/models").json())
         assert submit(c).status_code == 422
 

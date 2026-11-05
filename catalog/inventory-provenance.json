@@ -1,0 +1,719 @@
+{
+  "workbook_name": "HuggingFace NER models list.xlsx",
+  "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+  "excel_repositories": [
+    {
+      "model_id": "bsc-bio-ehr-es-proctemist",
+      "repository": "janrodriguez/bsc-bio-ehr-es-proctemist",
+      "category": "PROCEDURE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J3",
+      "dataset": "ProcTEMIST",
+      "reported_metrics": {
+        "precision": 0.74,
+        "recall": 0.78,
+        "f1": 0.76
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-meddocan",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-meddocan",
+      "category": "ANONYMIZATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J9",
+      "dataset": "Meddocan",
+      "reported_metrics": {
+        "precision": 0.95,
+        "recall": 0.972,
+        "f1": 0.961
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-drugtemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-drugtemist",
+      "category": "MEDICATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J10",
+      "dataset": "Drugtemist",
+      "reported_metrics": {
+        "precision": 0.9169,
+        "recall": 0.909,
+        "f1": 0.9129
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-symptemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-symptemist",
+      "category": "SYMPTOM",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J11",
+      "dataset": "Symptemist",
+      "reported_metrics": {
+        "precision": 0.707,
+        "recall": 0.716,
+        "f1": 0.711
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-medprocner",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-medprocner",
+      "category": "PROCEDURE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J12",
+      "dataset": "Medprocner",
+      "reported_metrics": {
+        "precision": 0.757,
+        "recall": 0.761,
+        "f1": 0.759
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-distemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-distemist",
+      "category": "DISEASE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J13",
+      "dataset": "Distemist",
+      "reported_metrics": {
+        "precision": 0.7542,
+        "recall": 0.7591,
+        "f1": 0.7567
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-livingner-humano",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-livingner-humano",
+      "category": "HUMAN",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J14",
+      "dataset": "LivingNER Human",
+      "reported_metrics": {
+        "precision": 0.976,
+        "recall": 0.984,
+        "f1": 0.98
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-livingner-species",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-livingner-species",
+      "category": "SPECIES",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J15",
+      "dataset": "LivingNER Species",
+      "reported_metrics": {
+        "precision": 0.94,
+        "recall": 0.928,
+        "f1": 0.934
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-anon",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-anon",
+      "category": "ANONYMIZATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J17",
+      "dataset": "carmen anon",
+      "reported_metrics": {
+        "precision": 0.946,
+        "recall": 0.962,
+        "f1": 0.954
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-farmaco",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-farmaco",
+      "category": "MEDICATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J18",
+      "dataset": "carmen fármaco",
+      "reported_metrics": {
+        "precision": 0.954,
+        "recall": 0.928,
+        "f1": 0.941
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-sintoma",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-sintoma",
+      "category": "SYMPTOM",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J19",
+      "dataset": "carmen síntoma",
+      "reported_metrics": {
+        "precision": 0.615,
+        "recall": 0.75,
+        "f1": 0.676
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-procedimiento",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-procedimiento",
+      "category": "PROCEDURE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J20",
+      "dataset": "carmen procedimiento",
+      "reported_metrics": {
+        "precision": 0.746,
+        "recall": 0.784,
+        "f1": 0.764
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-enfermedad",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-enfermedad",
+      "category": "DISEASE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J21",
+      "dataset": "carmen enfermedad",
+      "reported_metrics": {
+        "precision": 0.746,
+        "recall": 0.763,
+        "f1": 0.754
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-humano",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-humano",
+      "category": "HUMAN",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J22",
+      "dataset": "carmen humano",
+      "reported_metrics": {
+        "precision": 0.878,
+        "recall": 0.918,
+        "f1": 0.897
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-species",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-species",
+      "category": "SPECIES",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J23",
+      "dataset": "carmen species",
+      "reported_metrics": {
+        "precision": 0.848,
+        "recall": 0.799,
+        "f1": 0.823
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-meddocan",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-meddocan",
+      "category": "ANONYMIZATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J25",
+      "dataset": "Carmen Anon (train) + Meddocan (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.944,
+        "recall": 0.957,
+        "f1": 0.95
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-drugtemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-drugtemist",
+      "category": "MEDICATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J26",
+      "dataset": "Carmen Fármaco (train) + Drugtemist (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.944,
+        "recall": 0.926,
+        "f1": 0.935
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-symptemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-symptemist",
+      "category": "SYMPTOM",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J27",
+      "dataset": "Carmen Síntomas (train) + Symptemist (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.743,
+        "recall": 0.764,
+        "f1": 0.753
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-medprocner",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-medprocner",
+      "category": "PROCEDURE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J28",
+      "dataset": "Carmen Procedimientos (train) + Medprocner (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.803,
+        "recall": 0.821,
+        "f1": 0.812
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-distemist",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-distemist",
+      "category": "DISEASE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J29",
+      "dataset": "Carmen Enfermedades (train) + Distemist (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.765,
+        "recall": 0.79,
+        "f1": 0.777
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-livingner-humano",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-humano",
+      "category": "HUMAN",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J30",
+      "dataset": "Carmen Humano (train) + LivingNER Humano (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.904,
+        "recall": 0.941,
+        "f1": 0.922
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "bsc-bio-ehr-es-carmen-livingner-species",
+      "repository": "BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-species",
+      "category": "SPECIES",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J31",
+      "dataset": "Carmen Species (train) + LivingNER Species (train/val/test)",
+      "reported_metrics": {
+        "precision": 0.843,
+        "recall": 0.83,
+        "f1": 0.837
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "prof-ner-es",
+      "repository": "BSC-NLP4BIA/prof-ner-es",
+      "category": "PROFESSION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J33",
+      "dataset": "Meddoprof (without actividad)",
+      "reported_metrics": {
+        "precision": 0.785,
+        "recall": 0.776,
+        "f1": 0.78
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "location-tagger",
+      "repository": "BSC-NLP4BIA/location-tagger",
+      "category": "LOCATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J36",
+      "dataset": "Meddoplace (flat)",
+      "reported_metrics": {
+        "precision": 0.865,
+        "recall": 0.859,
+        "f1": 0.862
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "location-sub-tagger",
+      "repository": "BSC-NLP4BIA/location-sub-tagger",
+      "category": "LOCATION",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J37",
+      "dataset": "Meddoplace subtask 3",
+      "reported_metrics": {
+        "precision": 0.744321868916288,
+        "recall": 0.734785393978219,
+        "f1": 0.739522888459058
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "negation-tagger",
+      "repository": "BSC-NLP4BIA/negation-tagger",
+      "category": "NEGATION_UNCERTAINTY",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J39",
+      "dataset": "Negacion",
+      "reported_metrics": {
+        "precision": 0.88804780876494,
+        "recall": 0.907942973523421,
+        "f1": 0.897885196374622
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "drug-ner-cat-v1",
+      "repository": "BSC-NLP4BIA/drug-ner-cat-v1",
+      "category": "MEDICATION",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J43",
+      "dataset": "Drugtemist (cat) Gold Standard",
+      "reported_metrics": {
+        "precision": 0.921,
+        "recall": 0.904,
+        "f1": 0.913
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "drug-ner-cat-v0",
+      "repository": "BSC-NLP4BIA/drug-ner-cat-v0",
+      "category": "MEDICATION",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J44",
+      "dataset": "Drugtemist (cat) Silver Standard",
+      "reported_metrics": {},
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "prof-ner-cat-v1",
+      "repository": "BSC-NLP4BIA/prof-ner-cat-v1",
+      "category": "PROFESSION",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J45",
+      "dataset": "Meddoprof (w/o actividad) (cat) Gold Standard",
+      "reported_metrics": {
+        "precision": 0.838,
+        "recall": 0.794,
+        "f1": 0.815
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "prof-ner-cat-v0",
+      "repository": "BSC-NLP4BIA/prof-ner-cat-v0",
+      "category": "PROFESSION",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J46",
+      "dataset": "Meddoprof (w/o actividad) (cat) Silver Standard",
+      "reported_metrics": {},
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "disease-ner-cat-v1",
+      "repository": "BSC-NLP4BIA/disease-ner-cat-v1",
+      "category": "DISEASE",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J47",
+      "dataset": "Distemist (cat) Gold Standard",
+      "reported_metrics": {
+        "precision": 0.775,
+        "recall": 0.818,
+        "f1": 0.796
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "disease-ner-cat-v0",
+      "repository": "BSC-NLP4BIA/disease-ner-cat-v0",
+      "category": "DISEASE",
+      "languages": [
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J48",
+      "dataset": "Distemist (cat) Silver Standard",
+      "reported_metrics": {},
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "rheuma-disease-tagger",
+      "repository": "BSC-NLP4BIA/rheuma-disease-tagger",
+      "category": "DISEASE",
+      "languages": [
+        "es",
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J52",
+      "dataset": "ReumaCCC-enfermedad-es + ReumaCCC-enfermedad-cat + RMPT-enfermedadd",
+      "reported_metrics": {
+        "precision": 0.828,
+        "recall": 0.821,
+        "f1": 0.825
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "rheuma-symptom-tagger",
+      "repository": "BSC-NLP4BIA/rheuma-symptom-tagger",
+      "category": "SYMPTOM",
+      "languages": [
+        "es",
+        "ca"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J53",
+      "dataset": "ReumaCCC-sintoma-es + ReumaCCC-sintoma-cat + RMPT-sintoma",
+      "reported_metrics": {
+        "precision": 0.729,
+        "recall": 0.752,
+        "f1": 0.74
+      },
+      "metrics_status": "Reported in user inventory; not independently reproduced or checkpoint-verified."
+    },
+    {
+      "model_id": "chagas-sintoma-tagger",
+      "repository": "BSC-NLP4BIA/chagas-sintoma-tagger",
+      "category": "SYMPTOM",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J55",
+      "dataset": "ChagasCC",
+      "reported_metrics": {},
+      "metrics_status": "Combined experiment metrics; no per-checkpoint claim."
+    },
+    {
+      "model_id": "chagas-enfermedad-tagger",
+      "repository": "BSC-NLP4BIA/chagas-enfermedad-tagger",
+      "category": "DISEASE",
+      "languages": [
+        "es"
+      ],
+      "workbook_sha256": "f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47",
+      "sheet": "Overview",
+      "cell": "J55",
+      "dataset": "ChagasCC",
+      "reported_metrics": {},
+      "metrics_status": "Combined experiment metrics; no per-checkpoint claim."
+    }
+  ],
+  "additional_sources": [
+    "https://huggingface.co/collections/BSC-NLP4BIA/dt4h-multilingual-ner-models",
+    "https://huggingface.co/DT4H/cardio-ner-multilingual-medication-xlm-roberta-large-multiclass",
+    "https://huggingface.co/BSC-NLP4BIA/GreekMedNLP-bert-base-greek-uncased-v1-2025-2026"
+  ],
+  "limitations": [
+    "The workbook lists metrics but not exact local checkpoint hashes or full label schemas.",
+    "DT4H language codes CZ/SW in the workbook are routed as cs/sv based on the published multilingual cards.",
+    "location-sub-tagger requires further input/dependency verification; the model card linked usage example returned 404.",
+    "Exact combined-corpus GreekMedNLP card was inaccessible; do not copy scores from its 2026-only sibling."
+  ],
+  "experiments_without_checkpoint_links": [
+    {
+      "sheet": "Overview",
+      "row": "4",
+      "name": "Meddoplace (0.0 F1)",
+      "dataset": "Meddoplace",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "5",
+      "name": "Carmen (all)",
+      "dataset": "Carmen (all)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "6",
+      "name": "Carmen-species-lr-4",
+      "dataset": "Carmen (species)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "7",
+      "name": "Meddoplace_class_weights_not_normalized",
+      "dataset": "Meddoplace (all)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "34",
+      "name": "Meddoprof (with actividad)",
+      "dataset": "Meddoprof (with actividad)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "35",
+      "name": "Meddoplace (flat) v1",
+      "dataset": "Meddoplace (flat)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "40",
+      "name": "Temporalidad",
+      "dataset": "Temporalidad",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "51",
+      "name": "BARITONE",
+      "dataset": "ReumaCCC (cat)",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "56",
+      "name": null,
+      "dataset": "No finetuning on chagas data",
+      "status": "Experiment only; no repository URL in this row."
+    },
+    {
+      "sheet": "Overview",
+      "row": "59",
+      "name": null,
+      "dataset": "Situations",
+      "status": "Experiment only; no repository URL in this row."
+    }
+  ]
+}

@@ -16,7 +16,21 @@ COLUMNS = [
     "model_id",
     "submitter_name",
     "submitter_email",
+    "model_version",
+    "model_ids",
+    "original_labels",
+    "sources",
 ]
+
+
+def annotation_row(row):
+    return {
+        **row,
+        **{
+            key: json.dumps(row.get(key, []), ensure_ascii=False, allow_nan=False)
+            for key in ("model_ids", "original_labels", "sources")
+        },
+    }
 
 
 def package(
@@ -34,7 +48,7 @@ def package(
         {**row, **{k: payload[k] for k in ("language", "submitter_name", "submitter_email")}}
         for row in spans
     ]
-    write_tsv(output / "annotations.tsv", COLUMNS, rows)
+    write_tsv(output / "annotations.tsv", COLUMNS, [annotation_row(r) for r in rows])
     write_tsv(
         output / "document_statistics.tsv",
         [

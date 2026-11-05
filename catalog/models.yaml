@@ -1,4 +1,4 @@
-# No model is available until its local checkpoint passes offline validation.
+# Catalog inventory, not an assertion of installed or validated checkpoints.
 languages:
   es:
     display_name: Spanish
@@ -13,11 +13,79 @@ languages:
         model_dir: null
         min_score: 0.0
         batch_size: 16
+        models:
+        - bsc-bio-ehr-es-distemist
+        - bsc-bio-ehr-es-carmen-enfermedad
+        - bsc-bio-ehr-es-carmen-distemist
+        - rheuma-disease-tagger
+        - chagas-enfermedad-tagger
       SYMPTOM:
         display_name: Symptoms
         model_id: es-symptom
         enabled: false
         model_dir: null
+        models:
+        - bsc-bio-ehr-es-symptemist
+        - bsc-bio-ehr-es-carmen-sintoma
+        - bsc-bio-ehr-es-carmen-symptemist
+        - rheuma-symptom-tagger
+        - chagas-sintoma-tagger
+      MEDICATION:
+        display_name: Medications
+        models:
+        - bsc-bio-ehr-es-drugtemist
+        - bsc-bio-ehr-es-carmen-farmaco
+        - bsc-bio-ehr-es-carmen-drugtemist
+      PROCEDURE:
+        display_name: Procedures
+        models:
+        - bsc-bio-ehr-es-proctemist
+        - bsc-bio-ehr-es-medprocner
+        - bsc-bio-ehr-es-carmen-procedimiento
+        - bsc-bio-ehr-es-carmen-medprocner
+      ANONYMIZATION:
+        display_name: Anonymization
+        models:
+        - bsc-bio-ehr-es-meddocan
+        - bsc-bio-ehr-es-carmen-anon
+        - bsc-bio-ehr-es-carmen-meddocan
+      HUMAN:
+        display_name: Human
+        models:
+        - bsc-bio-ehr-es-livingner-humano
+        - bsc-bio-ehr-es-carmen-humano
+        - bsc-bio-ehr-es-carmen-livingner-humano
+      SPECIES:
+        display_name: Species
+        models:
+        - bsc-bio-ehr-es-livingner-species
+        - bsc-bio-ehr-es-carmen-species
+        - bsc-bio-ehr-es-carmen-livingner-species
+      PROFESSION:
+        display_name: Professions
+        models:
+        - prof-ner-es
+      LOCATION:
+        display_name: Locations
+        models:
+        - location-tagger
+        - location-sub-tagger
+      NEGATION_UNCERTAINTY:
+        display_name: Negation / Uncertainty
+        models:
+        - negation-tagger
+      TEMPORALITY:
+        display_name: Temporality
+        models:
+        - temporality-unpublished
+      EVENT:
+        display_name: Events
+        models:
+        - pediatrics-event
+      SITUATION:
+        display_name: Situations
+        models:
+        - pediatrics-situation
   en:
     display_name: English
     statistics_model: null
@@ -27,3 +95,1419 @@ languages:
         model_id: en-disease
         enabled: false
         model_dir: null
+  ca:
+    display_name: Catalan
+    statistics_model: null
+    entities:
+      MEDICATION:
+        display_name: Medications
+        models:
+        - drug-ner-cat-v1
+        - drug-ner-cat-v0
+      PROFESSION:
+        display_name: Professions
+        models:
+        - prof-ner-cat-v1
+        - prof-ner-cat-v0
+      DISEASE:
+        display_name: Diseases
+        models:
+        - disease-ner-cat-v1
+        - disease-ner-cat-v0
+        - rheuma-disease-tagger
+      SYMPTOM:
+        display_name: Symptoms
+        models:
+        - rheuma-symptom-tagger
+      EVENT:
+        display_name: Events
+        models:
+        - pediatrics-event
+      SITUATION:
+        display_name: Situations
+        models:
+        - pediatrics-situation
+  el:
+    display_name: Greek
+    statistics_model: null
+    entities:
+      DISEASE:
+        display_name: Diseases
+        models:
+        - GreekMedNLP-bert-base-greek-uncased-v1-2025-2026
+  ro:
+    display_name: Romanian
+    statistics_model: null
+    entities: {}
+  it:
+    display_name: Italian
+    statistics_model: null
+    entities: {}
+  cs:
+    display_name: Czech
+    statistics_model: null
+    entities: {}
+  sv:
+    display_name: Swedish
+    statistics_model: null
+    entities: {}
+  nl:
+    display_name: Dutch
+    statistics_model: null
+    entities: {}
+models:
+  bsc-bio-ehr-es-proctemist:
+    name: janrodriguez/bsc-bio-ehr-es-proctemist
+    repository: janrodriguez/bsc-bio-ehr-es-proctemist
+    language: es
+    languages:
+    - es
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J3
+      dataset: ProcTEMIST
+      reported_metrics:
+        precision: 0.74
+        recall: 0.78
+        f1: 0.76
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-meddocan:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-meddocan
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-meddocan
+    language: es
+    languages:
+    - es
+    target_label: CALLE
+    label_mapping:
+      CALLE: ANONYMIZATION
+      CENTRO_SALUD: ANONYMIZATION
+      CORREO_ELECTRONICO: ANONYMIZATION
+      EDAD_SUJETO_ASISTENCIA: ANONYMIZATION
+      FAMILIARES_SUJETO_ASISTENCIA: ANONYMIZATION
+      FECHAS: ANONYMIZATION
+      HOSPITAL: ANONYMIZATION
+      ID_ASEGURAMIENTO: ANONYMIZATION
+      ID_CONTACTO_ASISTENCIAL: ANONYMIZATION
+      ID_SUJETO_ASISTENCIA: ANONYMIZATION
+      ID_TITULACION_PERSONAL_SANITARIO: ANONYMIZATION
+      INSTITUCION: ANONYMIZATION
+      NOMBRE_PERSONAL_SANITARIO: ANONYMIZATION
+      NOMBRE_SUJETO_ASISTENCIA: ANONYMIZATION
+      NUMERO_FAX: ANONYMIZATION
+      NUMERO_TELEFONO: ANONYMIZATION
+      OTROS_SUJETO_ASISTENCIA: ANONYMIZATION
+      PAIS: ANONYMIZATION
+      PROFESION: ANONYMIZATION
+      SEXO_SUJETO_ASISTENCIA: ANONYMIZATION
+      TERRITORIO: ANONYMIZATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J9
+      dataset: Meddocan
+      reported_metrics:
+        precision: 0.95
+        recall: 0.972
+        f1: 0.961
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-drugtemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-drugtemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-drugtemist
+    language: es
+    languages:
+    - es
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J10
+      dataset: Drugtemist
+      reported_metrics:
+        precision: 0.9169
+        recall: 0.909
+        f1: 0.9129
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-symptemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-symptemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-symptemist
+    language: es
+    languages:
+    - es
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J11
+      dataset: Symptemist
+      reported_metrics:
+        precision: 0.707
+        recall: 0.716
+        f1: 0.711
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-medprocner:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-medprocner
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-medprocner
+    language: es
+    languages:
+    - es
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J12
+      dataset: Medprocner
+      reported_metrics:
+        precision: 0.757
+        recall: 0.761
+        f1: 0.759
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-distemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-distemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-distemist
+    language: es
+    languages:
+    - es
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J13
+      dataset: Distemist
+      reported_metrics:
+        precision: 0.7542
+        recall: 0.7591
+        f1: 0.7567
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-livingner-humano:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-livingner-humano
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-livingner-humano
+    language: es
+    languages:
+    - es
+    target_label: HUMAN
+    label_mapping:
+      HUMAN: HUMAN
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J14
+      dataset: LivingNER Human
+      reported_metrics:
+        precision: 0.976
+        recall: 0.984
+        f1: 0.98
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-livingner-species:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-livingner-species
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-livingner-species
+    language: es
+    languages:
+    - es
+    target_label: SPECIES
+    label_mapping:
+      SPECIES: SPECIES
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J15
+      dataset: LivingNER Species
+      reported_metrics:
+        precision: 0.94
+        recall: 0.928
+        f1: 0.934
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-anon:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-anon
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-anon
+    language: es
+    languages:
+    - es
+    target_label: CALLE
+    label_mapping:
+      CALLE: ANONYMIZATION
+      CENTRO_SALUD: ANONYMIZATION
+      CORREO_ELECTRONICO: ANONYMIZATION
+      EDAD_SUJETO_ASISTENCIA: ANONYMIZATION
+      FAMILIARES_SUJETO_ASISTENCIA: ANONYMIZATION
+      FECHAS: ANONYMIZATION
+      HOSPITAL: ANONYMIZATION
+      ID_ASEGURAMIENTO: ANONYMIZATION
+      ID_CONTACTO_ASISTENCIAL: ANONYMIZATION
+      ID_SUJETO_ASISTENCIA: ANONYMIZATION
+      ID_TITULACION_PERSONAL_SANITARIO: ANONYMIZATION
+      INSTITUCION: ANONYMIZATION
+      NOMBRE_PERSONAL_SANITARIO: ANONYMIZATION
+      NOMBRE_SUJETO_ASISTENCIA: ANONYMIZATION
+      NUMERO_FAX: ANONYMIZATION
+      NUMERO_TELEFONO: ANONYMIZATION
+      OTROS_SUJETO_ASISTENCIA: ANONYMIZATION
+      PAIS: ANONYMIZATION
+      PROFESION: ANONYMIZATION
+      SEXO_SUJETO_ASISTENCIA: ANONYMIZATION
+      TERRITORIO: ANONYMIZATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J17
+      dataset: carmen anon
+      reported_metrics:
+        precision: 0.946
+        recall: 0.962
+        f1: 0.954
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-farmaco:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-farmaco
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-farmaco
+    language: es
+    languages:
+    - es
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J18
+      dataset: carmen fármaco
+      reported_metrics:
+        precision: 0.954
+        recall: 0.928
+        f1: 0.941
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-sintoma:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-sintoma
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-sintoma
+    language: es
+    languages:
+    - es
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J19
+      dataset: carmen síntoma
+      reported_metrics:
+        precision: 0.615
+        recall: 0.75
+        f1: 0.676
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-procedimiento:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-procedimiento
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-procedimiento
+    language: es
+    languages:
+    - es
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J20
+      dataset: carmen procedimiento
+      reported_metrics:
+        precision: 0.746
+        recall: 0.784
+        f1: 0.764
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-enfermedad:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-enfermedad
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-enfermedad
+    language: es
+    languages:
+    - es
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J21
+      dataset: carmen enfermedad
+      reported_metrics:
+        precision: 0.746
+        recall: 0.763
+        f1: 0.754
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-humano:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-humano
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-humano
+    language: es
+    languages:
+    - es
+    target_label: HUMAN
+    label_mapping:
+      HUMAN: HUMAN
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J22
+      dataset: carmen humano
+      reported_metrics:
+        precision: 0.878
+        recall: 0.918
+        f1: 0.897
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-species:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-species
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-species
+    language: es
+    languages:
+    - es
+    target_label: SPECIES
+    label_mapping:
+      SPECIES: SPECIES
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J23
+      dataset: carmen species
+      reported_metrics:
+        precision: 0.848
+        recall: 0.799
+        f1: 0.823
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-meddocan:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-meddocan
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-meddocan
+    language: es
+    languages:
+    - es
+    target_label: CALLE
+    label_mapping:
+      CALLE: ANONYMIZATION
+      CENTRO_SALUD: ANONYMIZATION
+      CORREO_ELECTRONICO: ANONYMIZATION
+      EDAD_SUJETO_ASISTENCIA: ANONYMIZATION
+      FAMILIARES_SUJETO_ASISTENCIA: ANONYMIZATION
+      FECHAS: ANONYMIZATION
+      HOSPITAL: ANONYMIZATION
+      ID_ASEGURAMIENTO: ANONYMIZATION
+      ID_CONTACTO_ASISTENCIAL: ANONYMIZATION
+      ID_SUJETO_ASISTENCIA: ANONYMIZATION
+      ID_TITULACION_PERSONAL_SANITARIO: ANONYMIZATION
+      INSTITUCION: ANONYMIZATION
+      NOMBRE_PERSONAL_SANITARIO: ANONYMIZATION
+      NOMBRE_SUJETO_ASISTENCIA: ANONYMIZATION
+      NUMERO_FAX: ANONYMIZATION
+      NUMERO_TELEFONO: ANONYMIZATION
+      OTROS_SUJETO_ASISTENCIA: ANONYMIZATION
+      PAIS: ANONYMIZATION
+      PROFESION: ANONYMIZATION
+      SEXO_SUJETO_ASISTENCIA: ANONYMIZATION
+      TERRITORIO: ANONYMIZATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J25
+      dataset: Carmen Anon (train) + Meddocan (train/val/test)
+      reported_metrics:
+        precision: 0.944
+        recall: 0.957
+        f1: 0.95
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-drugtemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-drugtemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-drugtemist
+    language: es
+    languages:
+    - es
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J26
+      dataset: Carmen Fármaco (train) + Drugtemist (train/val/test)
+      reported_metrics:
+        precision: 0.944
+        recall: 0.926
+        f1: 0.935
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-symptemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-symptemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-symptemist
+    language: es
+    languages:
+    - es
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J27
+      dataset: Carmen Síntomas (train) + Symptemist (train/val/test)
+      reported_metrics:
+        precision: 0.743
+        recall: 0.764
+        f1: 0.753
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-medprocner:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-medprocner
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-medprocner
+    language: es
+    languages:
+    - es
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J28
+      dataset: Carmen Procedimientos (train) + Medprocner (train/val/test)
+      reported_metrics:
+        precision: 0.803
+        recall: 0.821
+        f1: 0.812
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-distemist:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-distemist
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-distemist
+    language: es
+    languages:
+    - es
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J29
+      dataset: Carmen Enfermedades (train) + Distemist (train/val/test)
+      reported_metrics:
+        precision: 0.765
+        recall: 0.79
+        f1: 0.777
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-livingner-humano:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-humano
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-humano
+    language: es
+    languages:
+    - es
+    target_label: HUMAN
+    label_mapping:
+      HUMAN: HUMAN
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J30
+      dataset: Carmen Humano (train) + LivingNER Humano (train/val/test)
+      reported_metrics:
+        precision: 0.904
+        recall: 0.941
+        f1: 0.922
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  bsc-bio-ehr-es-carmen-livingner-species:
+    name: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-species
+    repository: BSC-NLP4BIA/bsc-bio-ehr-es-carmen-livingner-species
+    language: es
+    languages:
+    - es
+    target_label: SPECIES
+    label_mapping:
+      SPECIES: SPECIES
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J31
+      dataset: Carmen Species (train) + LivingNER Species (train/val/test)
+      reported_metrics:
+        precision: 0.843
+        recall: 0.83
+        f1: 0.837
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  prof-ner-es:
+    name: BSC-NLP4BIA/prof-ner-es
+    repository: BSC-NLP4BIA/prof-ner-es
+    language: es
+    languages:
+    - es
+    target_label: PROFESION
+    label_mapping:
+      PROFESION: PROFESSION
+      SITUACION_LABORAL: PROFESSION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J33
+      dataset: Meddoprof (without actividad)
+      reported_metrics:
+        precision: 0.785
+        recall: 0.776
+        f1: 0.78
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  location-tagger:
+    name: BSC-NLP4BIA/location-tagger
+    repository: BSC-NLP4BIA/location-tagger
+    language: es
+    languages:
+    - es
+    target_label: GPE_NOM
+    label_mapping:
+      COMUNIDAD: LOCATION
+      DEPARTAMENTO: LOCATION
+      FAC_GEN: LOCATION
+      FAC_NOM: LOCATION
+      GEO_GEN: LOCATION
+      GEO_NOM: LOCATION
+      GPE_GEN: LOCATION
+      GPE_NOM: LOCATION
+      IDIOMA: LOCATION
+      TRANSPORTE: LOCATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J36
+      dataset: Meddoplace (flat)
+      reported_metrics:
+        precision: 0.865
+        recall: 0.859
+        f1: 0.862
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  location-sub-tagger:
+    name: BSC-NLP4BIA/location-sub-tagger
+    repository: BSC-NLP4BIA/location-sub-tagger
+    language: es
+    languages:
+    - es
+    target_label: ATENCION
+    label_mapping:
+      ATENCION: LOCATION
+      LUGAR_NATAL: LOCATION
+      MOVIMIENTO: LOCATION
+      RESIDENCIA: LOCATION
+      OTHER: LOCATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Subcategorization model registered. Verify input contract/pre-tokenization and
+      whether upstream spans are required; no standalone execution until reviewed.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J37
+      dataset: Meddoplace subtask 3
+      reported_metrics:
+        precision: 0.744321868916288
+        recall: 0.734785393978219
+        f1: 0.739522888459058
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+    dependency_review: pending
+    candidate_dependencies:
+    - location-tagger
+  negation-tagger:
+    name: BSC-NLP4BIA/negation-tagger
+    repository: BSC-NLP4BIA/negation-tagger
+    language: es
+    languages:
+    - es
+    target_label: NEG
+    label_mapping:
+      NEG: NEGATION_UNCERTAINTY
+      NSCO: NEGATION_UNCERTAINTY
+      UNC: NEGATION_UNCERTAINTY
+      USCO: NEGATION_UNCERTAINTY
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J39
+      dataset: Negacion
+      reported_metrics:
+        precision: 0.88804780876494
+        recall: 0.907942973523421
+        f1: 0.897885196374622
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  drug-ner-cat-v1:
+    name: BSC-NLP4BIA/drug-ner-cat-v1
+    repository: BSC-NLP4BIA/drug-ner-cat-v1
+    language: ca
+    languages:
+    - ca
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J43
+      dataset: Drugtemist (cat) Gold Standard
+      reported_metrics:
+        precision: 0.921
+        recall: 0.904
+        f1: 0.913
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  drug-ner-cat-v0:
+    name: BSC-NLP4BIA/drug-ner-cat-v0
+    repository: BSC-NLP4BIA/drug-ner-cat-v0
+    language: ca
+    languages:
+    - ca
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J44
+      dataset: Drugtemist (cat) Silver Standard
+      reported_metrics: {}
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  prof-ner-cat-v1:
+    name: BSC-NLP4BIA/prof-ner-cat-v1
+    repository: BSC-NLP4BIA/prof-ner-cat-v1
+    language: ca
+    languages:
+    - ca
+    target_label: PROFESION
+    label_mapping:
+      PROFESION: PROFESSION
+      SITUACION_LABORAL: PROFESSION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J45
+      dataset: Meddoprof (w/o actividad) (cat) Gold Standard
+      reported_metrics:
+        precision: 0.838
+        recall: 0.794
+        f1: 0.815
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  prof-ner-cat-v0:
+    name: BSC-NLP4BIA/prof-ner-cat-v0
+    repository: BSC-NLP4BIA/prof-ner-cat-v0
+    language: ca
+    languages:
+    - ca
+    target_label: PROFESION
+    label_mapping:
+      PROFESION: PROFESSION
+      SITUACION_LABORAL: PROFESSION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J46
+      dataset: Meddoprof (w/o actividad) (cat) Silver Standard
+      reported_metrics: {}
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  disease-ner-cat-v1:
+    name: BSC-NLP4BIA/disease-ner-cat-v1
+    repository: BSC-NLP4BIA/disease-ner-cat-v1
+    language: ca
+    languages:
+    - ca
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J47
+      dataset: Distemist (cat) Gold Standard
+      reported_metrics:
+        precision: 0.775
+        recall: 0.818
+        f1: 0.796
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  disease-ner-cat-v0:
+    name: BSC-NLP4BIA/disease-ner-cat-v0
+    repository: BSC-NLP4BIA/disease-ner-cat-v0
+    language: ca
+    languages:
+    - ca
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J48
+      dataset: Distemist (cat) Silver Standard
+      reported_metrics: {}
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  rheuma-disease-tagger:
+    name: BSC-NLP4BIA/rheuma-disease-tagger
+    repository: BSC-NLP4BIA/rheuma-disease-tagger
+    language: es
+    languages:
+    - es
+    - ca
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J52
+      dataset: ReumaCCC-enfermedad-es + ReumaCCC-enfermedad-cat + RMPT-enfermedadd
+      reported_metrics:
+        precision: 0.828
+        recall: 0.821
+        f1: 0.825
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  rheuma-symptom-tagger:
+    name: BSC-NLP4BIA/rheuma-symptom-tagger
+    repository: BSC-NLP4BIA/rheuma-symptom-tagger
+    language: es
+    languages:
+    - es
+    - ca
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J53
+      dataset: ReumaCCC-sintoma-es + ReumaCCC-sintoma-cat + RMPT-sintoma
+      reported_metrics:
+        precision: 0.729
+        recall: 0.752
+        f1: 0.74
+      metrics_status: Reported in user inventory; not independently reproduced or checkpoint-verified.
+  chagas-sintoma-tagger:
+    name: BSC-NLP4BIA/chagas-sintoma-tagger
+    repository: BSC-NLP4BIA/chagas-sintoma-tagger
+    language: es
+    languages:
+    - es
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J55
+      dataset: ChagasCC
+      reported_metrics: {}
+      metrics_status: Combined experiment metrics; no per-checkpoint claim.
+  chagas-enfermedad-tagger:
+    name: BSC-NLP4BIA/chagas-enfermedad-tagger
+    repository: BSC-NLP4BIA/chagas-enfermedad-tagger
+    language: es
+    languages:
+    - es
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    inventory_source:
+      workbook_sha256: f91b003cc83063a5a9cee1f53fb7c9bc42736adb8eb5085719dbc45927dd8c47
+      sheet: Overview
+      cell: J55
+      dataset: ChagasCC
+      reported_metrics: {}
+      metrics_status: Combined experiment metrics; no per-checkpoint claim.
+  pediatrics-event:
+    name: Pediatrics — Events
+    repository: null
+    language: es
+    languages:
+    - es
+    - ca
+    target_label: EVENT
+    label_mapping:
+      EVENT: EVENT
+    task: unpublished
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: No published, validated checkpoint; pediatric experiment only.
+    inventory_source:
+      sheet: Overview
+      cell: C58
+  pediatrics-situation:
+    name: Pediatrics — Situations
+    repository: null
+    language: es
+    languages:
+    - es
+    - ca
+    target_label: SITUATION
+    label_mapping:
+      SITUATION: SITUATION
+    task: unpublished
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: No published, validated checkpoint; pediatric experiment only.
+    inventory_source:
+      sheet: Overview
+      cell: C59
+  temporality-unpublished:
+    name: Temporality — inventory experiment
+    repository: null
+    language: es
+    languages:
+    - es
+    target_label: AGE
+    label_mapping:
+      AGE: TEMPORALITY
+      DATE: TEMPORALITY
+      DURATION: TEMPORALITY
+      SET: TEMPORALITY
+      TIME: TEMPORALITY
+    task: unpublished
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Workbook marks this checkpoint as not released.
+    inventory_source:
+      sheet: Overview
+      cell: B40
+  GreekMedNLP-bert-base-greek-uncased-v1-2025-2026:
+    name: GreekMedNLP — BERT Greek Uncased v1 (2025–2026)
+    repository: BSC-NLP4BIA/GreekMedNLP-bert-base-greek-uncased-v1-2025-2026
+    language: el
+    languages:
+    - el
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+    version: 2025-2026
+    inventory_source:
+      source: User-provided exact repository URL
+  DT4H_XLM-R_stl_multilingual_disease:
+    name: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_disease
+    repository: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_disease
+    language: es
+    languages: &id001
+    - es
+    - it
+    - ro
+    - en
+    - nl
+    - sv
+    - cs
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_es-it-ro_disease:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_disease
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_disease
+    language: es
+    languages:
+    - es
+    - it
+    - ro
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_en-nl-sv_disease:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_disease
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_disease
+    language: en
+    languages:
+    - en
+    - nl
+    - sv
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_stl_multilingual_symptom:
+    name: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_symptom
+    repository: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_symptom
+    language: es
+    languages: *id001
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_es-it-ro_symptom:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_symptom
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_symptom
+    language: es
+    languages:
+    - es
+    - it
+    - ro
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_en-nl-sv_symptom:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_symptom
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_symptom
+    language: en
+    languages:
+    - en
+    - nl
+    - sv
+    target_label: SYMPTOM
+    label_mapping:
+      SYMPTOM: SYMPTOM
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_stl_multilingual_procedure:
+    name: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_procedure
+    repository: BSC-NLP4BIA/DT4H_XLM-R_stl_multilingual_procedure
+    language: es
+    languages: *id001
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_es-it-ro_procedure:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_procedure
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_es-it-ro_procedure
+    language: es
+    languages:
+    - es
+    - it
+    - ro
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_en-nl-sv_procedure:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_procedure
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_en-nl-sv_procedure
+    language: en
+    languages:
+    - en
+    - nl
+    - sv
+    target_label: PROCEDURE
+    label_mapping:
+      PROCEDURE: PROCEDURE
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  DT4H_XLM-R_mtl_multilingual_multilabel:
+    name: BSC-NLP4BIA/DT4H_XLM-R_mtl_multilingual_multilabel
+    repository: BSC-NLP4BIA/DT4H_XLM-R_mtl_multilingual_multilabel
+    language: es
+    languages: *id001
+    target_label: DISEASE
+    label_mapping:
+      DISEASE: DISEASE
+      SYMPTOM: SYMPTOM
+      PROCEDURE: PROCEDURE
+    task: custom_mtl
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+  cardio-ner-multilingual-medication-xlm-roberta-large-multiclass:
+    name: DT4H/cardio-ner-multilingual-medication-xlm-roberta-large-multiclass
+    repository: DT4H/cardio-ner-multilingual-medication-xlm-roberta-large-multiclass
+    language: es
+    languages: *id001
+    target_label: MEDICATION
+    label_mapping:
+      MEDICATION: MEDICATION
+    task: ner
+    schema_review: pending
+    enabled: false
+    model_dir: null
+    min_score: 0.0
+    batch_size: 16
+    unavailable_reason: Checkpoint not installed; original label schema and native compatibility require
+      offline validation.
+multilingual:
+  display_name: Multilingual models
+  entities:
+    DISEASE:
+      display_name: Diseases
+      models:
+      - DT4H_XLM-R_stl_multilingual_disease
+      - DT4H_XLM-R_mtl_es-it-ro_disease
+      - DT4H_XLM-R_mtl_en-nl-sv_disease
+      - DT4H_XLM-R_mtl_multilingual_multilabel
+    SYMPTOM:
+      display_name: Symptoms
+      models:
+      - DT4H_XLM-R_stl_multilingual_symptom
+      - DT4H_XLM-R_mtl_es-it-ro_symptom
+      - DT4H_XLM-R_mtl_en-nl-sv_symptom
+      - DT4H_XLM-R_mtl_multilingual_multilabel
+    PROCEDURE:
+      display_name: Procedures
+      models:
+      - DT4H_XLM-R_stl_multilingual_procedure
+      - DT4H_XLM-R_mtl_es-it-ro_procedure
+      - DT4H_XLM-R_mtl_en-nl-sv_procedure
+      - DT4H_XLM-R_mtl_multilingual_multilabel
+    MEDICATION:
+      display_name: Medications
+      models:
+      - cardio-ner-multilingual-medication-xlm-roberta-large-multiclass
