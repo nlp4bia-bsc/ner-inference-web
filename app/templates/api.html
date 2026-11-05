@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>API reference · Multilingual NER</title>
+    <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="brand" href="{{ prefix }}/">Multilingual NER</a
+      ><span class="institution">TEMU · API reference</span>
+    </nav>
+    <main class="results">
+      <header>
+        <p class="eyebrow">DEVELOPER REFERENCE</p>
+        <h1>Multilingual NER API</h1>
+        <p class="intro">
+          Submit corpora, follow private jobs and explore original-coordinate
+          annotations.
+        </p>
+        <a class="button" href="{{ prefix }}/openapi.json"
+          >Download OpenAPI schema</a
+        >
+      </header>
+      <section class="status-card">
+        <h2>Operations</h2>
+        {% for path, methods in schema.paths.items() %}{% for method, operation
+        in methods.items() %}
+        <details>
+          <summary><strong>{{ method|upper }}</strong> {{ path }}</summary>
+          <p>{{ operation.summary }}</p>
+          {% for parameter in operation.get('parameters', []) %}
+          <p>
+            <strong>{{ parameter.name }}</strong> · {{ parameter['in'] }} · {{
+            parameter.schema.get('type','') }}{% if parameter.get('required') %}
+            · required{% endif %}
+          </p>
+          {% endfor %}
+          <p>Response codes: {{ operation.responses.keys()|join(', ') }}</p>
+        </details>
+        {% endfor %}{% endfor %}
+      </section>
+      <section class="status-card">
+        <h2>Data models</h2>
+        {% for name, model in schema.components.schemas.items() %}
+        <details>
+          <summary>{{ name }}</summary>
+          {% for field, properties in model.get('properties',{}).items() %}
+          <p>
+            <strong>{{ field }}</strong> · {{
+            properties.get('type',properties.get('title','')) }}{% if field in
+            model.get('required',[]) %} · required{% endif %}
+          </p>
+          {% endfor %}
+        </details>
+        {% endfor %}
+      </section>
+    </main>
+  </body>
+</html>

@@ -92,7 +92,10 @@ def test_prefix_routes_origin_and_links(settings):
         assert client.get("/ner/").status_code == 200
         assert "/ner/static/form.js" in client.get("/ner/").text
         assert client.get("/ner/health").status_code == 200
-        assert client.get("/ner/docs").status_code == 200
+        docs = client.get("/ner/docs")
+        assert docs.status_code == 200
+        assert "cdn.jsdelivr.net" not in docs.text and "unpkg.com" not in docs.text
+        assert "/ner/openapi.json" in docs.text
         assert "/ner/api/jobs" in client.get("/ner/openapi.json").json()["paths"]
         response = client.post(
             "/ner/api/jobs",

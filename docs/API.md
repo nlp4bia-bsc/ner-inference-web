@@ -18,7 +18,7 @@ paths, email/name, raw inputs or internal exception messages.
 | GET /api/jobs/{token}/statistics | Strict JSON statistics when completed |
 | GET /health | Liveness, 200 |
 | GET /ready | SQLite access + fresh worker heartbeat; 200 or 503, includes models_available |
-| GET /docs, /openapi.json | Generated API schema (Swagger UI assets require internet) |
+| GET /docs, /openapi.json | Offline API reference and machine-readable OpenAPI schema |
 
 Multipart fields: submitter_name (1–120 characters, trimmed, no controls),
 submitter_email (validated EmailStr, normalized lowercase; not verified), language
@@ -78,3 +78,5 @@ No filename/path is accepted as a filesystem selector. IDs resolve from the
 job's private index. Fragment clipping changes the text response only; returned
 annotations retain complete original surfaces and document coordinates even when
 crossing the fragment boundary. No text from other documents is bundled.
+
+The HTML reference is served locally without Swagger CDN scripts; it lists operations and response/request model fields. No third-party runtime asset is required.

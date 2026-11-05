@@ -2,8 +2,9 @@
 
 - Baseline before edits: **71 passed in 22.57s**.
 - First backend refactor: **69 passed** excluding the then opt-in browser cases.
-- Final full run: `SCREENSHOT_OUTPUT=work/screenshots BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`: **94 passed in 48.16s**, no skips.
+- Final full run: `BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`: **94 passed in 52.81s**, no skips.
 - Ruff lint/format and Prettier checks passed; `git diff --check` passed.
+- The local HTML API reference was checked without any CDN scripts; prefixed OpenAPI remained available.
 - Viewer/home tests used self-started temporary `/ner` servers and real document
   APIs, at 320/375/390/768/1024/1440/1920/2560px. They selected every nested,
   crossing and equal-boundary annotation, including four simultaneous spans;

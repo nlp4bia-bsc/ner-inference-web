@@ -34,4 +34,12 @@ def router(service, templates):
             request=request, name="viewer.html", context={"prefix": service.settings.app_prefix}
         )
 
+    @api.get("/docs", response_class=HTMLResponse, include_in_schema=False)
+    def api_reference(request: Request):
+        return templates.TemplateResponse(
+            request=request,
+            name="api.html",
+            context={"prefix": service.settings.app_prefix, "schema": request.app.openapi()},
+        )
+
     return api

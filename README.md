@@ -300,6 +300,9 @@ python -m pytest -q tests/test_viewer_api.py # new contracts / prefix / controll
 python -m ruff check app scripts tests
 python -m ruff format --check app scripts tests
 pip install playwright
+# On Debian/Ubuntu, if Chromium is not already installed:
+# sudo apt-get update
+# sudo apt-get install -y chromium
 # Requires Chromium at /usr/bin/chromium; browser tests start a temporary prefixed server.
 BROWSER_TESTS=1 python -m pytest -q
 # Viewer-specific tests start their own temporary prefixed server:
