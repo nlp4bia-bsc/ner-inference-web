@@ -51,7 +51,14 @@ class DocumentRepository:
         self.jobs = jobs
 
     def root(self, token: str) -> Path:
-        job = self.jobs.completed(token)
+        job = self.jobs.available(token)
+        with self.jobs.db.connect() as c:
+            incremental = c.execute(
+                "SELECT 1 FROM documents WHERE job_id=? LIMIT 1", (job["id"],)
+            ).fetchone()
+        if incremental:
+            return self.jobs.storage.job(job["id"])
+        self.jobs.completed(token)
         root = self.jobs.storage.job(job["id"])
         if not (root / "viewer" / "index.json").is_file():
             self.backfill(root, job)
@@ -87,6 +94,26 @@ class DocumentRepository:
                 shutil.rmtree(temporary)
 
     def index(self, token: str) -> list[dict]:
+        job = self.jobs.available(token)
+        from app.persistence.progress import ProgressRepository
+
+        rows = ProgressRepository(self.jobs.db).rows(job["id"])
+        if rows:
+            order = {name: i for i, name in enumerate(json.loads(job["payload"])["documents"])}
+            return [
+                {
+                    "document_id": r["document_id"],
+                    "filename": r["filename"],
+                    "relative_path": r["filename"],
+                    "source_type": r["source_type"],
+                    "annotation_count": r["annotation_count"],
+                    "entities_by_label": json.loads(r["entities_by_label"]),
+                    "status": r["status"],
+                    "statistics": json.loads(r["statistics"]),
+                    "error_code": r["error_code"],
+                }
+                for r in sorted(rows, key=lambda r: order.get(r["filename"], 0))
+            ]
         return json.loads((self.root(token) / "viewer" / "index.json").read_text(encoding="utf-8"))
 
     def document(self, token: str, identity: str) -> tuple[Path, dict]:
@@ -94,6 +121,8 @@ class DocumentRepository:
         record = next((row for row in self.index(token) if row["document_id"] == identity), None)
         if record is None:
             raise ServiceError("Document not found.", 404)
+        if record["status"] not in ("ANNOTATED", "COMPLETED"):
+            raise ServiceError("This document is not annotated yet.", 409)
         return root, record
 
     def text(self, token: str, identity: str) -> tuple[dict, str]:
@@ -102,4 +131,7 @@ class DocumentRepository:
 
     def annotations(self, token: str, identity: str) -> list[dict]:
         root, _ = self.document(token, identity)
+        published = root / "published" / identity / "artifact.json"
+        if published.is_file():
+            return json.loads(published.read_text(encoding="utf-8"))["annotations"]
         return json.loads((root / "viewer" / (identity + ".json")).read_text(encoding="utf-8"))

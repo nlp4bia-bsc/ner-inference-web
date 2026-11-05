@@ -1,6 +1,7 @@
 """Bounded upload admission and private-response headers."""
 
 import asyncio
+import tempfile
 from urllib.parse import urlsplit
 
 from fastapi.responses import JSONResponse
@@ -40,6 +41,7 @@ class AdmissionMiddleware:
         ):
             return await self.app(scope, receive, secure_send)
         lease = None
+        spool = None
         try:
             origin = headers.get(b"origin")
             if (
@@ -58,7 +60,9 @@ class AdmissionMiddleware:
             if length > maximum:
                 raise ServiceError("Upload exceeds the configured limit.", 413)
             lease = await run_in_threadpool(self.db.reserve_upload)
-            chunks, size = [], 0
+            scope["admission_lease"] = lease
+            spool = tempfile.TemporaryFile(dir=self.s.storage_root / "staging")
+            size = 0
             async with asyncio.timeout(300):
                 while True:
                     message = await receive()
@@ -67,16 +71,20 @@ class AdmissionMiddleware:
                     size += len(message.get("body", b""))
                     if size > maximum:
                         raise ServiceError("Upload exceeds the configured limit.", 413)
-                    chunks.append(message.get("body", b""))
+                    await run_in_threadpool(spool.write, message.get("body", b""))
                     if not message.get("more_body", False):
                         break
-            body, delivered = b"".join(chunks), False
+            spool.seek(0)
+            delivered = False
 
             async def replay():
                 nonlocal delivered
                 if not delivered:
+                    chunk = await run_in_threadpool(spool.read, 65536)
+                    if chunk:
+                        return {"type": "http.request", "body": chunk, "more_body": True}
                     delivered = True
-                    return {"type": "http.request", "body": body, "more_body": False}
+                    return {"type": "http.request", "body": b"", "more_body": False}
                 return await receive()
 
             await self.app(scope, replay, secure_send)
@@ -85,5 +93,7 @@ class AdmissionMiddleware:
             message = exc.message if isinstance(exc, ServiceError) else "Upload timed out."
             await JSONResponse({"detail": message}, status_code=status)(scope, receive, secure_send)
         finally:
+            if spool is not None:
+                spool.close()
             if lease:
                 await run_in_threadpool(self.db.release_upload, lease)

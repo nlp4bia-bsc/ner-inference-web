@@ -8,7 +8,9 @@ import uuid
 from datetime import datetime, timezone
 
 from app.errors import ServiceError
-from app.services.documents import load_documents
+from app.persistence.progress import ProgressRepository
+from app.services.documents import ingest
+from app.services.registry import statistics_reference
 
 
 def iso(value):
@@ -20,19 +22,45 @@ class JobService:
         self.settings, self.db, self.storage, self.registry = settings, database, storage, registry
 
     def submit(self, form, uploaded: list[tuple[str, bytes]], ip: str):
+        import io
+
+        return self.submit_streams(form, [(name, io.BytesIO(data)) for name, data in uploaded], ip)
+
+    def submit_streams(self, form, streams, ip, source_type="TXT_UPLOAD", lease=None):
         selected = self.registry.select(form.language, form.entities)
-        documents = load_documents(uploaded, self.settings)
+        reference, reference_digest = statistics_reference(
+            self.registry.languages[form.language], selected
+        )
         job_id, token = uuid.uuid4().hex, secrets.token_urlsafe(32)
         staging = self.storage.root / "staging" / job_id
         staging.mkdir()
+        if lease:
+            self.db.touch_upload(lease, job_id)
+        last_touch = time.monotonic()
+        reserved = 2 * self.settings.upload_bytes + int(
+            self.settings.storage_reserve_extra_mb * 1024**2
+        )
+
+        def grow(total):
+            nonlocal reserved, last_touch
+            if lease and time.monotonic() - last_touch > 5:
+                self.db.touch_upload(lease)
+                last_touch = time.monotonic()
+            target = self.db.reservation(total)
+            if lease and target > reserved:
+                self.db.resize_upload(lease, target)
+                reserved = target
+
         try:
-            for name, data in documents.items():
-                path = staging / "input" / name
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(data)
+            references = ingest(
+                streams, staging / "input", self.settings, source_type, on_bytes=grow
+            )
             payload = {
                 **form.model_dump(),
-                "documents": list(documents),
+                "documents": [r["original_relative_path"] for r in references],
+                "document_references": references,
+                "statistics_reference": reference,
+                "statistics_reference_sha256": reference_digest,
                 "selected_models": [
                     {
                         k: m.get(k)
@@ -49,7 +77,7 @@ class JobService:
                 ],
             }
             staging.rename(self.storage.job(job_id))
-            self.db.accept(job_id, token, payload, len(documents), ip)
+            self.db.accept(job_id, token, payload, len(references), ip, lease=lease)
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
             self.storage.delete(job_id)
@@ -69,7 +97,7 @@ class JobService:
 
     def completed(self, token: str) -> dict:
         job = self.available(token)
-        if job["status"] != "COMPLETED":
+        if job["status"] not in ("COMPLETED", "COMPLETED_WITH_ERRORS"):
             raise ServiceError("Results are not ready.", 409)
         return job
 
@@ -102,5 +130,7 @@ class JobService:
             "entities": payload["entities"],
             **{k: iso(job[k]) for k in ("created_at", "started_at", "completed_at", "expires_at")},
             "summary": json.loads(job["summary"]) if job["summary"] else None,
-            "downloads_available": job["status"] == "COMPLETED",
+            "downloads_available": job["status"] in ("COMPLETED", "COMPLETED_WITH_ERRORS"),
+            "progress": ProgressRepository(self.db).snapshot(job),
+            "server_now": iso(time.time()),
         }

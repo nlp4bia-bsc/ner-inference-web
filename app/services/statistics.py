@@ -68,3 +68,77 @@ def statistics(documents: dict[str, str], spans: list[dict], language: str, toke
             "offsets": "Unicode code points [start,end)",
         },
     }, rows
+
+
+class StreamingStatistics:
+    """Native measurements and one reference tokenizer, accumulated without a corpus mapping."""
+
+    def __init__(self, language, tokenizer_path):
+        os.environ["HF_HUB_OFFLINE"] = "1"
+        os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        from lab.core.stats.annotations import AnnotationMeasurements
+        from lab.core.stats.primitives import load_tokenizer
+        from lab.core.stats.text import TextMeasurements
+
+        self.language = language
+        self.reference = tokenizer_path
+        self.tokenizer = load_tokenizer(tokenizer_path)
+        self.text = TextMeasurements()
+        self.annotations = AnnotationMeasurements()
+        self.characters = 0
+
+    def add(self, filename, text, spans):
+        from lab.core.stats.primitives import DEFAULT_MATTR_WINDOW
+
+        entities = [
+            {"start": r["start_span"], "end": r["end_span"], "label": r["label"], "text": r["text"]}
+            for r in spans
+        ]
+        self.text.add(text, self.language, self.tokenizer, DEFAULT_MATTR_WINDOW)
+        self.annotations.add(text, entities, self.tokenizer)
+        self.characters += len(text)
+        return {
+            "filename": filename,
+            "characters": len(text),
+            "words": self.text.word_counts[-1],
+            "tokens": self.text.token_counts[-1],
+            "sentences": self.text.sentence_counts[-1],
+            "entities_total": len(spans),
+            "processing_status": "COMPLETED",
+        }
+
+    def result(self):
+        import pandas as pd
+        from lab.core import describe_sentence_segmenter
+        from lab.core.stats.primitives import share
+
+        a = self.annotations.row()
+        for label, count in self.annotations.labels.most_common():
+            a["mentions_" + label] = count
+            a["pct_" + label] = share(count, a["mentions"])
+
+        def native(value):
+            return json.loads(pd.DataFrame([value]).to_json(orient="records"))[0]
+
+        t = native(self.text.row(self.language))
+        return {
+            "ner_lab": {"text": t, "annotations": native(a)},
+            "operational": {
+                "documents": self.annotations.documents,
+                "annotations": sum(self.annotations.mention_counts),
+                "documents_with_entities": self.annotations.annotated_documents,
+                "characters": self.characters,
+                "words": t["words"],
+                "tokens": t["tokens"],
+                "sentences": t["sentences"],
+                "mentions_by_label": dict(self.annotations.labels),
+            },
+            "definitions": {
+                "tokenizer": Path(self.reference).name,
+                "segmenter": describe_sentence_segmenter(self.language),
+                "transformers_version": version("transformers"),
+                "tokens": "reference tokenizer subwords without special tokens",
+                "words": "ner_lab Unicode words_of",
+                "offsets": "Unicode code points [start,end)",
+            },
+        }

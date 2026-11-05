@@ -13,7 +13,9 @@ def router(service):
     def brat(token: str):
         return FileResponse(
             service.result_path(token, "results.zip"),
-            filename="ner_results.zip",
+            filename="ner_results_partial.zip"
+            if service.available(token)["status"] == "COMPLETED_WITH_ERRORS"
+            else "ner_results.zip",
             media_type="application/zip",
         )
 
@@ -21,7 +23,9 @@ def router(service):
     def tsv(token: str):
         return FileResponse(
             service.result_path(token, "annotations.tsv"),
-            filename="annotations.tsv",
+            filename="annotations_partial.tsv"
+            if service.available(token)["status"] == "COMPLETED_WITH_ERRORS"
+            else "annotations.tsv",
             media_type="text/tab-separated-values",
         )
 

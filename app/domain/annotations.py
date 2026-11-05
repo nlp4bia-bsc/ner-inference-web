@@ -12,6 +12,7 @@ class Annotation(BaseModel):
     text: str
     score: float | None = Field(default=None, ge=0, le=1)
     model_id: str | None = None
+    model_version: str | None = None
 
 
 def validate_surface(text: str, start: int, end: int, surface: str) -> None:
@@ -33,6 +34,9 @@ def canonical_annotations(document_id: str, text: str, spans: list[dict]) -> lis
                 text=row["text"],
                 score=row.get("score"),
                 model_id=row.get("model_id"),
+                model_version=str(row["model_version"])
+                if row.get("model_version") is not None
+                else None,
             )
         )
     return annotations

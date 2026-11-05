@@ -53,7 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="TEMU Multilingual NER",
-        version="0.2.0",
+        version="0.3.0",
         lifespan=lifespan,
         docs_url=None,
         openapi_url=settings.app_prefix + "/openapi.json",

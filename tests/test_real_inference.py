@@ -15,54 +15,7 @@ from tests.conftest import submit
 
 
 def test_real_preflight_worker_and_ner_lab(settings, tmp_path):
-    torch = pytest.importorskip("torch")
-    pytest.importorskip("lab")
-    pytest.importorskip("datasets")
-    pytest.importorskip("accelerate")
-    from lab.ner.encoding import Encoder, describe_encoder
-    from tokenizers import Tokenizer
-    from tokenizers.models import WordPiece
-    from tokenizers.pre_tokenizers import BertPreTokenizer
-    from tokenizers.processors import TemplateProcessing
-    from transformers import BertConfig, BertForTokenClassification, PreTrainedTokenizerFast
-
-    checkpoint = tmp_path / "synthetic-checkpoint"
-    vocab = {"[PAD]": 0, "[UNK]": 1, "[CLS]": 2, "[SEP]": 3, "Cancer": 4, ".": 5}
-    raw = Tokenizer(WordPiece(vocab=vocab, unk_token="[UNK]"))
-    raw.pre_tokenizer = BertPreTokenizer()
-    raw.post_processor = TemplateProcessing(
-        single="[CLS] $A [SEP]", special_tokens=[("[CLS]", 2), ("[SEP]", 3)]
-    )
-    tokenizer = PreTrainedTokenizerFast(
-        tokenizer_object=raw,
-        unk_token="[UNK]",
-        pad_token="[PAD]",
-        cls_token="[CLS]",
-        sep_token="[SEP]",
-    )
-    encoder = Encoder(tokenizer, "DISEASE", "es", max_length=32, min_sentence_tokens=1)
-    torch.manual_seed(42)
-    config = BertConfig(
-        vocab_size=len(vocab),
-        hidden_size=16,
-        num_hidden_layers=1,
-        num_attention_heads=2,
-        intermediate_size=32,
-        max_position_embeddings=64,
-        label2id=encoder.label2id,
-        id2label=encoder.id2label,
-    )
-    model = BertForTokenClassification(config)
-    model.save_pretrained(checkpoint)
-    tokenizer.save_pretrained(checkpoint)
-    (checkpoint / "encoding.json").write_text(
-        json.dumps(
-            {
-                "model": {"architecture": "linear", "base_model": str(checkpoint)},
-                "encoding": describe_encoder(encoder),
-            }
-        )
-    )
+    checkpoint = build_checkpoint(tmp_path)
     catalog = tmp_path / "models.yaml"
     catalog.write_text(
         yaml.safe_dump(
@@ -140,3 +93,55 @@ def test_real_preflight_worker_and_ner_lab(settings, tmp_path):
             finally:
                 worker.terminate()
                 worker.wait(timeout=10)
+
+
+def build_checkpoint(tmp_path):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("lab")
+    pytest.importorskip("datasets")
+    pytest.importorskip("accelerate")
+    from lab.ner.encoding import Encoder, describe_encoder
+    from tokenizers import Tokenizer
+    from tokenizers.models import WordPiece
+    from tokenizers.pre_tokenizers import BertPreTokenizer
+    from tokenizers.processors import TemplateProcessing
+    from transformers import BertConfig, BertForTokenClassification, PreTrainedTokenizerFast
+
+    checkpoint = tmp_path / "synthetic-checkpoint"
+    vocab = {"[PAD]": 0, "[UNK]": 1, "[CLS]": 2, "[SEP]": 3, "Cancer": 4, ".": 5}
+    raw = Tokenizer(WordPiece(vocab=vocab, unk_token="[UNK]"))
+    raw.pre_tokenizer = BertPreTokenizer()
+    raw.post_processor = TemplateProcessing(
+        single="[CLS] $A [SEP]", special_tokens=[("[CLS]", 2), ("[SEP]", 3)]
+    )
+    tokenizer = PreTrainedTokenizerFast(
+        tokenizer_object=raw,
+        unk_token="[UNK]",
+        pad_token="[PAD]",
+        cls_token="[CLS]",
+        sep_token="[SEP]",
+    )
+    encoder = Encoder(tokenizer, "DISEASE", "es", max_length=32, min_sentence_tokens=1)
+    torch.manual_seed(42)
+    config = BertConfig(
+        vocab_size=len(vocab),
+        hidden_size=16,
+        num_hidden_layers=1,
+        num_attention_heads=2,
+        intermediate_size=32,
+        max_position_embeddings=64,
+        label2id=encoder.label2id,
+        id2label=encoder.id2label,
+    )
+    model = BertForTokenClassification(config)
+    model.save_pretrained(checkpoint)
+    tokenizer.save_pretrained(checkpoint)
+    (checkpoint / "encoding.json").write_text(
+        json.dumps(
+            {
+                "model": {"architecture": "linear", "base_model": str(checkpoint)},
+                "encoding": describe_encoder(encoder),
+            }
+        )
+    )
+    return checkpoint

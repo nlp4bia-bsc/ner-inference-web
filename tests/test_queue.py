@@ -102,14 +102,14 @@ def test_atomic_claims(settings):
 
 def test_finished_jobs_release_unused_reservations(settings):
     # A budget for one active job must also allow tiny retained completed jobs.
-    settings = settings.model_copy(update={"max_storage_mb": 2100})
+    settings = settings.model_copy(update={"max_storage_mb": 160})
     storage, db = LocalStorage(settings.storage_root), Database(settings)
     enqueue(db)
     root = storage.job("job1")
     root.mkdir()
     (root / "result.txt").write_bytes(b"result")
     with pytest.raises(ServiceError):
-        db.reserve_upload()  # Two active worst-case reservations exceed 2100 MiB.
+        db.reserve_upload()  # Two active worst-case reservations exceed 160 MiB.
     db.claim()
     db.finish("job1", {"documents": 1})
     lease = db.reserve_upload()
@@ -117,6 +117,7 @@ def test_finished_jobs_release_unused_reservations(settings):
     # Actual retained bytes still count against the budget.
     with (root / "large.bin").open("wb") as f:
         f.truncate(100 * 1024**2)
+    db.record_storage("job1")  # Explicit reconciliation after out-of-band file changes.
     with pytest.raises(ServiceError):
         db.reserve_upload()
 
@@ -128,7 +129,18 @@ def test_free_disk_reserves_capacity_for_queued_jobs(settings, monkeypatch):
     db = Database(settings)
     enqueue(db)
     monkeypatch.setattr(
-        "app.db.shutil.disk_usage", lambda _: usage(5000 * 1024**2, 0, 3000 * 1024**2)
+        "app.db.shutil.disk_usage", lambda _: usage(5000 * 1024**2, 0, 100 * 1024**2)
     )
     with pytest.raises(ServiceError):
         db.reserve_upload()
+
+
+def test_storage_budget_rejects_before_writing(settings):
+    from app.storage import StorageBudget
+
+    settings.storage_root.mkdir()
+    budget = StorageBudget(settings.storage_root, 3)
+    budget.write_text(settings.storage_root / "valid.txt", "abc")
+    with pytest.raises(RuntimeError):
+        budget.write_text(settings.storage_root / "too-large.txt", "d")
+    assert not (settings.storage_root / "too-large.txt").exists()

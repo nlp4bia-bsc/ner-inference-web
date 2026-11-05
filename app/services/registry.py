@@ -101,3 +101,18 @@ class Registry:
                 raise ServiceError("An entity is not available for this language.")
             result.append({**e, "label": label, "language": language})
         return result
+
+
+def statistics_reference(language: dict, models: list[dict]) -> tuple[str | None, str | None]:
+    reference = language.get("statistics_model") or models[0].get("model_dir")
+    if not reference:
+        return None, None
+    path = Path(reference).resolve()
+    for model in models:
+        if (
+            model.get("model_dir")
+            and Path(model["model_dir"]).resolve() == path
+            and model.get("checkpoint_sha256")
+        ):
+            return str(path), model["checkpoint_sha256"]
+    return str(path), fingerprint(path)

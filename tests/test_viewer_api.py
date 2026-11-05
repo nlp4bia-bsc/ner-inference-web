@@ -74,6 +74,8 @@ def test_legacy_completed_job_backfills_private_viewer(settings):
     app, accepted, _, _ = seed_viewer(settings)
     root = app.state.jobs.storage.job(accepted["job_id"])
     shutil.rmtree(root / "viewer")
+    with app.state.db.connect() as c:
+        c.execute("DELETE FROM documents WHERE job_id=?", (accepted["job_id"],))
     with TestClient(app) as client:
         response = client.get("/api/jobs/" + accepted["token"] + "/documents")
         assert response.status_code == 200 and response.json()["total"] == 2
@@ -176,6 +178,18 @@ def test_thousand_document_index_and_cross_fragment_spans(settings):
         "model_id": "test",
     }
     write_index(service.storage.job(job["id"]) / "viewer", documents, [span], [])
+    from app.persistence.progress import ProgressRepository
+
+    for record in json.loads(
+        (service.storage.job(job["id"]) / "viewer" / "index.json").read_text()
+    ):
+        ProgressRepository(service.db).publish(
+            job["id"],
+            record["document_id"],
+            record["annotation_count"],
+            record["entities_by_label"],
+            record["statistics"],
+        )
     service.db.finish(job["id"], {"documents": 1000})
     with TestClient(app) as client:
         base = "/api/jobs/" + accepted["token"] + "/documents"

@@ -11,6 +11,9 @@ class Document(BaseModel):
     annotation_count: int
     entities_by_label: dict[str, int]
     status: str
+    source_type: str | None = None
+    relative_path: str | None = None
+    error_code: str | None = None
 
 
 class DocumentPage(BaseModel):

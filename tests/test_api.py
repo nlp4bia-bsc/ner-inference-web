@@ -89,10 +89,10 @@ def test_origins_body_limits(client):
 
 
 def test_storage_error_does_not_expose_private_paths(client, monkeypatch):
-    def broken_loader(*args):
+    def broken_loader(*args, **kwargs):
         raise OSError("/private/patient-sensitive-filename")
 
-    monkeypatch.setattr("app.services.jobs.load_documents", broken_loader)
+    monkeypatch.setattr("app.services.jobs.ingest", broken_loader)
     response = submit(client)
     assert response.status_code == 503
     assert "patient-sensitive" not in response.text

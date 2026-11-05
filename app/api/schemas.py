@@ -43,4 +43,24 @@ class JobStatus(BaseModel):
     expires_at: str | None
     error_summary: str | None
     summary: dict | None
+    server_now: str
+    progress: dict
     downloads_available: bool
+
+
+class ProgressResponse(BaseModel):
+    status: str
+    stage: str
+    total_documents: int
+    annotated_documents: int
+    processing_documents: int
+    failed_documents: int
+    pending_documents: int
+    progress_percent: float
+    updated_at: str
+    server_now: str
+    expires_at: str | None
+    queue_position: int | None
+    provisional_statistics: dict[str, int | None]
+    mentions: int
+    partial_results: bool

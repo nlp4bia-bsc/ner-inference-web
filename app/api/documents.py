@@ -26,14 +26,19 @@ def router(service):
         q: Annotated[str, Query(max_length=200)] = "",
         label: str | None = None,
         has_annotations: bool | None = None,
+        status: str | None = None,
+        sort: str | None = None,
     ):
         rows = [
             r
             for r in repository.index(token)
-            if q.casefold() in r["filename"].casefold()
+            if (status is None or r["status"] == status)
+            and q.casefold() in r["filename"].casefold()
             and (label is None or label in r["entities_by_label"])
             and (has_annotations is None or bool(r["annotation_count"]) == has_annotations)
         ]
+        if sort == "name":
+            rows.sort(key=lambda r: r["filename"].casefold())
         return {
             "items": rows[offset : offset + limit],
             "total": len(rows),
@@ -109,5 +114,27 @@ def router(service):
             "total": text.count(q),
             "wrapped": wrapped,
         }
+
+    @api.get("/{document_id}/download/{format}")
+    def download_document(token: str, document_id: str, format: str):
+        from fastapi.responses import FileResponse
+
+        from app.errors import ServiceError
+
+        root, record = repository.document(token, document_id)
+        if format == "txt":
+            path = root / "input" / record["filename"]
+        elif format == "ann":
+            path = root / "published" / document_id / "document.ann"
+            if not path.exists():
+                path = (root / "output" / "brat" / "documents" / record["filename"]).with_suffix(
+                    ".ann"
+                )
+        else:
+            raise ServiceError("Unsupported document download.", 404)
+        from pathlib import PurePosixPath
+
+        name = PurePosixPath(record["filename"]).with_suffix("." + format).name
+        return FileResponse(path, filename=name, media_type="text/plain")
 
     return api

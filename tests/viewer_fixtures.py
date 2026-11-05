@@ -84,5 +84,17 @@ def seed_viewer(settings):
         {"source": "synthetic overlap fixture"},
     )
     write_index(root / "viewer", docs, spans, per_doc)
+    import json
+
+    from app.persistence.progress import ProgressRepository
+
+    for row in json.loads((root / "viewer" / "index.json").read_text()):
+        ProgressRepository(service.db).publish(
+            job["id"],
+            row["document_id"],
+            row["annotation_count"],
+            row["entities_by_label"],
+            row["statistics"],
+        )
     service.db.finish(job["id"], stats["operational"])
     return app, accepted, docs, spans
