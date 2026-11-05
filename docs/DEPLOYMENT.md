@@ -12,8 +12,8 @@ locally; BSC TLS/domain deployment has not been performed.
 
 `docker compose up --build -d` builds a no-model web image and starts web + idle
 worker. Dependencies are pinned in requirements.lock. Real inference requires
-`INSTALL_NLP=true docker compose build web`; requirements-nlp.lock pins the full
-upstream NER extra, including Torch 2.10.0 and its large CUDA/training dependencies.
+`NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web`; requirements-nlp.lock pins the GPU NER extra; requirements-cpu.lock selects Torch
+2.10.0+cpu without CUDA runtime packages. Set NLP_PROFILE=cpu or gpu explicitly.
 Allow sufficient build disk/network capacity. Production model initialization and
 GPU drivers must be validated on BSC; the Compose file does not request GPUs.
 To use GPU hardware add the site's supported NVIDIA runtime/device grant and size
@@ -29,7 +29,7 @@ Do not scale workers; a second supervisor exits while the lifetime lock is held.
 Example model preflight after editing catalog to paths under `/models`:
 
 ```sh
-INSTALL_NLP=true docker compose build web
+NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web
 docker compose run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/catalog:/service/catalog:rw" worker python -m scripts.validate_models
 docker compose up -d --force-recreate
@@ -98,14 +98,18 @@ them, so shell/.env values reach both containers. Important adjustments:
 | JOB_RESULTS_TTL_HOURS | 72 from terminal completion, including failed jobs |
 | CLEANUP_INTERVAL_SECONDS / TOMBSTONE_HOURS | 60 / 24 |
 
-Storage reservation may reduce effective queue capacity below MAX_QUEUE_SIZE: the
-minimum of queue and storage bounds wins. Only queued/processing jobs and active
-uploads reserve worst-case space; completed/failed jobs count by their actual
-retained bytes until deletion. Disk free-space checks include reservations for
-queued work, not just new uploads. Use a dedicated disk quota for a hard
-storage limit; model intermediate output can exceed the conservative reservation.
-Provision CPU/RAM/GPU and disk after measuring maximum allowed corpora/model counts.
-Single-host SQLite is unsuitable for horizontally distributed services.
+Storage admission combines persisted actual bytes, a configurable active-output
+reserve (input bytes * STORAGE_RESERVE_FACTOR + STORAGE_RESERVE_EXTRA_MB), free
+space and queue/upload bounds. It no longer walks completed directories inside
+admission transactions. Expanded upload reservations grow before writes; private
+staging ownership/heartbeats prevent cleanup races. Per-job output writers check
+conservative budgets, while a real filesystem quota remains the hard disk limit.
+
+INFERENCE_DOCUMENT_BATCH_SIZE=32 bounds source-document batches independently of
+model window batch_size. MAX_LOADED_MODELS=2 bounds native checkpoint sessions.
+Tune these after real CPU/GPU measurements. Clinical checkpoints, full NLP Docker
+profiles and production/GPU load were not validated here; native tiny-BERT CPU
+mechanics and the no-NLP image have been exercised.
 
 ## Retention and recovery
 
@@ -131,3 +135,10 @@ external mail service is required. An optional future notifier can react to
 COMPLETED events without changing capability-link retrieval; none is connected.
 
 Phase 2 upgrades and old-job deadlines: see [retention](RETENTION_POLICY.md).
+
+V3 rollout: stop/drain both API and worker, back up SQLite consistently according
+to retention policy, deploy together and let versioned additive migrations run.
+Do not automatically run migrate_retention: old deadlines must remain unchanged.
+See MIGRATIONS_V3.md. COMPLETED_WITH_ERRORS allows explicitly partial batch exports;
+FAILED jobs may retain individual valid published documents. Both expire from
+terminal completion. Live publication and recovery are in INCREMENTAL_PROCESSING.md.

@@ -1,0 +1,151 @@
+{
+  "hardware": {
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "cpu_count": 3,
+    "python": "3.12.14"
+  },
+  "cases": [
+    {
+      "mode": "v2-ingestion",
+      "documents": 1000,
+      "admission_seconds": 0.8632335560005231,
+      "upload_peak_python_bytes": 33859540,
+      "process_peak_rss_kib": 88160
+    },
+    {
+      "mode": "v3-microbatch",
+      "documents": 1000,
+      "bytes_per_document": 16384,
+      "microbatch": 8,
+      "admission_seconds": 1.2754104280002139,
+      "upload_peak_python_bytes": 1396712,
+      "process_peak_rss_kib": 68632,
+      "first_document_seconds": 0.06716497800061916,
+      "median_publication_interval_seconds": 0.0005417149995992077,
+      "total_worker_seconds": 5.3516119160003655,
+      "export_seconds": 0.3362259260002247,
+      "zip_seconds": 0.1777055239999754,
+      "http_progress_p95_seconds": 0.01838878000035038,
+      "document_listing_seconds": 0.02139830400028586,
+      "model_initialization_seconds": null,
+      "note": "Controlled predictor/statistics; no clinical model throughput claim"
+    },
+    {
+      "mode": "v3-microbatch",
+      "documents": 1000,
+      "bytes_per_document": 16384,
+      "microbatch": 32,
+      "admission_seconds": 1.4570695149996027,
+      "upload_peak_python_bytes": 1396712,
+      "process_peak_rss_kib": 69032,
+      "first_document_seconds": 0.09314733499923022,
+      "median_publication_interval_seconds": 0.0005035880003561033,
+      "total_worker_seconds": 2.155201754999325,
+      "export_seconds": 0.3139501839996228,
+      "zip_seconds": 0.17110646399942198,
+      "http_progress_p95_seconds": 0.01975030199992034,
+      "document_listing_seconds": 0.04632449800010363,
+      "model_initialization_seconds": null,
+      "note": "Controlled predictor/statistics; no clinical model throughput claim"
+    },
+    {
+      "mode": "v3-microbatch",
+      "documents": 1000,
+      "bytes_per_document": 16384,
+      "microbatch": 64,
+      "admission_seconds": 1.254390451999825,
+      "upload_peak_python_bytes": 1396712,
+      "process_peak_rss_kib": 69020,
+      "first_document_seconds": 0.06672024699946633,
+      "median_publication_interval_seconds": 0.000512921000336064,
+      "total_worker_seconds": 1.6202311380002357,
+      "export_seconds": 0.37326652799947624,
+      "zip_seconds": 0.19626300599975366,
+      "http_progress_p95_seconds": 0.023753217000376026,
+      "document_listing_seconds": 0.01987812099923758,
+      "model_initialization_seconds": null,
+      "note": "Controlled predictor/statistics; no clinical model throughput claim"
+    }
+  ],
+  "tiny_cpu_session": {
+    "cold": {
+      "model_id": "synthetic-test-only",
+      "version": null,
+      "checkpoint_sha256": null,
+      "language": "es",
+      "entity": "DISEASE",
+      "encoding": {
+        "target_label": "DISEASE",
+        "language": "es",
+        "sentence_segmenter": {
+          "segmenter": "pysbd",
+          "version": "0.3.4"
+        },
+        "max_length": 32,
+        "strategy": "greedy",
+        "context_tokens": null,
+        "overlap_policy": "merge_same_label_then_keep_longest",
+        "min_sentence_tokens": 1,
+        "label2id": {
+          "O": 0,
+          "B-DISEASE": 1,
+          "I-DISEASE": 2
+        }
+      },
+      "model": {
+        "architecture": "linear"
+      },
+      "n_documents": 1,
+      "n_windows": 1,
+      "device": "cpu",
+      "min_score": 0,
+      "batch_size": 16,
+      "seconds": 0.06833356399965851,
+      "load_seconds": 0.023234215999764274,
+      "checkpoint_loaded": true,
+      "encoding_seconds": 0.008438773000307265,
+      "inference_seconds": 0.02591998399930162,
+      "decoding_seconds": 0.00351624199993239
+    },
+    "warm": {
+      "model_id": "synthetic-test-only",
+      "version": null,
+      "checkpoint_sha256": null,
+      "language": "es",
+      "entity": "DISEASE",
+      "encoding": {
+        "target_label": "DISEASE",
+        "language": "es",
+        "sentence_segmenter": {
+          "segmenter": "pysbd",
+          "version": "0.3.4"
+        },
+        "max_length": 32,
+        "strategy": "greedy",
+        "context_tokens": null,
+        "overlap_policy": "merge_same_label_then_keep_longest",
+        "min_sentence_tokens": 1,
+        "label2id": {
+          "O": 0,
+          "B-DISEASE": 1,
+          "I-DISEASE": 2
+        }
+      },
+      "model": {
+        "architecture": "linear"
+      },
+      "n_documents": 1,
+      "n_windows": 1,
+      "device": "cpu",
+      "min_score": 0,
+      "batch_size": 16,
+      "seconds": 0.014763766000214673,
+      "load_seconds": 3.074999767704867e-06,
+      "checkpoint_loaded": false,
+      "encoding_seconds": 0.0011160170006405679,
+      "inference_seconds": 0.009647277000112808,
+      "decoding_seconds": 0.0021147100005691755
+    },
+    "note": "Random tiny BERT, not a clinical checkpoint"
+  }
+}

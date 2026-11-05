@@ -1,0 +1,28 @@
+{
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "viewport": "1440x900",
+  "note": "Actual segments/lanes module with synthetic spans; plain DOM layout excludes product CSS, HTTP and neural inference. Functional app rendering is covered separately.",
+  "cases": [
+    {
+      "annotations": 100,
+      "atomic_segments": 189,
+      "lanes": 19,
+      "segmentation_ms": 4.2000000001862645,
+      "plain_dom_layout_ms": 20
+    },
+    {
+      "annotations": 1000,
+      "atomic_segments": 1785,
+      "lanes": 115,
+      "segmentation_ms": 13.299999999813735,
+      "plain_dom_layout_ms": 16.5
+    },
+    {
+      "annotations": 3000,
+      "atomic_segments": 3491,
+      "lanes": 237,
+      "segmentation_ms": 47.799999999813735,
+      "plain_dom_layout_ms": 44.799999999813735
+    }
+  ]
+}

@@ -64,3 +64,19 @@ Extremely dense annotations may require many JSON pages and a large active set;
 benchmark real models before increasing corpus/document limits. Accessibility is
 supported by labeled controls, focus states, text labels, keyboard-selectable
 regions and an alternate mention list; no formal WCAG certification is claimed.
+
+## V3 live publications
+
+New jobs use SQLite document metadata and immutable per-document publications,
+not a final-job index prerequisite. PENDING/PROCESSING/FAILED leaves are disabled;
+ANNOTATED documents open immediately. A paginated folder tree retains expansion,
+filters, scroll and selected document when polling adds results. Model version and
+overlap peers appear in the inspector; the synchronized paged table is an alternate
+selection route. A mobile native dialog provides a bottom-sheet detail action.
+
+The job/viewport share one progress controller with backoff, visibility/focus
+reconnection and a collapsible persistent bar. Provisional native counts cover
+annotated documents only. Exact server-clock expiry clears private content,
+including table rows and individual links. TXT/ANN downloads are individually
+available; batch downloads wait for explicit final/partial packaging. The previous
+v2 final-index/backfill path remains for valid old jobs.

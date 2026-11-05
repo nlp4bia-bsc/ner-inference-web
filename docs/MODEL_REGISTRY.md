@@ -42,3 +42,10 @@ future adapters; no arbitrary executable configuration is exposed publicly.
 Phase 2 requires no catalog migration. The form and explorer share configured
 labels; new entities need no frontend code. Display colors are deterministic aids,
 not label identities. Viewer filters never change model selections or saved spans.
+
+V3 sessions key cached checkpoints by path/digest/device and retain at most
+MAX_LOADED_MODELS per job child. The saved encoding/threshold/options are unchanged.
+Reference tokenizer path/digest is also snapshotted; changes fail rather than mix
+statistics on restart. Increase cache capacity only after measuring RAM/VRAM; a
+larger selected model set may reload checkpoints between microbatches. Alternating
+traversal order preserves recent cache entries without changing predictions.

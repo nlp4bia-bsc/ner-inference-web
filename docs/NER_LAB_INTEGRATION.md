@@ -1,103 +1,68 @@
-# Audited ner_lab integration
+# Audited ner_lab integration for V3
 
-Source audited locally: nlp4bia-bsc/ner_lab commit
-`8640d4797b081a5f6b66d9b45c11269542a79a26`, package `lab` 0.1.0.
-Reviewed README, pyproject, docs/core/library.md and prepare-dataset.md,
-docs/ner/predict-entities.md, src/lab/core corpus/spans/brat/segmentation/sentences/
-stats modules, src/lab/ner/inference predict/loading/prediction/io, encoder and
-trainer descriptions, verification README/fixtures/verify_inference. The core
-library was not modified.
+Pinned source: nlp4bia-bsc/ner_lab commit
+8640d4797b081a5f6b66d9b45c11269542a79a26, package lab 0.1.0. Reviewed README,
+pyproject, docs/core and docs/ner contracts, docs/dev design/style decisions,
+src/lab/core corpus/segmentation/sentences/statistics and src/lab/ner/inference,
+loading/encoding/prediction plus verification fixtures. No core library change.
 
-## Contracts reused
+The public `predict_entities` API loads a saved checkpoint per invocation and
+returns InferenceResult.spans/metrics/manifest/paths. Its span table is filename,
+label, start_span, end_span, text, score. The legacy NerLabAdapter remains available
+and is the reference used to verify the V3 production session's actual outputs.
 
-`lab.ner.predict_entities(model_dir, documents, output_dir, batch_size=16,
-device='auto', min_score=0.0)` takes a document mapping, canonical corpus or input
-directory. Returns `InferenceResult.spans` (filename, label, start_span, end_span,
-text, score), `.metrics`, `.manifest`, `.paths`. The adapter calls it once per
-selected model with all documents, so it loads a checkpoint once per model/job,
-not once per document. No long-lived model cache is added. Paths returned by
-ner_lab are private and are never exposed through public API/manifests.
+NerLabSession now composes upstream load_model, encoder_from_description,
+read_documents, predict_logits and decode_spans directly. It passes the same
+saved encoding, require_target_label=False, batch size, device, min_score and
+pad_to_multiple_of=8 as the public raw-text path. No gold is supplied or scored.
+A bounded LRU retains model/tokenizer objects across document microbatches within
+one supervised job child. Checkpoint path/digest/device identify cache entries;
+versions/options are snapshotted at admission. GPU memory can constrain capacity;
+cache eviction/reloads are intentional when the selected model set is larger.
 
-`lab.core.span_dataframe(spans, scored=True)` builds the canonical deduplicated
-span table. `build_corpus(documents, annotations, on_mismatch='documents')` includes
-documents without predictions and validates their exact entity surfaces. Its
-built-in `validate_corpus` is retained. `compute_text_stats(frame, base_model,
-language)` and `compute_annotation_stats(frame, base_model)` each return a one-row
-DataFrame. Conversion via pandas JSON maps undefined native NaNs to null.
-Public write_stats/write_manifest are available; this app writes the combined
-operational/native JSON envelope itself to enforce strict JSON and strip private
-locations. It does not invent names for native statistical fields.
+These lower-level module functions/classes are real pinned upstream code, not an
+official stable InferenceSession API. Upgrades must review their signatures and
+rerun session/public-API equivalence tests. An upstream public reusable session
+would simplify future maintenance. No arbitrary global monkeypatch of model loading
+or custom scientific engine is used. Callable/custom architectures/strategies
+remain subject to the original administrator preflight restrictions.
 
-For per-document statistics, the minimal adaptation reuses the upstream
-`TextMeasurements.add/row`, `AnnotationMeasurements.add` and `load_tokenizer`
-classes/functions from lab.core.stats modules. These are lower-level, unexported
-APIs at the pinned revision and must be reviewed when upgrading. They let us reuse
-one tokenizer across 1,000 documents while preserving identical definitions.
-Calling the public aggregate functions once each and loading the document
-statistics tokenizer once gives three tokenizer loads per job, not thousands.
+encoding.json is authoritative for architecture, target, language and the complete
+window configuration. No manual 512-token limit, document truncation or simplistic
+sentence regex is introduced. Upstream split_into_sentences/sentence_token_ranges/
+tokenize_document/merging/windowing/decoding retain PySBD, bundled Punkt or ICU
+routing and Unicode word definitions. CRF models may require the original backbone
+in a pre-provisioned local cache. Offline flags are set before tokenizer/model use;
+public requests never select remote model URLs or download arbitrary checkpoints.
 
-`describe_sentence_segmenter(language)` records provenance. Internally ner_lab
-uses split_into_sentences, split_into_words, tokenize_document,
-sentence_token_ranges and its window strategy. Sentence routing is PySBD for its
-supported language table, bundled Punkt for other listed languages, ICU for other
-ISO 639-1 languages. Unicode UAX #29 word boundaries include punctuation spans;
-stats `words_of` counts only spans containing letters/digits, lowercased for
-vocabulary. Tokens are model subwords without special tokens. Sentence counts use
-the exact native TextMeasurements definition. These operations, merging sentence
-ranges and rebuilding model windows are never reimplemented here.
+All input bytes (including CRLF, Unicode/BOM/combining characters) remain unchanged.
+Mapping keys are original relative TXT paths including extension. Canonical offsets
+are Python Unicode code points, inclusive start/exclusive end. Every entity must
+round-trip exactly; no fuzzy offset repair. Invalid prediction batches fail without
+publishing partial-model documents. Native window deduplication remains upstream;
+cross-model merge keeps the highest score for exact document/label/start/end
+matches while preserving different labels and legitimate crossing/nesting.
 
-## Text and offsets
+StreamingStatistics reuses native TextMeasurements and AnnotationMeasurements
+with one loaded reference fast tokenizer. It calls their add/row methods, so
+vocabulary, weighted MATTR, quantiles, mention complexity and label distributions
+retain native definitions. Public compute_text_stats/compute_annotation_stats are
+kept as a reference and their equality with streamed measurements is tested.
+The lower-level statistics classes were already used by v2 for document counts;
+the revision pin remains important. Undefined native values become strict-JSON null.
 
-Input UTF-8 bytes are preserved, including CRLF, BOM, accents and emoji. Decode
-without universal newline translation. The library accepts a dict mapping each
-original relative `.txt` path to text; this avoids directory glob/stem collisions
-and means no lossy internal-ID translation is needed. Annotation offsets are
-Python Unicode code-point indices, zero-based start inclusive/end exclusive,
-not byte indices or JavaScript UTF-16 code units.
+The reference is configured local statistics_model or the first selected checkpoint.
+Its effective path/digest is snapshotted and checked on restart; incompatible
+statistics cannot mix. Tokens from different model vocabularies are never summed.
+Per-document native counts publish with validated spans. Provisional sums are
+identified as annotated-document-only; final native corpus figures are computed
+once at completion, never recomputed by normal viewer reads. No precision/recall/
+F1 is displayed without gold. Operational timings/counters remain separate.
 
-Every prediction must satisfy `original_text[start:end] == predicted_text`, with
-valid bounds, known filename, expected label and finite confidence when supplied.
-Any invalid prediction fails the whole job. No fuzzy repair is attempted.
-The upstream decoder already deduplicates overlapping-window predictions at the
-highest score. Cross-model aggregation also deduplicates exact document/label/
-start/end keys at the highest confidence, retaining overlaps/different labels and
-sorting deterministically. BRAT IDs restart at T1 for each document. BRAT surface
-forms replace tabs/newlines with spaces as required by its line format; offsets
-and exported original TXT remain unchanged. TSV uses standard quoted fields and
-preserves original entity surfaces.
-
-## Models and windows
-
-Saved `encoding.json` contains model architecture/base and the complete encoding
-(language, target label, strategy, vocabulary, windows, overlaps). Inference reads
-it through upstream load_model and encoder_from_description, without manually
-setting 512-token limits, truncation, segmentation or window offsets. The
-administrator preflight uses the same loader and encoder constructor offline.
-Checkpoint directories must include weights, encoding.json and a saved fast
-tokenizer. Their full content digest is validated and snapshotted into jobs.
-
-Callable/custom architectures or window strategies not serializable by upstream
-need a future explicit adapter; they are rejected by preflight. CRF models may
-need their original backbone present in the local Hugging Face cache because the
-upstream loader reconstructs it from the saved base_model. Provision that cache
-in advance, validate it in the runtime image, and retain offline mode. There is no
-public model URL/path input and no model download during inference.
-
-Public aggregate token counts use one explicit reference tokenizer: configured
-local statistics_model, otherwise first selected checkpoint. Counts from different
-model tokenizers are never added together. Native token/segmenter definitions and
-versions accompany the stats. Operational counts/elapsed times are a separate JSON
-namespace. No precision, recall or F1 is computed for raw, unannotated inputs.
-
-Empty/whitespace documents are rejected at admission because build_corpus rejects
-them. A nonempty document that produces no windows can still fail predict_entities;
-that error is a failed job, never simulated success. Files without mentions get an
-empty ANN. Upstream writes TSV/parquet intermediates; they remain private and are
-deleted after successful packaging or failed execution. Installed NER extras are
-large because upstream couples training dependencies with inference.
-
-Phase 2 retains all NLP contracts and the same pinned revision. Orchestration moved
-to services/pipeline.py; worker.py only supervises it. Shared surface validation
-now lives in domain/annotations.py. Viewer indexing happens after the same span
-merge used by BRAT/TSV and does not rerun inference or statistics. All source
-annotations retain their full Unicode code-point coordinates and original text.
+The same validated spans feed canonical annotation JSON, ANN, TSV and native stats.
+BRAT normalizes tabs/newlines only in its one-line surface display; offsets/TXT
+remain original. The browser maps code points explicitly to UTF-16 DOM ranges.
+Empty text is rejected, and no-window inference errors are explicit failures.
+All-model document publication and partial/final semantics are detailed in
+INCREMENTAL_PROCESSING.md. Real tiny-BERT CPU tests validate mechanics/equivalence;
+no clinical accuracy or GPU capacity is claimed.

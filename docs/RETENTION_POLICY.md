@@ -1,13 +1,13 @@
 # Private 72-hour retention
 
 JOB_RESULTS_TTL_HOURS defaults to 72 in Python, .env.example and Compose. For both
-COMPLETED and FAILED jobs, expires_at = terminal completion + configured hours.
-QUEUED/PROCESSING jobs have no expiry. Queue waiting time cannot consume download
+COMPLETED, COMPLETED_WITH_ERRORS and FAILED jobs, expires_at = terminal completion + configured hours.
+QUEUED/PROCESSING jobs have no expiry, including their early published documents. Queue waiting time cannot consume download
 time. A minimal expired tombstone remains for TOMBSTONE_HOURS (default 24), then
 its events/row disappear. Tombstones are not document retention.
 
 All content is private: originals, ANN, TSV, ZIP, native/operational statistics,
-viewer index/per-document annotations and worker intermediates. The API's
+viewer indexes, incremental published documents, incomplete microbatches and worker intermediates. The API's
 JobService.available/completed guards are shared by status, downloads, statistics,
 viewer HTML and every new document route. Exactly at expiry these return 410;
 unknown/deleted capabilities return 404. No static mount exposes storage.
@@ -36,3 +36,11 @@ lazily for the viewer while still valid, under a private per-job lock.
 Tests use a controlled clock for 71-hour access, exact 72-hour denial across every
 old/new private endpoint, complete artifact/PII removal, idempotent cleanup,
 prolonged queue waiting and explicit retention migration. No real 72-hour sleep.
+
+V3 startup does not modify old deadlines. Versioned additive schema migrations are
+separate from the optional explicit deadline-change command. The new progress
+endpoint supplies server_now + expires_at; the shared UI counts down using elapsed
+performance time after server synchronization, not an assumed browser wall clock.
+The open viewer clears text, annotation table, inspector, selection and download
+links on expiry. It never puts content in localStorage/IndexedDB. Browser tests
+exercise clock skew and expiration with loaded data; API tests enforce actual TTL.

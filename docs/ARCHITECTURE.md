@@ -1,75 +1,72 @@
-# Architecture and decisions
+# V3 architecture
 
-Browser → HTTPS reverse proxy → FastAPI → SQLite WAL + private local disk.
-A separate worker claims the oldest queued sequence, invokes ner_lab per selected
-checkpoint over the whole document mapping, validates/merges spans, computes
-statistics and packages results. HTTP never runs inference; closing a browser has
-no effect on a job.
+The composition root creates FastAPI, private local storage, SQLite repositories
+and routers; it performs no NLP. HTTP routes validate transport contracts, job
+use cases handle admission/access, the supervisor controls one child per job, and
+the pipeline composes native ner_lab pieces over bounded document microbatches.
 
-SQLite is an intentional alternative to PostgreSQL + Redis + RQ, scoped to a
-single Linux host. `BEGIN IMMEDIATE` makes rate-limit checks, both IP/email keys,
-queue-capacity checks and job insertion atomic across web processes. FIFO order is
-the database admission sequence, not upload start time. A worker lifetime flock
-prevents two supervisors from processing at once. Database claims are atomic.
-All inputs are renamed from staging before job insertion, so a committed job
-always has input. A failed transaction removes its unregistered directory. A
-process crash in that gap leaves an orphan removed by the periodic sweep.
+```mermaid
+flowchart TD
+  H[HTTP: paste / TXT / ZIP] --> S[Disk spool + bounded one-document ingestion]
+  S --> Q[Atomic SQLite admission / FIFO / rate keys]
+  Q --> W[One lifetime-locked supervisor]
+  W --> M[Job child: bounded native model session]
+  M --> B[Microbatch: all selected models]
+  B --> V[Canonical offsets / merge / native document stats]
+  V --> P[Atomic published document directory]
+  P --> D[Commit ANNOTATED / persistent counters]
+  D --> A[Private paginated APIs and live viewer]
+  D --> E[PREPARING_DOWNLOADS: streaming final / partial exports]
+  E --> T[Terminal state + 72-hour expiry]
+  T --> C[Independent retention sweep]
+```
 
-States: QUEUED → PROCESSING → COMPLETED or FAILED → EXPIRED → deleted tombstone.
-Every transition has an event timestamp; times are UTC epoch seconds internally
-and ISO-8601 UTC in HTTP. Original relative paths identify documents unambiguously.
-The payload records submitter metadata, language, entities, original paths and a
-snapshot of model identity/digest/options. No document text is stored in SQLite.
+SQLite WAL is the actual queue, not Redis/RQ/PostgreSQL. BEGIN IMMEDIATE makes rate
+checks, reservation transfer, job insertion and document-reference insertion
+atomic across web processes. FIFO is acceptance sequence, not upload start time.
+The existing worker claim/recover/finish boundary is the seam for a future queue
+backend; multi-host processing requires an explicit database/queue migration.
+Linux, one host and a private local filesystem are required; not NFS.
 
-On worker restart, interrupted jobs return to QUEUED at their original sequence,
-up to MAX_ATTEMPTS (2 by default). A second interrupted attempt becomes FAILED.
-Ordinary inference errors are terminal and require resubmission; repeated public
-failures do not monopolize the queue. Each attempt builds in a private fresh
-directory, then renames a complete output directory before committing COMPLETED.
-If the supervisor dies, Linux parent-death signaling kills its inference child.
-A per-job hard timeout terminates the child; heartbeat/retention continue while
-inference runs. Child results are published atomically through a private JSON
-file, rather than a bounded OS pipe: a large multi-model summary cannot block
-sending while the supervisor waits for process exit. The deadline covers shutdown
-after result publication too. Stale summaries are removed before retrying and a
-nonzero child exit never publishes success. Lost completion commits are safe to replay from original input.
+Job states: QUEUED → PROCESSING → COMPLETED / COMPLETED_WITH_ERRORS / FAILED →
+EXPIRED → removed tombstone. Stages distinguish INFERENCE and PREPARING_DOWNLOADS.
+Document states: PENDING → PROCESSING → ANNOTATED or FAILED. ANNOTATED means every
+selected model and exact offset validation succeeded. Failed documents are never
+counted as annotated. Counters derive from persistent rows, not a Python-only
+counter or a guessed percentage. Source content is stored on disk, not in SQL.
 
-There are no partial successes: all selected models, statistics, required exports
-and offset checks must pass. Completed document count is 0 until the entire batch
-is published. No intermediate per-document progress is claimed by ner_lab's API.
+Request bodies are byte-bounded and spooled to an anonymous private temporary
+file. Multipart files are consumed as streams; ZIP validation yields at most one
+bounded document at a time, preserving bytes and hierarchy. Upload leases are
+persistent and bind their staging directories; long validation renews the lease.
+Only exactly one input mode is accepted. Failed loads clean their private staging.
 
-Admission bounds actual request bytes before multipart parsing, including requests
-without Content-Length. At most MAX_CONCURRENT_UPLOADS are buffered; each has a
-five minute body timeout. Persistent leases expire after ten minutes after crashes.
-A conservative reservation of `8 * MAX_UNCOMPRESSED_MB + MAX_UPLOAD_MB` per admitted
-QUEUED/PROCESSING job and active upload, plus the actual retained bytes of
-COMPLETED/FAILED jobs, constrains total storage admission. Finished jobs release
-unused reservations immediately without waiting for retention expiry. Free-space
-checks also reserve room for queued jobs, which have not yet produced their outputs. This is
-capacity planning, not a kernel disk quota: use a dedicated filesystem quota for
-hard disk enforcement, especially model-generated intermediate amplification.
-Model memory/CPU are bounded operationally by container resources and job timeout.
+Storage admission uses persisted input/output bytes, configurable expansion
+factor/additional reserve, queue/upload limits and actual free space. It performs
+no completed-directory traversal in the admission transaction. Migration initially
+reconciles old rows once. Expanded uploads grow reservations before writes. New
+artifact/packaging writes have a conservative per-job budget. An encrypted local
+volume with an OS quota is still required for a hard disk boundary; external
+administrator writes and model files are outside job accounting.
 
-Cleanup runs periodically in both API and worker and can also run as a scheduled
-command. COMPLETED/FAILED inputs, intermediates, outputs and metadata are removed
-after their TTL. Download endpoints enforce expiry even before the next sweep.
-An EXPIRED tombstone remains for TOMBSTONE_HOURS; after deletion the URL is 404.
-The web app remains available without models; readiness separately reports that
-fact. Worker and database must share local persistent storage.
+The supervisor keeps heartbeats/cleanup alive while the child processes, enforces
+a lifetime timeout and uses Linux parent-death signaling. Result transfer is an
+atomic private JSON file, not an OS pipe. The native checkpoint cache is bounded,
+job-scoped and released with the child. Interrupted jobs reuse only verified full
+publications, preserving counts and model/tokenizer provenance.
 
-English UI copy is contained in templates and centralized JS message maps;
-future localization can replace these sources without changing the model catalog.
-Storage access has a Protocol seam, but transactional publish/delete semantics must
-be implemented explicitly when replacing local storage with an object store.
+Readers permit individual ANNOTATED documents while the job is running, preparing,
+partially completed or failed with valid publications. Batch exports are available
+only after packaging; partial attachment names/manifests distinguish failures.
+Expired routes deny access immediately and cleanup removes the entire job root.
+Pre-v3 tokens/deadlines remain unchanged by additive migrations.
 
-## Phase 2 boundaries
+The frontend remains local templates, CSS and ES modules. Shared progress/dialog/
+countdown logic polls server state with backoff/visibility awareness and uses a
+monotonic elapsed clock synchronized to server_now. It stores no clinical data in
+browser persistence. Folder expansion, selection and filters survive live list
+refreshes; the sweep-line renderer/Unicode mapping is preserved.
 
-main.py now composes routers and resources; api modules own HTTP contracts,
-services/jobs owns admission/status, services/pipeline owns inference orchestration,
-and visualization/repository owns indexed per-document reads. Exports use
-separate BRAT/TSV writers. Domain span validation is shared; inference remains
-independent of FastAPI. The existing SQLite queue and supervision are preserved.
-
-The new private viewer uses bounded text fragments and paged documents/annotations.
-Default retention is 72 hours from completion, including viewer indexes. See
-REFACTORING_DECISIONS.md and VISUALIZATION_ARCHITECTURE.md for details.
+See INCREMENTAL_PROCESSING.md, MIGRATIONS_V3.md, VISUALIZATION_ARCHITECTURE.md and
+PERFORMANCE_V3.md for data contracts, crash windows, viewer tradeoffs and measured
+limits. CPU synthetic tests do not establish clinical/GPU/BSC capacity.

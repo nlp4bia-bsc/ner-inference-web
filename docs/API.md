@@ -62,8 +62,8 @@ noindex, nosniff and a same-origin CSP.
 
 All routes can be mounted with APP_PREFIX=/ner; set PUBLIC_BASE_URL with the same
 path. Existing unprefixed contracts are unchanged when APP_PREFIX is empty.
-New routes all require a valid completed/unexpired job; 404/409/410 apply before
-reading files. OpenAPI exposes Pydantic document/text/annotation/statistics schemas.
+New document content routes require a valid unexpired capability and an annotated
+document; metadata can be read during processing. 404/409/410 apply before reading files. OpenAPI exposes Pydantic document/text/annotation/statistics schemas.
 
 | GET path (append to /api/jobs/{token}) | Parameters / response |
 |---|---|
@@ -80,3 +80,34 @@ annotations retain complete original surfaces and document coordinates even when
 crossing the fragment boundary. No text from other documents is bundled.
 
 The HTML reference is served locally without Swagger CDN scripts; it lists operations and response/request model fields. No third-party runtime asset is required.
+
+## V3 incremental inputs and progress
+
+POST accepts exactly one input mode: PASTED_TEXT (pasted_text or a UTF-8
+pasted_text_file part, optional document_name), TXT_UPLOAD (one/many files), or
+ZIP_ENTRY (one ZIP). Omitted input_mode keeps legacy file-only inference. Mixed
+text/files and unknown modes are rejected. Browser paste uses a UTF-8 Blob to
+avoid multipart textarea line-ending conversion; stored bytes are unchanged.
+
+GET /api/jobs/{token}/progress exposes persisted document counts, stage, percentage,
+updated_at, server_now, expires_at, queue_position and provisional native-statistic
+sums. Percent means ANNOTATED/total, excludes failures, and is not time progress.
+Server time synchronizes the monotonic browser countdown. PREPARING_DOWNLOADS is
+an explicit nonterminal stage. Existing GET status adds server_now/progress.
+
+Document listing now includes PENDING/PROCESSING/ANNOTATED/FAILED, source_type,
+relative_path and safe error_code, with status filtering and optional sort=name.
+Only ANNOTATED documents expose text/annotations/statistics/individual downloads;
+409 protects unfinished documents. Lists are available while processing.
+
+GET /jobs/{token}/viewer is an alias for the existing API viewer URL and opens
+when at least one annotated document is published. GET
+/api/jobs/{token}/documents/{document_id}/download/txt and /download/ann provide
+individual validated artifacts, including during processing. Every route checks
+the capability and exact expiry before reading data.
+
+COMPLETED_WITH_ERRORS is a new terminal status. Full-export endpoints offer only
+the validated subset with *_partial attachment names and an explicit partial
+manifest. FAILED does not offer final batch downloads, though valid previously
+published individual documents remain available until expiry. Native final
+statistics exclude failed documents and report their operational count separately.

@@ -4,6 +4,7 @@ services:
       context: .
       args:
         INSTALL_NLP: ${INSTALL_NLP:-false}
+        NLP_PROFILE: ${NLP_PROFILE:-gpu}
     image: temu-ner-web:local
     command: ["uvicorn", "app.asgi:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--no-proxy-headers"]
     environment: &environment
@@ -26,6 +27,10 @@ services:
       MAX_STORAGE_MB: ${MAX_STORAGE_MB:-10000}
       MIN_FREE_DISK_MB: ${MIN_FREE_DISK_MB:-500}
       MAX_CONCURRENT_UPLOADS: ${MAX_CONCURRENT_UPLOADS:-4}
+      INFERENCE_DOCUMENT_BATCH_SIZE: ${INFERENCE_DOCUMENT_BATCH_SIZE:-32}
+      MAX_LOADED_MODELS: ${MAX_LOADED_MODELS:-2}
+      STORAGE_RESERVE_FACTOR: ${STORAGE_RESERVE_FACTOR:-4}
+      STORAGE_RESERVE_EXTRA_MB: ${STORAGE_RESERVE_EXTRA_MB:-32}
       MAX_ATTEMPTS: ${MAX_ATTEMPTS:-2}
       JOB_TIMEOUT_SECONDS: ${JOB_TIMEOUT_SECONDS:-7200}
       CLEANUP_INTERVAL_SECONDS: ${CLEANUP_INTERVAL_SECONDS:-60}

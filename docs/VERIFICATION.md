@@ -1,4 +1,62 @@
-# Latest: phase 2 verification
+# Latest: V3 verification
+
+Baseline audited at 9c95bb5: **94 passed in 51.77s** before edits.
+
+Executed locally on Python 3.12.14 / Linux:
+
+- Full native/browser regression: **117 passed in 65.56s**, no skips, with
+  `SCREENSHOT_OUTPUT=work/screenshots-v3 BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`.
+- A separate clean environment with only requirements.lock, test extras and
+  Playwright (no Torch/ner_lab) ran **91 passed, 26 explicitly skipped in 4.80s**.
+  The skips were browser opt-in cases and optional real NLP integrations.
+- That clean environment then ran all selected browser cases with BROWSER_TESTS=1:
+  **21 passed in 46.47s**. A Starlette warning about the compatible httpx fallback
+  is recorded; no functional failures occurred.
+- Ruff lint/format and Prettier checks passed; `git diff --check` passed.
+- `uv build --out-dir work/dist` built both the 0.3.0 sdist and wheel; the wheel
+  includes the new persistence, publication, document contract and progress modules.
+- The final non-NLP Docker image built successfully. After a coordinated Compose
+  web/worker restart, `/`, `/health`, `/ready`, `/docs`, `/openapi.json` and
+  `/static/progress.js` returned 200. A separate container with `APP_PREFIX=/ner`
+  served the same routes under `/ner`; readiness returned 503 with no worker and
+  200 after starting its isolated worker. Both schemas reported version 0.3.0 and
+  the progress endpoint. `models_available` was false in this deliberate no-NLP
+  smoke run. The temporary prefixed container was removed afterward.
+- CPU and GPU NLP dependency profiles were resolved separately. Full NLP Docker
+  builds, GPU execution and real BSC/clinical checkpoints were not run.
+- GitHub Actions now configures lint, unit/light integration, browser, package and
+  no-NLP Docker smoke jobs with no private checkpoints. Remote Actions execution
+  is not claimed; the corresponding local clean-environment commands were run.
+
+New regressions cover exact pasted Unicode/CRLF bytes and exclusive input modes,
+actual body limits without Content-Length, failed-upload cleanup and live staging
+ownership; concurrent eight-client HTTP admission/FIFO; no directory traversal in
+admission; versioned migration with unchanged old tokens/deadlines; all-model
+publication while the job is running; partial failures/attachments; crash before
+SQL commit, verified restart reuse, missing-artifact reprocessing and idempotent
+counts; storage-budget denial before writes; actual native session/public API
+prediction equivalence, warm model reuse and streamed/public statistic equality.
+
+Chromium exercises all existing eight viewports plus paste acceptance dialogs,
+collapsible progress, completion notification, server/browser clock skew, a live
+expiry that clears text/table/inspector/links, folder navigation, synchronized row
+selection, individual downloads and all overlapping-span selections. Controlled
+predictors/catalog fixtures are test-only and never presented as clinical results.
+
+Measurements, raw JSON and limits are in PERFORMANCE_V3.md and benchmarks/.
+The 1,000x16KiB ingestion fixture reduced peak traced Python allocations from
+32.29 to 1.33 MiB; full admission is not claimed faster than the old pure loader.
+Real tiny-BERT timings, publication/ZIP/HTTP timings and synthetic renderer timings
+are reported separately and are not GPU or clinical throughput predictions.
+
+Known remaining validation: actual biomedical checkpoints/corpora, GPU/driver and
+full neural-image deployment, external-user TCP/load/soak tests, institutional data
+policy, BSC TLS/domain integration and hosted CI runner results. No clinical
+accuracy, formal WCAG certification or BSC production deployment is claimed.
+
+---
+
+# Historical: phase 2 verification
 
 - Baseline before edits: **71 passed in 22.57s**.
 - First backend refactor: **69 passed** excluding the then opt-in browser cases.

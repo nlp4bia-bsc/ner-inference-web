@@ -68,3 +68,17 @@ for source documents, and no browser persistent storage is created. Viewer index
 are private job-directory artifacts and are deleted by the same 72-hour retention
 sweep. Open viewers clear content at their expiry deadline; API checks remain
 authoritative. APP_PREFIX affects routes, not authorization. See RETENTION_POLICY.md.
+
+V3 paste/file modes are mutually exclusive on the server. Paste is treated as
+sensitive source data and follows identical TXT validation, rate limits and TTL.
+Multipart bodies are disk-spooled and byte-bounded; ZIP entries remain bounded
+per document, with leases expanded before additional disk writes. Admission uses
+persisted byte counters/reservations rather than traversing terminal directories.
+A conservative output budget complements (not replaces) encrypted volume quotas.
+
+All live document reads require ANNOTATED state, a valid job capability and an
+unexpired job. Individual partial results are explicit; unvalidated model/batch
+files are never exposed. Failed jobs cannot offer batch exports. Expiry deletes
+partial publications too. Server-clock UI countdowns clear loaded data but cannot
+revoke files/clipboard material a user already downloaded/copied. No text or tokens
+are stored in browser persistence. Session caches are job-child scoped and offline.

@@ -42,3 +42,9 @@ Tests exercise every annotation's selected state in Chromium, including equal
 boundaries, crossing and four active annotations, at 320/375/390/768/1024/1440/
 1920/2560px. Pure segment tests also verify exact text reconstruction and lanes.
 No annotation is deleted, merged across labels or approximately repositioned.
+
+V3 preserves this renderer and adds a synchronized paged Entity/Label/Start/End/
+Confidence/Model table. Both selection routes use the same annotation IDs and
+highlight all fragments. Version/overlap peers are visible without relying on
+color. A mobile bottom-sheet action uses native dialog focus/close semantics.
+The renderer benchmark and its limited interpretation are in PERFORMANCE_V3.md.

@@ -1,7 +1,8 @@
 # Multilingual NER · TEMU / Barcelona Supercomputing Center
 
 Explore, annotate and analyze multilingual documents. This account-free service
-accepts UTF-8 TXT or nested-folder ZIP corpora, queues inference, and offers a
+accepts pasted text, UTF-8 TXT or nested-folder ZIP corpora, queues incremental
+inference, and offers a
 responsive, read-only annotation explorer plus BRAT/TSV exports. Results remain
 private behind a capability link for **72 hours after completion**.
 
@@ -17,17 +18,23 @@ only in tests; they do not represent biomedical model performance.
 flowchart LR
     B[Browser: templates / ES modules] --> P[HTTPS proxy /ner/]
     P --> A[FastAPI routers]
-    A --> J[Job use cases]
-    J --> Q[SQLite WAL: FIFO / states / rate limits]
+    A --> J[Job use cases / input streams]
+    J --> Q[SQLite WAL: FIFO / document states / rate limits]
     J --> S[Private local storage]
-    Q --> W[One supervised worker]
+    Q --> W[One supervised worker / microbatches]
     W --> N[ner_lab / local checkpoints]
     N --> V[Validated original-coordinate annotations]
     V --> X[BRAT / TSV / statistics]
-    V --> I[Per-document viewer index]
+    V --> I[Atomic document publications]
     I --> A
     C[Periodic retention sweep] --> S
 ```
+
+V3 publishes each document as soon as **all selected models** finish and offsets
+validate. A persistent top progress bar shows actual annotated/processing/pending/
+failed counts and can be collapsed without losing state. You can explore finished
+documents while the rest of the job runs. Accepted/completed dialogs and a
+server-synchronized countdown make job lifecycle events explicit.
 
 The existing single-host SQLite queue is preserved. Redis, RQ and PostgreSQL are
 **not runtime dependencies** of this repository. They were an alternative in the
@@ -82,14 +89,15 @@ python -m app.worker
 Open http://localhost:8000. An idle worker and disabled model catalog are usable
 without NLP packages. `/health` checks HTTP liveness; `/ready` checks database and
 worker heartbeat and separately reports models_available. No SMTP is needed.
-For actual inference install the revision-pinned dependency set:
+For actual CPU inference install the revision-pinned CPU dependency set:
 
 ```sh
-pip install -r requirements-nlp.lock
+pip install -r requirements-cpu.lock
 ```
 
-requirements.lock pins HTTP dependencies; requirements-nlp.lock pins the complete
-upstream NER extra and revision archive. Upstream also includes training/search
+requirements.lock pins HTTP dependencies; requirements-cpu.lock pins the CPU NER
+profile and requirements-nlp.lock the CUDA NER profile, both with the exact upstream
+revision archive. Upstream also includes training/search
 packages, making this image large. Local installation/test commands were exercised;
 no clinical production checkpoint is part of this checkout.
 
@@ -173,14 +181,14 @@ read-only, data is writable. Do not use `down -v` unless discarding retained job
 For a real NLP image after model/catalog preparation:
 
 ```sh
-INSTALL_NLP=true docker compose build web
+NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web
 docker compose run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/catalog:/service/catalog:rw" worker python -m scripts.validate_models
 docker compose up -d --force-recreate
 ```
 
 Preflight must see the same `/models` paths and caches as the running worker.
-The full GPU/training image dependency set was resolved, but its large NLP-enabled
+The full CPU/GPU training image dependency sets were resolved, but their large NLP-enabled
 Docker build was not executed. The no-NLP Docker image and web/worker Compose pair
 have been built and run. See [deployment](docs/DEPLOYMENT.md) for optional build
 CA secrets when using a managed HTTPS proxy and deployment-specific permissions.
@@ -188,13 +196,22 @@ CA secrets when using a managed HTTPS proxy and deployment-specific permissions.
 ## CPU and GPU
 
 `DEVICE=auto` lets ner_lab choose CUDA when available; `DEVICE=cpu` forces CPU.
-The upstream Torch version is 2.10.0. A CPU environment can first install that
-version from https://download.pytorch.org/whl/cpu, then install the pinned NLP set.
-Use a compatible wheel/driver/runtime for your infrastructure. To use GPU in
-Docker, explicitly grant the worker a supported NVIDIA device/runtime and mount
-any required local cache; setting DEVICE=cuda alone does not expose hardware.
-GPU operation is **not tested in this environment**. Reduce registry batch_size
-for memory pressure, restrict container resources and keep one inference worker.
+The upstream Torch version is 2.10.0. requirements-cpu.lock selects the CPU wheel
+and excludes CUDA runtime packages; requirements-nlp.lock is the original GPU
+profile. Use NLP_PROFILE=cpu or gpu with INSTALL_NLP=true when building Docker.
+Setting DEVICE=cpu on an already CUDA-built image does not remove its GPU packages.
+To use GPU in Docker, explicitly grant the worker a supported NVIDIA device/runtime
+and mount any required local cache; DEVICE=cuda alone does not expose hardware.
+GPU operation and full NLP Docker image builds are **not tested here**. Native CPU
+inference and session equivalence have been executed in the development environment.
+
+Set INFERENCE_DOCUMENT_BATCH_SIZE (default 32) to bound source-document memory,
+independently of each model's window batch_size. MAX_LOADED_MODELS (default 2)
+bounds a job-scoped versioned LRU cache. Tune both with measured RAM/VRAM: larger
+model sets may still require checkpoint reloads. Scientific encoding/windows are
+unchanged; the child/cache is released at job completion. See
+[session/publication design](docs/INCREMENTAL_PROCESSING.md) and
+[measured synthetic benchmarks](docs/PERFORMANCE_V3.md).
 
 ## Production origin and `/ner/` reverse proxy
 
@@ -238,17 +255,22 @@ Prefix behavior is tested locally; **no BSC production deployment is claimed**.
 
 ## Explorer and result formats
 
-Completed jobs offer **Explore annotations**, BRAT ZIP, TSV and JSON statistics.
+The job page exposes **Explore annotations** once the first document is ANNOTATED.
+Batch ZIP/TSV downloads wait until packaging completes. COMPLETED_WITH_ERRORS offers
+explicit *_partial downloads and a failed-document manifest; FAILED jobs offer no
+final batch export, but validated published documents can remain individually
+viewable/downloadable. Only successful all-model documents count as annotated.
 The explorer uses the available horizontal space: three panels on desktop/tall
 wide monitors, two at tablet widths and a stacked touch/keyboard workspace on
 mobile. Documents are paged at 50, text at 5,000 code points and mention-list DOM
-at 50. Search filenames, filter annotated documents/types/mention surfaces, find
+at 50. Browse expandable folder trees, search filenames, filter document states/types/mention surfaces, find
 text across the whole document and navigate documents, fragments and mentions.
 
 Every crossing/nested/equal-boundary annotation remains selectable. A highlighted
 atomic region shows its annotation count; selecting it reveals every covering
 entity. Details show exact offsets, model and actual confidence. Emoji/combining
-marks use code-point mapping, not naive JavaScript UTF-16 offsets. No HTML from a
+marks use code-point mapping, not naive JavaScript UTF-16 offsets. A synchronized annotation table and individual TXT/ANN downloads are available.
+No HTML from a
 document is interpreted and no content is sent to third-party services.
 See [overlap rendering](docs/OVERLAP_RENDERING.md) and
 [viewer architecture](docs/VISUALIZATION_ARCHITECTURE.md).
@@ -272,16 +294,23 @@ Actual ANN uses TAB separators between ID, span specification and surface.
 All originals, annotations, ZIP/TSV, statistics, viewer indexes and temporaries
 expire 72 hours after terminal completion. Queue waiting time is excluded.
 Every private route denies access exactly at expiry, independently of sweeping.
-API/worker perform cleanup; run `python -m scripts.cleanup` under the same config
+API/worker perform cleanup of originals, published partials, temporary batches
+and final outputs; run `python -m scripts.cleanup` under the same config
 for a manual/scheduled sweep. PII is scrubbed; a minimal tombstone remains 24 hours.
 No browser localStorage/IndexedDB or shared document cache is used.
 
-For upgrades from v1, stop/drain the worker, back up configuration and a consistent
-SQLite database only as allowed by retention policy, deploy API/worker together,
-and optionally run `python -m scripts.migrate_retention` with the new TTL. It
-extends only still-unexpired terminal jobs; expired links are never revived.
-V1 completed result sets lazily build a private viewer index under a per-job lock.
-No DB schema migration is required in this phase.
+For upgrades, drain and stop API/worker first. Startup applies additive versioned
+SQLite migrations for document progress, storage accounting and upload ownership.
+Existing tokens/statuses/expiry timestamps remain unchanged. Do not automatically
+run scripts.migrate_retention when upgrading: v3 applies the configured 72-hour
+TTL to new terminal completions without reviving or extending old jobs. The legacy
+explicit deadline-change script remains available only for a deliberate operator
+action. See [migration/rollback instructions](docs/MIGRATIONS_V3.md).
+
+V1/v2 completed jobs retain their viewer/backfill path. Interrupted v3 jobs verify
+published artifacts against model/tokenizer digests and original input hashes,
+register complete orphan publications idempotently and reprocess only missing or
+invalid documents. Do not replace checkpoints in place while jobs are pending.
 
 Model updates: use new immutable versioned paths, drain, preflight, restart, smoke
 test with authorized nonsensitive text. ner_lab upgrades: change the pinned
@@ -296,7 +325,10 @@ volumes and backup lifetimes that do not preserve temporary documents indefinite
 ```sh
 python -m pytest -q                         # API, unit, pipeline, retention
 python -m pytest -q tests/test_real_inference.py  # requires NLP deps; tiny random CPU model
-python -m pytest -q tests/test_viewer_api.py # new contracts / prefix / controlled clock
+python -m pytest -q tests/test_viewer_api.py # contracts / prefix / controlled clock
+python -m pytest -q tests/test_incremental.py tests/test_ingestion_v3.py tests/test_migrations_v3.py
+python -m scripts.benchmark_v3 --real-model # optional NLP deps, 1,000 synthetic docs
+python -m scripts.benchmark_viewer          # browser microbenchmark
 python -m ruff check app scripts tests
 python -m ruff format --check app scripts tests
 pip install playwright
@@ -306,7 +338,7 @@ pip install playwright
 # Requires Chromium at /usr/bin/chromium; browser tests start a temporary prefixed server.
 BROWSER_TESTS=1 python -m pytest -q
 # Viewer-specific tests start their own temporary prefixed server:
-BROWSER_TESTS=1 python -m pytest -q tests/test_viewer_browser.py
+BROWSER_TESTS=1 python -m pytest -q tests/test_viewer_browser.py tests/test_ui_v3.py
 ```
 
 Viewer browser cases cover widths 320, 375, 390, 768, 1024, 1440, 1920 and 2560,
@@ -352,7 +384,12 @@ app/db.py, storage.py    persistence / private local storage
 app/templates/, static/  responsive UI and dependency-free ES modules
 catalog/                 declarative models and local validation receipt
 scripts/                 preflight, cleanup and explicit retention upgrade
+app/persistence/        migrations, document progress and publication counters
+app/services/publication.py atomic all-model document artifact writes / validation
+app/services/incremental_export.py streaming final/partial packaging
+app/static/progress.js  shared polling, dialogs and monotonic server-clock countdown
 tests/, docs/            unit/API/integration/browser checks and operating guides
+.github/workflows/ci.yml lint, unit/light integration, browser, wheel/build smoke
 ```
 
 Real BSC checkpoints/corpora, clinical accuracy, GPU performance, maximum-density
@@ -364,3 +401,45 @@ automatic language detection or notification service is implemented.
 
 Visual evidence: [desktop and mobile captures](docs/PREVIEWS.md), using clearly
 identified synthetic test fixtures rather than real biomedical model results.
+
+
+## Input modes and progress
+
+Choose exactly one mode: **Paste text**, **Upload TXT**, or **Upload ZIP**. Paste
+has a UTF-8 byte/code-point counter, clear/copy controls and an optional safe filename
+(default pasted-text.txt). TXT mode supports multiple files, drag/drop and removal
+before submission; ZIP mode preserves nested relative paths. Uploaded body bytes
+are bounded and spooled to private disk before multipart parsing; ZIP entries are
+validated/written one document at a time, not expanded into a corpus-sized mapping.
+The HTTP API still accepts legacy file-only multipart submissions without input_mode.
+
+```sh
+curl -X POST http://localhost:8000/api/jobs \
+  -F submitter_name=Researcher -F submitter_email=user@example.org \
+  -F language=es -F entities=DISEASE -F input_mode=PASTED_TEXT \
+  -F 'pasted_text=Authorized example text.'
+```
+
+Browser paste uses an exact UTF-8 file part to preserve textarea bytes/line breaks.
+It goes through the same validation, FIFO, ner_lab session, statistics and retention
+as files. No text is persisted in localStorage/IndexedDB or sent to third parties.
+
+The upload bar reports actual bytes sent; validation, queue waiting, inference and
+PREPARING_DOWNLOADS are distinct stages. Document progress comes from SQLite, never
+an in-memory UI counter. Polling backs off on failures and hidden tabs, reconnects
+on focus, and stops on terminal states; the server-clock countdown continues until
+expiry and clears loaded private content. It does not reset on navigation/reload.
+
+Storage admission uses actual input bytes times STORAGE_RESERVE_FACTOR (default 4)
+plus STORAGE_RESERVE_EXTRA_MB (32 MiB), persistent retained-output accounting, free
+space, queue bounds and upload leases. It no longer scans completed directories
+inside an admission transaction. Reservations grow before expanded entries are
+written; artifact/packaging budgets reject excessive output before writing. Use
+an OS filesystem quota and container memory limits for the hard infrastructure
+boundary. Administrative out-of-band changes require explicit accounting repair
+(Database.record_storage), not a global directory scan on each public request.
+
+GitHub Actions is configured for lint, non-neural regressions, isolated browser
+servers, package builds and no-NLP Docker smoke tests. It downloads no private
+checkpoints. The workflow file is configured here; remote GitHub execution is not
+claimed until the repository's Actions runner reports a run.
