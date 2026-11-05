@@ -34,3 +34,11 @@ model results or a BSC production deployment.
 ![V3 desktop workspace](previews/v3-viewer-desktop.png)
 
 ![V3 mobile workspace](previews/v3-viewer-mobile.png)
+
+# Model catalog correction
+
+Actual no-NLP Docker runtime, Locations expanded. These are real inventory records
+with zero selected/available checkpoints, rather than fabricated clinical results.
+The previous screenshots above remain historical views of earlier releases.
+
+![Primary categories, location checkpoints and independent multilingual models](previews/catalog-selector.png)

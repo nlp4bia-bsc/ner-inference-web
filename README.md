@@ -101,6 +101,23 @@ revision archive. Upstream also includes training/search
 packages, making this image large. Local installation/test commands were exercised;
 no clinical production checkpoint is part of this checkout.
 
+## Model catalog correction
+
+The registry now includes all 36 repository links from the supplied Excel and the
+exact GreekMedNLP 2025–2026 checkpoint, preserving existing IDs. Categories are
+peers; sublabels stay inside their main category. Users explicitly select one or
+more checkpoints per category, with a separate Multilingual models section.
+Opening a category selects nothing. Same-category/same-offset predictions display
+once and retain every source model, original label and individual score.
+
+All imported entries remain disabled until actual offline checkpoint/schema
+validation. Unpublished pediatric Events/Situations and Temporality are visible;
+custom multi-head/dependent tasks stay blocked without a compatible native adapter.
+The location subtype classifier remains listed with its dependency review pending.
+The spreadsheet's metrics are reported evidence, not independently reproduced F1.
+See [catalog operations and evidence](docs/MODEL_REGISTRY.md) and
+[inventory provenance](catalog/inventory-provenance.json).
+
 ## Configure and validate a model
 
 Place a trusted checkpoint in a versioned directory, e.g. host

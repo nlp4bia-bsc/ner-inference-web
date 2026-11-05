@@ -41,10 +41,16 @@ mention-list preview (ellipsis), while selection details and JSON retain it.
 Tests exercise every annotation's selected state in Chromium, including equal
 boundaries, crossing and four active annotations, at 320/375/390/768/1024/1440/
 1920/2560px. Pure segment tests also verify exact text reconstruction and lanes.
-No annotation is deleted, merged across labels or approximately repositioned.
+Distinct canonical categories and offsets are never merged or approximately repositioned.
 
 V3 preserves this renderer and adds a synchronized paged Entity/Label/Start/End/
 Confidence/Model table. Both selection routes use the same annotation IDs and
 highlight all fragments. Version/overlap peers are visible without relying on
 color. A mobile bottom-sheet action uses native dialog focus/close semantics.
 The renderer benchmark and its limited interpretation are in PERFORMANCE_V3.md.
+
+Catalog correction: before drawing, exactly equal document/canonical-category/
+offset mentions from several models consolidate into one annotation ID. All
+original labels, models, versions and individual scores remain in `sources` and
+are shown in the desktop inspector/mobile sheet. This removes duplicate votes
+without changing the sweep algorithm or suppressing distinct legitimate overlaps.

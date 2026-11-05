@@ -10,7 +10,7 @@ paths, email/name, raw inputs or internal exception messages.
 | GET / | English responsive form |
 | GET /jobs/{token} | Private status HTML; its JS polls every 5 seconds while pending |
 | GET /api/languages | Array of code/display_name from YAML |
-| GET /api/models?language=es | Array of entity/display_name/description/language/model_id/version/available |
+| GET /api/models?language=es | Category/checkpoint rows, neutral model_name, supported languages, availability/reason, label mapping, dependencies and verified metrics |
 | POST /api/jobs | Multipart submission, 202 with job_id/status/token/url |
 | GET /api/jobs/{token} | Status, real document counts, queue position, UTC timestamps, summary/download availability |
 | GET /api/jobs/{token}/download/brat | ZIP archive attachment when completed |
@@ -22,14 +22,18 @@ paths, email/name, raw inputs or internal exception messages.
 
 Multipart fields: submitter_name (1–120 characters, trimmed, no controls),
 submitter_email (validated EmailStr, normalized lowercase; not verified), language
-(two-letter code from catalog), entities (one or more repeated fields), files
+(two-letter code from catalog), models (one or more repeated checkpoint IDs), files
 (one or more repeated file fields). Choose either TXT files or exactly one ZIP.
-Neither public model paths nor inference parameters are accepted.
+The server derives the canonical category set. Optional repeated entities must
+match that set. Legacy entities-only requests retain their original single-model
+selection; new ambiguous categories require explicit models. No model is selected
+implicitly by the frontend. Neither public model paths nor inference parameters
+are accepted.
 
 ```sh
 curl -X POST http://localhost:8000/api/jobs \
   -F submitter_name=Researcher -F submitter_email=user@example.org \
-  -F language=es -F entities=DISEASE -F 'files=@corpus.zip'
+  -F language=es -F models=bsc-bio-ehr-es-distemist -F models=bsc-bio-ehr-es-carmen-distemist -F 'files=@corpus.zip'
 ```
 
 Example accepted response (token abbreviated for illustration):
@@ -41,7 +45,7 @@ Example accepted response (token abbreviated for illustration):
 Keep the URL: plaintext tokens are returned once and not stored in SQLite. Status
 contains job_id, status, document_count, processed_documents (0 until a full batch
 completes), queue_position (pending jobs up to this job, excludes active job),
-language, entities, created_at, started_at, completed_at, expires_at, error_summary,
+language, entities, models (resolved checkpoint IDs), created_at, started_at, completed_at, expires_at, error_summary,
 summary and downloads_available. Timestamps are ISO-8601 UTC; the browser formats
 them in the visitor's local timezone.
 
@@ -111,3 +115,13 @@ the validated subset with *_partial attachment names and an explicit partial
 manifest. FAILED does not offer final batch downloads, though valid previously
 published individual documents remain available until expiry. Native final
 statistics exclude failed documents and report their operational count separately.
+
+## Canonical categories and supporting predictions
+
+Annotations consolidate only equal document/category/offset tuples. Each item adds
+`model_ids`, `original_labels` and `sources` containing every distinct model/version/
+original-label/score prediction. Top-level `model_id`, `model_version`, `score`
+remain for compatibility and represent the deterministic highest-score source.
+Different offsets or categories remain separate selectable overlapping spans.
+TSV appends the same provenance as JSON-encoded cells. Old saved viewer indexes and
+TSVs without these optional fields remain readable.

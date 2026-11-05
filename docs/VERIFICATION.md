@@ -1,4 +1,49 @@
-# Latest: V3 verification
+# Latest: model catalog correction
+
+Baseline: V3 commit 5f0fb4c, 117 passing tests. Final regression on Python 3.12.14:
+`SCREENSHOT_OUTPUT=work/screenshots-catalog BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`
+completed with **128 passed in 85.38s**, no skips. Ruff lint/format, Prettier and
+`git diff --check` passed. The sdist/wheel and non-NLP Docker image built.
+
+New cases verify the 36 Excel repository links and retained legacy IDs, the exact
+combined-corpus Greek repository, flat categories, explicit same-category and
+multilingual selection, rejection of unknown/duplicate/incompatible checkpoints,
+dependency cycles/order and forwarding of upstream annotations, canonical merge
+with all original labels/scores and legitimate overlaps, all-model publication,
+BRAT/TSV/JSON provenance, changed mappings invalidating snapshots/receipts, legacy
+queued-job compatibility, and desktop/mobile provenance display. Browser forms
+are tested at all eight existing viewports with no automatic selection, plus an
+actual inventory-based catalog fixture and explicit multipart checkpoint IDs.
+
+The native CPU test preflights two records pointing to a tiny random BERT,
+executes both using ner_lab, consolidates their spans under a mapped category,
+and checks both source IDs survive. This validates mechanics and the new receipt
+contract, not the quality of any clinical checkpoint. Existing real inference,
+recovery, upload, quota, 72-hour expiry, prefix and overlap regressions also pass.
+
+The imported catalog contains 51 new checkpoint/experiment records plus the three
+legacy entries; some checkpoints have several language/category bindings. No
+imported checkpoint was downloaded, initialized or enabled. The full clinical
+schemas, LocationSubTagger input/dependency contract, custom DT4H MTL architecture,
+GPU deployment and exact Greek combined-corpus scores remain unverified. See
+MODEL_REGISTRY.md for per-source evidence and the conservative execution guards.
+
+A clean HTTP/test-only environment separately ran **98 passed, 30 skipped in
+7.38s** (browser opt-in and real NLP cases skipped explicitly); one compatible
+Starlette/httpx deprecation warning remains.
+
+After the coordinated Docker web/worker restart, home, health, readiness, local
+API reference, OpenAPI and form JavaScript returned 200. The live catalog exposed
+60 language/category bindings for 54 distinct records, zero executable models,
+and the exact Greek repository. A separate container checked the same routes under
+`APP_PREFIX=/ner`, plus its language-filtered catalog, with an isolated worker.
+The first temporary startup failed because accumulated build images filled the
+environment disk; removing obsolete images from this project/build cache recovered
+2.2 GiB. The repeated prefix smoke passed; no persistent volumes were removed.
+
+---
+
+# Historical: V3 verification
 
 Baseline audited at 9c95bb5: **94 passed in 51.77s** before edits.
 
