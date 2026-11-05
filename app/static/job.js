@@ -1,90 +1,82 @@
+import { startProgress } from "./progress.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
-const token = location.pathname.split("/").pop();
-const endpoint = base + "/api/jobs/" + encodeURIComponent(token);
-const messages = {
+const token = location.pathname.split("/").pop(),
+  endpoint = base + "/api/jobs/" + token;
+const $ = (id) => document.getElementById(id);
+let expired = false;
+const titles = {
   QUEUED: "Your request is queued.",
   PROCESSING: "Your documents are being processed.",
   COMPLETED: "Your annotations are ready.",
-  FAILED: "Your request could not be completed.",
-  EXPIRED: "Your results have expired.",
+  COMPLETED_WITH_ERRORS: "Your partial results are ready.",
+  FAILED: "Processing failed.",
 };
-function details(rows) {
-  const box = document.querySelector("#details");
-  box.replaceChildren();
-  for (const [label, text] of rows) {
+async function render(progress) {
+  if (expired) return;
+  const response = await fetch(endpoint, { cache: "no-store" });
+  if (response.status === 410) return expire();
+  if (!response.ok) throw new Error("Status unavailable");
+  const data = await response.json();
+  $("heading").textContent = titles[data.status] || data.status;
+  $("state").textContent = data.status;
+  $("details").replaceChildren();
+  for (const [name, value] of [
+    ["Request ID", data.job_id],
+    ["Submitted", new Date(data.created_at).toLocaleString()],
+    ["Language", data.language],
+    ["Documents", data.document_count],
+    ["Entity types", data.entities.join(", ")],
+    ["Queue position", data.queue_position ?? "—"],
+  ]) {
     const dt = document.createElement("dt"),
       dd = document.createElement("dd");
-    dt.textContent = label;
-    dd.textContent = text;
-    box.append(dt, dd);
+    dt.textContent = name;
+    dd.textContent = value;
+    $("details").append(dt, dd);
+  }
+  $("status-message").textContent =
+    data.error_summary ||
+    (data.status === "COMPLETED_WITH_ERRORS"
+      ? "Some documents failed. Downloads contain only validated annotated documents and an explicit partial manifest."
+      : "");
+  const available = progress.annotated_documents > 0;
+  $("downloads").hidden = !available;
+  $("explore").href = base + "/jobs/" + token + "/viewer";
+  $("brat").hidden = !data.downloads_available;
+  $("tsv").hidden = !data.downloads_available;
+  $("statistics").hidden = !data.downloads_available;
+  $("brat").href = endpoint + "/download/brat";
+  $("tsv").href = endpoint + "/download/tsv";
+  $("statistics").href = endpoint + "/statistics";
+  if (data.summary) {
+    $("summary").hidden = false;
+    $("summary").replaceChildren();
+    for (const [label, key] of [
+      ["Documents", "documents"],
+      ["Entities", "annotations"],
+      ["Words", "words"],
+      ["Tokens", "tokens"],
+      ["Sentences", "sentences"],
+    ]) {
+      const card = document.createElement("div"),
+        number = document.createElement("strong"),
+        name = document.createElement("span");
+      number.textContent = data.summary[key] ?? "—";
+      name.textContent = label;
+      card.append(number, name);
+      $("summary").append(card);
+    }
   }
 }
-async function poll() {
-  try {
-    const response = await fetch(endpoint, { cache: "no-store" });
-    const data = await response.json();
-    if (response.status === 410) {
-      document.querySelector("#heading").textContent = messages.EXPIRED;
-      document.querySelector("#state").textContent = "EXPIRED";
-      return;
-    }
-    if (!response.ok)
-      throw new Error(data.detail || "Could not load this request.");
-    document.querySelector("#heading").textContent = messages[data.status];
-    document.querySelector("#state").textContent = data.status;
-    details([
-      ["Request ID", data.job_id],
-      ["Submitted", new Date(data.created_at).toLocaleString()],
-      ["Language", data.language],
-      ["Documents", data.document_count],
-      ["Entity types", data.entities.join(", ")],
-      ...(data.queue_position ? [["Queue position", data.queue_position]] : []),
-    ]);
-    document.querySelector("#status-message").textContent =
-      data.error_summary ||
-      (data.status === "PROCESSING"
-        ? "Progress is reported when the entire batch finishes; no document estimate is available."
-        : "");
-    if (data.downloads_available) {
-      document.querySelector("#downloads").hidden = false;
-      document.querySelector("#explore").href = endpoint + "/viewer";
-      document.querySelector("#brat").href = endpoint + "/download/brat";
-      document.querySelector("#tsv").href = endpoint + "/download/tsv";
-      document.querySelector("#statistics").href = endpoint + "/statistics";
-      document.querySelector("#expiry").textContent =
-        "Available until " + new Date(data.expires_at).toLocaleString();
-      const summary = document.querySelector("#summary");
-      summary.hidden = false;
-      summary.replaceChildren();
-      for (const [label, value] of [
-        ["Documents", data.summary.documents],
-        ["Entities", data.summary.annotations],
-        ["Words", data.summary.words],
-        ["Tokens", data.summary.tokens],
-        ["Sentences", data.summary.sentences],
-      ]) {
-        const card = document.createElement("div"),
-          number = document.createElement("strong"),
-          name = document.createElement("span");
-        number.textContent = value;
-        name.textContent = label;
-        card.append(number, name);
-        summary.append(card);
-      }
-    }
-    if (["QUEUED", "PROCESSING"].includes(data.status)) setTimeout(poll, 5000);
-    // Expire the open page too, so stale download controls are hidden at the deadline.
-    if (data.status === "COMPLETED")
-      setTimeout(
-        () => {
-          document.querySelector("#downloads").hidden = true;
-          poll();
-        },
-        Math.max(1, new Date(data.expires_at) - Date.now()),
-      );
-  } catch (exc) {
-    document.querySelector("#status-message").textContent =
-      exc.message + " Reload this page to retry.";
-  }
+function expire() {
+  expired = true;
+  $("heading").textContent = "Your results have expired.";
+  $("state").textContent = "EXPIRED";
+  $("downloads").hidden = true;
 }
-poll();
+const copy = document.createElement("button");
+copy.className = "secondary";
+copy.textContent = "Copy private link";
+copy.onclick = () => navigator.clipboard.writeText(location.href);
+$("details").after(copy);
+startProgress(endpoint, { onChange: render, onExpire: expire });

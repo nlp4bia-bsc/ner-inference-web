@@ -76,7 +76,9 @@ def test_responsive_viewer_and_all_overlaps(viewer_server, width):
     base, token = viewer_server
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            executable_path="/usr/bin/chromium", headless=True, args=["--no-sandbox"]
+            executable_path=os.environ.get("CHROMIUM_EXECUTABLE", "/usr/bin/chromium"),
+            headless=True,
+            args=["--no-sandbox"],
         )
         page = browser.new_page(viewport={"width": width, "height": 900})
         errors = []
@@ -135,7 +137,9 @@ def test_segment_algorithm(viewer_server):
     base, _ = viewer_server
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            executable_path="/usr/bin/chromium", headless=True, args=["--no-sandbox"]
+            executable_path=os.environ.get("CHROMIUM_EXECUTABLE", "/usr/bin/chromium"),
+            headless=True,
+            args=["--no-sandbox"],
         )
         page = browser.new_page()
         page.goto(base + "/")

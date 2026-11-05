@@ -6,7 +6,7 @@
     <meta name="app-prefix" content="{{ prefix }}" />
     <title>Your request · Multilingual NER</title>
     <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
-    <script src="{{ prefix }}/static/job.js" defer></script>
+    <script type="module" src="{{ prefix }}/static/job.js"></script>
   </head>
   <body>
     <nav class="topbar">
@@ -14,6 +14,7 @@
         ><span class="brand-symbol">N</span> Multilingual NER</a
       ><span class="institution">TEMU · Barcelona Supercomputing Center</span>
     </nav>
+    <div id="global-progress"></div>
     <main class="results">
       <header>
         <p class="eyebrow">ANNOTATION WORKSPACE / REQUEST STATUS</p>

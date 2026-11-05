@@ -18,6 +18,7 @@
         ><a id="download-link" class="button secondary">Download BRAT</a>
       </div>
     </nav>
+    <div id="global-progress"></div>
     <header class="workspace-header">
       <div>
         <p class="eyebrow">RESEARCH WORKSPACE</p>
@@ -26,7 +27,12 @@
           Loading your private workspace…
         </p>
       </div>
-      <div id="metrics" class="metrics"></div>
+      <div>
+        <div id="metrics" class="metrics"></div>
+        <p id="metrics-scope" class="quiet">
+          Provisional statistics: annotated documents only
+        </p>
+      </div>
     </header>
     <div
       id="job-distribution"
@@ -48,6 +54,17 @@
             <option value="true">With annotations</option>
             <option value="false">Without annotations</option>
           </select>
+          <label for="document-state">Document state</label
+          ><select id="document-state">
+            <option value="">All states</option>
+            <option>PENDING</option>
+            <option>PROCESSING</option>
+            <option>ANNOTATED</option>
+            <option>FAILED</option>
+          </select>
+          <label
+            ><input type="checkbox" id="document-sort" /> Sort by name</label
+          >
           <div
             id="document-list"
             class="document-list"
@@ -80,6 +97,10 @@
         <div class="reading-heading">
           <p class="eyebrow">ORIGINAL DOCUMENT</p>
           <h2 id="filename">Choose a document</h2>
+          <div class="document-downloads">
+            <a id="individual-txt">Download TXT</a> ·
+            <a id="individual-ann">Download ANN</a>
+          </div>
           <p id="chunk-info" class="hint"></p>
         </div>
         <div class="reader-toolbar">
@@ -113,6 +134,14 @@
           class="region-annotations"
           aria-label="Annotations in selected region"
         ></div>
+        <button
+          type="button"
+          id="entity-sheet-trigger"
+          class="secondary"
+          hidden
+        >
+          Open entity details
+        </button>
       </section>
       <aside class="annotations-panel panel">
         <h2>Annotation details</h2>
@@ -121,6 +150,22 @@
             Select a mention in the text or the annotation list.
           </p>
         </div>
+        <details class="annotation-table-wrap">
+          <summary>Annotation table</summary>
+          <table class="annotation-table">
+            <thead>
+              <tr>
+                <th>Entity</th>
+                <th>Label</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Confidence</th>
+                <th>Model</th>
+              </tr>
+            </thead>
+            <tbody id="annotation-table-body"></tbody>
+          </table>
+        </details>
         <hr />
         <h3>Mentions in this fragment</h3>
         <label for="entity-search">Find an entity</label

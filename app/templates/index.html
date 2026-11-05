@@ -6,7 +6,7 @@
     <meta name="app-prefix" content="{{ prefix }}" />
     <title>Multilingual NER · TEMU</title>
     <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
-    <script src="{{ prefix }}/static/form.js" defer></script>
+    <script type="module" src="{{ prefix }}/static/form.js"></script>
   </head>
   <body>
     <nav class="topbar">
@@ -108,22 +108,104 @@
         </section>
         <section>
           <h3><span class="step">3</span> Upload documents</h3>
-          <label class="upload" id="drop-zone" for="files"
-            ><span class="upload-icon" aria-hidden="true">↑</span
-            ><strong>Drop documents here, or browse files</strong
-            ><span>UTF-8 TXT or one ZIP · nested folders supported</span
+          <div class="input-tabs" role="tablist" aria-label="Input mode">
+            <button
+              type="button"
+              role="tab"
+              id="tab-paste"
+              data-mode="PASTED_TEXT"
+              aria-controls="paste-panel"
+              tabindex="-1"
+              aria-selected="false"
+            >
+              Paste text
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-txt"
+              data-mode="TXT_UPLOAD"
+              aria-controls="file-panel"
+              tabindex="0"
+              aria-selected="true"
+            >
+              Upload TXT
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-zip"
+              data-mode="ZIP_ENTRY"
+              aria-controls="file-panel"
+              tabindex="-1"
+              aria-selected="false"
+            >
+              Upload ZIP
+            </button>
+          </div>
+          <input
+            type="hidden"
+            name="input_mode"
+            id="input-mode"
+            value="TXT_UPLOAD"
+          />
+          <div
+            id="paste-panel"
+            role="tabpanel"
+            aria-labelledby="tab-paste"
+            hidden
+          >
+            <label for="pasted-text">Document text</label
+            ><textarea
+              id="pasted-text"
+              name="pasted_text"
+              rows="12"
+              disabled
+            ></textarea>
+            <label for="document-name">Document name (optional)</label
             ><input
-              id="files"
-              name="files"
-              type="file"
-              accept=".txt,.zip"
-              multiple
-              required
-          /></label>
-          <p class="hint">
-            Up to {{ max_documents }} documents · {{ max_upload_mb|int }} MB
-            upload. Empty files and nested ZIPs are not supported.
-          </p>
+              id="document-name"
+              name="document_name"
+              placeholder="pasted-text.txt"
+              disabled
+            />
+            <p id="paste-counter" class="hint" aria-live="polite">
+              0 characters · 0 bytes
+            </p>
+            <button type="button" id="clear-text" class="secondary">
+              Clear text</button
+            ><button type="button" id="copy-text" class="secondary">
+              Copy text
+            </button>
+          </div>
+          <div id="file-panel" role="tabpanel" aria-labelledby="tab-txt">
+            <label class="upload" id="drop-zone" for="files"
+              ><span class="upload-icon" aria-hidden="true">↑</span
+              ><strong>Drop documents here, or browse files</strong
+              ><span id="upload-hint">UTF-8 TXT · multiple files supported</span
+              ><input
+                id="files"
+                name="files"
+                type="file"
+                accept=".txt,.zip"
+                multiple
+                required
+            /></label>
+            <p class="hint">
+              Up to {{ max_documents }} documents · {{ max_upload_mb|int }} MB
+              upload. Empty files and nested ZIPs are not supported.
+            </p>
+            <div id="file-list" aria-label="Selected files"></div>
+          </div>
+          <div id="upload-state" hidden>
+            <p id="upload-message" role="status">Uploading documents</p>
+            <progress
+              id="upload-progress"
+              max="100"
+              value="0"
+              aria-label="Upload progress"
+            ></progress>
+          </div>
           <div id="summary" class="summary" aria-live="polite">
             No documents selected.
           </div>

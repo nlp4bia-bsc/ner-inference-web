@@ -1,3 +1,4 @@
+import { showDialog } from "./progress.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
 /* UI messages are centralized here; templates contain the English page copy. */
 const messages = {
@@ -21,7 +22,19 @@ function selected() {
   return [...entities.querySelectorAll("input:checked")].map((x) => x.value);
 }
 function update() {
-  button.disabled = busy || !selected().length || !files.files.length;
+  const pasted = document.querySelector("#input-mode").value === "PASTED_TEXT";
+  const value = document.querySelector("#pasted-text").value;
+  document.querySelector("#paste-counter").textContent =
+    `${Array.from(value).length} characters · ${new TextEncoder().encode(value).length} UTF-8 bytes`;
+  button.disabled =
+    busy ||
+    !selected().length ||
+    (pasted ? !value.trim() : !files.files.length);
+  if (pasted) {
+    document.querySelector("#summary").textContent =
+      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${new TextEncoder().encode(value).length} bytes · ${language.value} · ${selected().join(", ")}`;
+    return;
+  }
   const names = [...files.files].map((x) => x.name);
   const bytes = [...files.files].reduce((sum, x) => sum + x.size, 0);
   const isZip = names.length === 1 && names[0].toLowerCase().endsWith(".zip");
@@ -69,16 +82,59 @@ form.addEventListener("submit", async (event) => {
   update();
   button.textContent = "Submitting…";
   try {
-    const response = await fetch(base + "/api/jobs", {
-      method: "POST",
-      body: new FormData(form),
-    });
-    const data = await response.json();
-    if (!response.ok)
-      throw new Error(
-        typeof data.detail === "string" ? data.detail : messages.uploadError,
+    const body = new FormData(form);
+    if (document.querySelector("#input-mode").value === "PASTED_TEXT") {
+      body.delete("pasted_text");
+      body.append(
+        "pasted_text_file",
+        new Blob([document.querySelector("#pasted-text").value], {
+          type: "text/plain",
+        }),
+        "pasted-text.txt",
       );
-    location.assign(data.url);
+    }
+    const data = await new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open("POST", base + "/api/jobs");
+      request.responseType = "json";
+      document.querySelector("#upload-state").hidden = false;
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          document.querySelector("#upload-progress").value =
+            (event.loaded / event.total) * 100;
+          document.querySelector("#upload-message").textContent =
+            `Uploading: ${event.loaded} / ${event.total} bytes`;
+        }
+      };
+      request.upload.onload = () => {
+        document.querySelector("#upload-message").textContent =
+          "Upload complete. Validating and registering your request…";
+      };
+      request.onload = () => {
+        if (request.status === 202) resolve(request.response);
+        else
+          reject(new Error(request.response?.detail || messages.uploadError));
+      };
+      request.onerror = () => reject(new Error(messages.uploadError));
+      request.send(body);
+    });
+    const accepted = showDialog(
+      "Request accepted",
+      "Your documents have entered the persistent queue. Save your private link.",
+      [
+        {
+          label: "Copy private link",
+          run: () => navigator.clipboard.writeText(data.url),
+        },
+        { label: "Continue to request", run: () => location.assign(data.url) },
+      ],
+    );
+    const link = document.createElement("a");
+    link.href = data.url;
+    link.textContent = data.url;
+    link.className = "private-link";
+    accepted.append(link);
+    accepted.addEventListener("close", () => location.assign(data.url));
   } catch (exc) {
     error.textContent = exc.message || messages.uploadError;
     error.hidden = false;
@@ -127,3 +183,84 @@ dropZone.addEventListener("drop", (event) => {
   files.files = event.dataTransfer.files;
   update();
 });
+
+for (const tab of document.querySelectorAll("[data-mode]")) {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.mode,
+      pasted = mode === "PASTED_TEXT";
+    document.querySelector("#input-mode").value = mode;
+    document
+      .querySelectorAll("[data-mode]")
+      .forEach((x) => x.setAttribute("aria-selected", String(x === tab)));
+    document.querySelector("#paste-panel").hidden = !pasted;
+    document.querySelector("#file-panel").hidden = pasted;
+    document.querySelector("#pasted-text").disabled = !pasted;
+    document.querySelector("#pasted-text").required = pasted;
+    document.querySelector("#document-name").disabled = !pasted;
+    files.disabled = pasted;
+    files.required = !pasted;
+    document
+      .querySelector("#file-panel")
+      .setAttribute("aria-labelledby", tab.id);
+    document
+      .querySelectorAll("[data-mode]")
+      .forEach((x) => (x.tabIndex = x === tab ? 0 : -1));
+    document.querySelector("#upload-hint").textContent =
+      mode === "ZIP_ENTRY"
+        ? "One ZIP archive · nested TXT folders supported"
+        : "UTF-8 TXT · multiple files supported";
+    files.accept = mode === "ZIP_ENTRY" ? ".zip" : ".txt";
+    files.multiple = mode !== "ZIP_ENTRY";
+    files.value = "";
+    renderFiles();
+    update();
+  });
+  tab.addEventListener("keydown", (event) => {
+    if (["ArrowLeft", "ArrowRight"].includes(event.key)) {
+      event.preventDefault();
+      const tabs = [...document.querySelectorAll("[data-mode]")];
+      const index =
+        (tabs.indexOf(tab) +
+          (event.key === "ArrowRight" ? 1 : -1) +
+          tabs.length) %
+        tabs.length;
+      tabs[index].focus();
+      tabs[index].click();
+    }
+  });
+}
+function renderFiles() {
+  const list = document.querySelector("#file-list");
+  list.replaceChildren();
+  [...files.files].forEach((file, index) => {
+    const row = document.createElement("div"),
+      name = document.createElement("span"),
+      remove = document.createElement("button");
+    name.textContent = file.name;
+    remove.type = "button";
+    remove.className = "secondary";
+    remove.textContent = "Remove";
+    remove.setAttribute("aria-label", "Remove " + file.name);
+    remove.onclick = () => {
+      const transfer = new DataTransfer();
+      [...files.files]
+        .filter((_, i) => i !== index)
+        .forEach((f) => transfer.items.add(f));
+      files.files = transfer.files;
+      renderFiles();
+      update();
+    };
+    row.append(name, remove);
+    list.append(row);
+  });
+}
+files.addEventListener("change", renderFiles);
+dropZone.addEventListener("drop", renderFiles);
+document.querySelector("#pasted-text").addEventListener("input", update);
+document.querySelector("#document-name").addEventListener("input", update);
+document.querySelector("#clear-text").onclick = () => {
+  document.querySelector("#pasted-text").value = "";
+  update();
+};
+document.querySelector("#copy-text").onclick = () =>
+  navigator.clipboard.writeText(document.querySelector("#pasted-text").value);

@@ -1,3 +1,4 @@
+import { startProgress, showDialog } from "./progress.js";
 import { segments, lanes, color } from "./spans.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
 const token = location.pathname.split("/").at(-2),
@@ -14,6 +15,7 @@ let records = [],
   mentionOffset = 0,
   generation = 0,
   expiryTimer,
+  listGeneration = 0,
   expiresAt = Infinity,
   expired = false;
 const make = (tag, text, cls) => {
@@ -25,7 +27,7 @@ const make = (tag, text, cls) => {
 async function api(path) {
   const response = await fetch(endpoint + path, { cache: "no-store" });
   const data = await response.json();
-  if (expired || Date.now() >= expiresAt) {
+  if (expired) {
     expire();
     throw new Error("Results have expired.");
   }
@@ -42,9 +44,15 @@ function failure(error) {
 }
 function expire() {
   expired = true;
+  $("entity-sheet-trigger").hidden = true;
+  document.querySelectorAll("dialog").forEach((dialog) => dialog.close());
   generation++;
   identity = null;
   annotations = [];
+  records = [];
+  selected = null;
+  enabled.clear();
+  getSelection()?.removeAllRanges();
   chunk = null;
   for (const id of [
     "annotated-text",
@@ -53,11 +61,17 @@ function expire() {
     "region-annotations",
     "document-list",
     "metrics",
+    "annotation-table-body",
+    "document-stats",
+    "filename",
+    "job-distribution",
   ])
     $(id).replaceChildren();
   $("viewer-status").textContent =
     "Your results have expired. Documents are no longer available.";
   $("download-link").removeAttribute("href");
+  $("individual-txt").removeAttribute("href");
+  $("individual-ann").removeAttribute("href");
   document
     .querySelectorAll("main button,main input,main select")
     .forEach((x) => (x.disabled = true));
@@ -82,7 +96,13 @@ async function documents() {
   });
   if ($("document-filter").value)
     query.set("has_annotations", $("document-filter").value);
+  const requestGeneration = ++listGeneration;
+  const scroll = $("document-list").scrollTop;
+  if ($("document-state")?.value)
+    query.set("status", $("document-state").value);
+  if ($("document-sort")?.checked) query.set("sort", "name");
   const data = await api("/documents?" + query);
+  if (requestGeneration !== listGeneration) return;
   records = data.items;
   docTotal = data.total;
   $("document-total").textContent = data.total;
@@ -102,6 +122,10 @@ async function documents() {
           : "No annotations",
       ),
     );
+    button.dataset.document = row.document_id;
+    button.disabled = !["ANNOTATED", "COMPLETED"].includes(row.status);
+    button.querySelector("small").textContent =
+      `${row.status} · ${row.annotation_count} mentions`;
     button.onclick = safely(() => openDocument(row.document_id));
     $("document-list").append(button);
   }
@@ -110,7 +134,12 @@ async function documents() {
     : "No documents";
   $("docs-prev").disabled = docOffset === 0;
   $("docs-next").disabled = docOffset + 50 >= docTotal;
-  if (!identity && records.length) await openDocument(records[0].document_id);
+  buildTree();
+  $("document-list").scrollTop = scroll;
+  const available = records.find((r) =>
+    ["ANNOTATED", "COMPLETED"].includes(r.status),
+  );
+  if (!identity && available) await openDocument(available.document_id);
 }
 async function openDocument(id, start = 0) {
   const current = ++generation;
@@ -148,6 +177,8 @@ async function openDocument(id, start = 0) {
   enabled = new Set(rows.map((x) => x.label));
   $("entity-search").value = "";
   $("filename").textContent = text.filename;
+  $("individual-txt").href = endpoint + "/documents/" + id + "/download/txt";
+  $("individual-ann").href = endpoint + "/documents/" + id + "/download/ann";
   $("chunk-info").textContent =
     `Characters ${text.start}–${text.end} of ${text.total_characters} · original Unicode code-point offsets`;
   $("chunk-prev").disabled = text.start === 0;
@@ -179,7 +210,7 @@ async function openDocument(id, start = 0) {
   $("document-list")
     .querySelectorAll("button")
     .forEach((button, i) =>
-      button.classList.toggle("active", records[i].document_id === id),
+      button.classList.toggle("active", button.dataset.document === id),
     );
   render();
   $("viewer-status").textContent =
@@ -262,6 +293,7 @@ function renderList(rows) {
     button.onclick = () => select(row.id, true);
     $("annotation-list").append(button);
   }
+  renderTable(rows.slice(mentionOffset, mentionOffset + 50));
   $("mention-page").textContent = `${rows.length} mentions`;
   $("mentions-prev").disabled = mentionOffset === 0;
   $("mentions-next").disabled = mentionOffset + 50 >= rows.length;
@@ -273,6 +305,9 @@ function select(id, scroll = false) {
   const a = annotations.find((x) => x.id === id);
   if (!a) return;
   selected = id;
+  $("entity-sheet-trigger").hidden = !matchMedia("(max-width:760px)").matches;
+  const selectedIndex = visible().findIndex((x) => x.id === id);
+  if (selectedIndex >= 0) mentionOffset = Math.floor(selectedIndex / 50) * 50;
   const heading = make("h3", a.label, "entity-badge " + color(a.label)),
     surface = make("blockquote", a.text),
     list = make("dl");
@@ -280,6 +315,14 @@ function select(id, scroll = false) {
     ["Annotation", a.id],
     ["Start / end", `${a.start} / ${a.end}`],
     ["Model", a.model_id || "Not provided"],
+    ["Model version", a.model_version || "Not provided"],
+    [
+      "Overlaps",
+      annotations
+        .filter((b) => b.id !== a.id && b.start < a.end && b.end > a.start)
+        .map((b) => b.id + " " + b.label)
+        .join(", ") || "None",
+    ],
     ["Confidence", a.score === null ? "Not provided" : a.score.toFixed(4)],
   ])
     list.append(make("dt", name), make("dd", value));
@@ -434,9 +477,13 @@ $("download-link").href = endpoint + "/download/brat";
 safely(async () => {
   const job = await api("");
   $("viewer-expiry").textContent =
-    "Available until " + new Date(job.expires_at).toLocaleString();
-  expiresAt = Number(new Date(job.expires_at));
-  expiryTimer = setTimeout(expire, Math.max(1, expiresAt - Date.now()));
+    "Available until " +
+    (job.expires_at
+      ? new Date(job.expires_at).toLocaleString()
+      : "after processing finishes");
+  if (job.expires_at)
+    expiresAt =
+      Date.now() + Date.parse(job.expires_at) - Date.parse(job.server_now);
   for (const [label, key] of [
     ["Documents", "documents"],
     ["Words", "words"],
@@ -445,13 +492,19 @@ safely(async () => {
     ["Entities", "annotations"],
   ]) {
     const card = make("div");
-    card.append(make("strong", job.summary[key] ?? "—"), make("span", label));
+    card.append(
+      make(
+        "strong",
+        job.summary?.[key] ?? (key === "documents" ? job.document_count : "—"),
+      ),
+      make("span", label),
+    );
     $("metrics").append(card);
   }
   const distribution = $("job-distribution");
   distribution.append(make("strong", "Corpus distribution"));
   for (const [label, count] of Object.entries(
-    job.summary.mentions_by_label || {},
+    job.summary?.mentions_by_label || {},
   )) {
     distribution.append(
       make("span", `${label} · ${count}`, "entity-toggle " + color(label)),
@@ -475,3 +528,152 @@ async function navigateDocument(direction) {
 }
 $("document-prev").onclick = safely(() => navigateDocument(-1));
 $("document-next").onclick = safely(() => navigateDocument(1));
+
+const folderState = new Map();
+function buildTree() {
+  const list = $("document-list"),
+    buttons = [...list.querySelectorAll("button")],
+    folders = new Map();
+  list.replaceChildren();
+  for (const button of buttons) {
+    const filename =
+      records.find((r) => r.document_id === button.dataset.document)
+        ?.filename || "";
+    const parts = filename.split("/");
+    let parent = list,
+      path = "";
+    for (const part of parts.slice(0, -1)) {
+      path += (path ? "/" : "") + part;
+      if (!folders.has(path)) {
+        const branch = make("details"),
+          summary = make("summary", part);
+        branch.open = folderState.get(path) ?? true;
+        const key = path;
+        branch.ontoggle = () => folderState.set(key, branch.open);
+        branch.append(summary);
+        parent.append(branch);
+        folders.set(path, branch);
+      }
+      parent = folders.get(path);
+    }
+    button.title = filename;
+    button.querySelector("strong").textContent = parts.at(-1);
+    parent.append(button);
+  }
+}
+function renderTable(rows) {
+  const body = $("annotation-table-body");
+  if (!body) return;
+  body.replaceChildren();
+  for (const a of rows) {
+    const row = make("tr");
+    row.dataset.tableAnnotation = a.id;
+    row.setAttribute("aria-selected", String(a.id === selected));
+    const first = make("td"),
+      button = make(
+        "button",
+        Array.from(a.text.slice(0, 200)).slice(0, 100).join(""),
+      );
+    button.type = "button";
+    button.onclick = () => select(a.id, true);
+    first.append(button);
+    row.append(first);
+    for (const value of [
+      a.label,
+      a.start,
+      a.end,
+      a.score === null ? "—" : a.score,
+      a.model_id || "—",
+    ])
+      row.append(make("td", String(value)));
+    body.append(row);
+  }
+}
+let lastProgressKey = "";
+startProgress(endpoint, {
+  onExpire: expire,
+  onChange: async (snapshot) => {
+    if (snapshot.expires_at)
+      expiresAt =
+        Date.now() +
+        Date.parse(snapshot.expires_at) -
+        Date.parse(snapshot.server_now);
+    $("download-link").hidden = ![
+      "COMPLETED",
+      "COMPLETED_WITH_ERRORS",
+    ].includes(snapshot.status);
+    const cards = $("metrics").children;
+    const provisional = snapshot.provisional_statistics || {};
+    const values = [
+      snapshot.total_documents,
+      provisional.words,
+      provisional.tokens,
+      provisional.sentences,
+      snapshot.mentions,
+    ];
+    for (let i = 0; i < cards.length; i++)
+      cards[i].querySelector("strong").textContent = values[i] ?? "—";
+    $("metrics-scope").textContent =
+      snapshot.status === "COMPLETED"
+        ? "Final statistics"
+        : snapshot.status === "COMPLETED_WITH_ERRORS"
+          ? "Final statistics for annotated documents; failed documents excluded"
+          : "Provisional statistics: annotated documents only";
+    const key = [
+      snapshot.annotated_documents,
+      snapshot.failed_documents,
+      snapshot.processing_documents,
+      snapshot.status,
+    ].join(":");
+    if (key !== lastProgressKey) {
+      lastProgressKey = key;
+      await documents();
+    }
+  },
+});
+$("document-state").onchange = safely(() => {
+  docOffset = 0;
+  return documents();
+});
+$("document-sort").onchange = safely(() => {
+  docOffset = 0;
+  return documents();
+});
+document.addEventListener("keydown", (event) => {
+  if (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)) return;
+  if (event.key === "ArrowRight" && event.altKey) {
+    event.preventDefault();
+    navigate(1);
+  }
+  if (event.key === "ArrowLeft" && event.altKey) {
+    event.preventDefault();
+    navigate(-1);
+  }
+});
+
+function showEntitySheet(id) {
+  const a = annotations.find((row) => row.id === id);
+  if (!a) return;
+  const dialog = showDialog(a.label, a.text, [
+    { label: "Copy entity", run: () => navigator.clipboard.writeText(a.text) },
+  ]);
+  dialog.classList.add("entity-sheet");
+  const offsets = make(
+    "p",
+    `Offsets ${a.start}–${a.end} · ${a.model_id || "Model not provided"} · confidence ${a.score ?? "not provided"}`,
+  );
+  dialog.append(offsets);
+  for (const other of annotations.filter(
+    (row) => row.id !== a.id && row.start < a.end && row.end > a.start,
+  )) {
+    const button = make("button", `${other.id} · ${other.label}`, "secondary");
+    button.onclick = () => {
+      dialog.close();
+      select(other.id);
+      showEntitySheet(other.id);
+    };
+    dialog.append(button);
+  }
+}
+
+$("entity-sheet-trigger").onclick = () => showEntitySheet(selected);

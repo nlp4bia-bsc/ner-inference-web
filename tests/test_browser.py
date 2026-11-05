@@ -20,7 +20,9 @@ def test_dynamic_form(viewport, viewer_server):
     playwright = pytest.importorskip("playwright.sync_api")
     with playwright.sync_playwright() as p:
         browser = p.chromium.launch(
-            executable_path="/usr/bin/chromium", headless=True, args=["--no-sandbox"]
+            executable_path=os.environ.get("CHROMIUM_EXECUTABLE", "/usr/bin/chromium"),
+            headless=True,
+            args=["--no-sandbox"],
         )
         page = browser.new_page(viewport=viewport)
         errors = []
