@@ -1,0 +1,61 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        INSTALL_NLP: ${INSTALL_NLP:-false}
+    image: temu-ner-web:local
+    command: ["uvicorn", "app.asgi:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--no-proxy-headers"]
+    environment: &environment
+      STORAGE_ROOT: /data
+      MODEL_CONFIG_PATH: /service/catalog/models.yaml
+      MODEL_VALIDATION_PATH: /service/catalog/validated-models.json
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      DEVICE: ${DEVICE:-auto}
+      WORKER_CONCURRENCY: 1
+      MAX_DOCUMENTS_PER_JOB: ${MAX_DOCUMENTS_PER_JOB:-1000}
+      JOB_RESULTS_TTL_HOURS: ${JOB_RESULTS_TTL_HOURS:-24}
+      RATE_LIMIT_SECONDS: ${RATE_LIMIT_SECONDS:-60}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UNCOMPRESSED_MB: ${MAX_UNCOMPRESSED_MB:-250}
+      MAX_DOCUMENT_MB: ${MAX_DOCUMENT_MB:-5}
+      MAX_ZIP_ENTRIES: ${MAX_ZIP_ENTRIES:-5000}
+      MAX_COMPRESSION_RATIO: ${MAX_COMPRESSION_RATIO:-100}
+      MAX_QUEUE_SIZE: ${MAX_QUEUE_SIZE:-100}
+      MAX_STORAGE_MB: ${MAX_STORAGE_MB:-10000}
+      MIN_FREE_DISK_MB: ${MIN_FREE_DISK_MB:-500}
+      MAX_CONCURRENT_UPLOADS: ${MAX_CONCURRENT_UPLOADS:-4}
+      MAX_ATTEMPTS: ${MAX_ATTEMPTS:-2}
+      JOB_TIMEOUT_SECONDS: ${JOB_TIMEOUT_SECONDS:-7200}
+      CLEANUP_INTERVAL_SECONDS: ${CLEANUP_INTERVAL_SECONDS:-60}
+      TOMBSTONE_HOURS: ${TOMBSTONE_HOURS:-24}
+      HF_HUB_OFFLINE: 1
+      TRANSFORMERS_OFFLINE: 1
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: &volumes
+      - ner-data:/data
+      - ./catalog:/service/catalog:ro
+      - ./models:/models:ro
+    restart: unless-stopped
+    init: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  worker:
+    image: temu-ner-web:local
+    command: ["python", "-m", "app.worker"]
+    environment: *environment
+    volumes: *volumes
+    restart: unless-stopped
+    init: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 8g
+    depends_on: [web]
+volumes:
+  ner-data:

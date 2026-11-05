@@ -1,0 +1,10 @@
+.git
+.venv
+.env
+storage
+work
+models
+__pycache__
+.pytest_cache
+.ruff_cache
+catalog/validated-models.json

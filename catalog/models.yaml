@@ -1,0 +1,29 @@
+# No model is available until its local checkpoint passes offline validation.
+languages:
+  es:
+    display_name: Spanish
+    statistics_model: null
+    entities:
+      DISEASE:
+        display_name: Diseases
+        description: Disease mentions
+        model_id: es-disease
+        version: null
+        enabled: false
+        model_dir: null
+        min_score: 0.0
+        batch_size: 16
+      SYMPTOM:
+        display_name: Symptoms
+        model_id: es-symptom
+        enabled: false
+        model_dir: null
+  en:
+    display_name: English
+    statistics_model: null
+    entities:
+      DISEASE:
+        display_name: Diseases
+        model_id: en-disease
+        enabled: false
+        model_dir: null
