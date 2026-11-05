@@ -57,7 +57,19 @@ An EXPIRED tombstone remains for TOMBSTONE_HOURS; after deletion the URL is 404.
 The web app remains available without models; readiness separately reports that
 fact. Worker and database must share local persistent storage.
 
-English UI copy is contained in two templates and centralized JS message maps;
+English UI copy is contained in templates and centralized JS message maps;
 future localization can replace these sources without changing the model catalog.
 Storage access has a Protocol seam, but transactional publish/delete semantics must
 be implemented explicitly when replacing local storage with an object store.
+
+## Phase 2 boundaries
+
+main.py now composes routers and resources; api modules own HTTP contracts,
+services/jobs owns admission/status, services/pipeline owns inference orchestration,
+and visualization/repository owns indexed per-document reads. Exports use
+separate BRAT/TSV writers. Domain span validation is shared; inference remains
+independent of FastAPI. The existing SQLite queue and supervision are preserved.
+
+The new private viewer uses bounded text fragments and paged documents/annotations.
+Default retention is 72 hours from completion, including viewer indexes. See
+REFACTORING_DECISIONS.md and VISUALIZATION_ARCHITECTURE.md for details.

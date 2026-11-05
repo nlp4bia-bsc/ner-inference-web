@@ -1,4 +1,35 @@
-# Verification record
+# Latest: phase 2 verification
+
+- Baseline before edits: **71 passed in 22.57s**.
+- First backend refactor: **69 passed** excluding the then opt-in browser cases.
+- Final full run: `SCREENSHOT_OUTPUT=work/screenshots BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`: **94 passed in 48.16s**, no skips.
+- Ruff lint/format and Prettier checks passed; `git diff --check` passed.
+- Viewer/home tests used self-started temporary `/ner` servers and real document
+  APIs, at 320/375/390/768/1024/1440/1920/2560px. They selected every nested,
+  crossing and equal-boundary annotation, including four simultaneous spans;
+  checked actual selected fragments, filters, original Unicode text, emoji search,
+  model/confidence, keyboard interaction, empty predictions and horizontal overflow.
+- API tests checked 1,000 indexed documents, paginated metadata (no full-text bulk
+  response), fragment-crossing spans, whole-document search, v1 index backfill,
+  prefixed OpenAPI/routes/static links, origin/body limits and exact 72-hour denial
+  on every old/new private endpoint. Cleanup was idempotent and removed originals,
+  outputs and viewer indexes; long queue waiting did not consume retention time.
+- Existing actual ner_lab tiny-BERT CPU inference and native statistics tests ran
+  again; no scientific NER logic was reimplemented or production mock enabled.
+- Default non-NLP Docker image built; Compose web/worker startup and health/ready
+  returned 200. A separate image instance with APP_PREFIX=/ner served prefixed
+  home/health/static viewer JS/languages successfully. Production TLS/GPU and the
+  large NLP-enabled Docker image remain untested as previously documented.
+- [Screenshots](PREVIEWS.md) record desktop/mobile synthetic test states.
+
+No claim of BSC deployment, clinical accuracy, formal WCAG certification or maximum
+annotation-density performance is made. The requested Hugging Face/BRAT web pages
+were blocked by network policy; the official BRAT GitHub source was inspected.
+See VISUALIZATION_ARCHITECTURE.md for exact references and the custom-renderer decision.
+
+---
+
+# Historical phase 1 verification
 
 Executed in the managed Linux workspace on 2026-11-05 (Python 3.12.14).
 

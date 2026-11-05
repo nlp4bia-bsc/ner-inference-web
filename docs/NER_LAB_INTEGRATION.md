@@ -95,3 +95,9 @@ that error is a failed job, never simulated success. Files without mentions get 
 empty ANN. Upstream writes TSV/parquet intermediates; they remain private and are
 deleted after successful packaging or failed execution. Installed NER extras are
 large because upstream couples training dependencies with inference.
+
+Phase 2 retains all NLP contracts and the same pinned revision. Orchestration moved
+to services/pipeline.py; worker.py only supervises it. Shared surface validation
+now lives in domain/annotations.py. Viewer indexing happens after the same span
+merge used by BRAT/TSV and does not rerun inference or statistics. All source
+annotations retain their full Unicode code-point coordinates and original text.

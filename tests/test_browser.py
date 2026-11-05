@@ -2,17 +2,21 @@
 
 import json
 import os
+from pathlib import Path
 
 import pytest
+
+from tests.test_viewer_browser import viewer_server as viewer_server
 
 
 @pytest.mark.skipif(
     os.environ.get("BROWSER_TESTS") != "1", reason="Set BROWSER_TESTS=1 with local server on :8000"
 )
 @pytest.mark.parametrize(
-    "viewport", [{"width": 390, "height": 844}, {"width": 1366, "height": 900}]
+    "viewport",
+    [{"width": width, "height": 900} for width in (320, 375, 390, 768, 1024, 1440, 1920, 2560)],
 )
-def test_dynamic_form(viewport):
+def test_dynamic_form(viewport, viewer_server):
     playwright = pytest.importorskip("playwright.sync_api")
     with playwright.sync_playwright() as p:
         browser = p.chromium.launch(
@@ -49,7 +53,7 @@ def test_dynamic_form(viewport):
                 ),
             ),
         )
-        page.goto("http://127.0.0.1:8000")
+        page.goto(viewer_server[0] + "/")
         page.wait_for_selector('#entities input[value="SYMPTOM"]')
         assert page.locator("#entities input:checked").count() == 2
         page.locator("#files").set_input_files(
@@ -63,5 +67,9 @@ def test_dynamic_form(viewport):
         page.locator('#entities input[value="DISEASE"]').uncheck()
         assert page.locator("#entities input:checked").count() == 1
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        if os.environ.get("SCREENSHOT_OUTPUT") and viewport["width"] in (390, 1440):
+            destination = Path(os.environ["SCREENSHOT_OUTPUT"])
+            destination.mkdir(parents=True, exist_ok=True)
+            page.screenshot(path=str(destination / f"home-{viewport['width']}.png"), full_page=True)
         assert not errors
         browser.close()

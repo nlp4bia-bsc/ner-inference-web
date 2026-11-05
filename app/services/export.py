@@ -1,7 +1,9 @@
-import csv
 import json
 import zipfile
 from pathlib import Path
+
+from app.services.exports.brat import write_brat
+from app.services.exports.tsv import write_tsv
 
 COLUMNS = [
     "filename",
@@ -17,15 +19,6 @@ COLUMNS = [
 ]
 
 
-def write_tsv(path: Path, columns: list[str], rows: list[dict]):
-    with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(
-            f, columns, delimiter="\t", extrasaction="ignore", lineterminator="\n"
-        )
-        writer.writeheader()
-        writer.writerows(rows)
-
-
 def package(
     output: Path,
     documents: dict[str, bytes],
@@ -36,29 +29,7 @@ def package(
     manifest: dict,
 ):
     output.mkdir(parents=True, exist_ok=True)
-    brat = output / "brat"
-    brat.mkdir()
-    grouped = {name: [] for name in documents}
-    for span in spans:
-        grouped[span["filename"]].append(span)
-    for name, data in documents.items():
-        # Original names live beneath documents/, avoiding config filename collisions.
-        txt = brat / "documents" / name
-        txt.parent.mkdir(parents=True, exist_ok=True)
-        txt.write_bytes(data)
-        lines = []
-        for index, row in enumerate(grouped[name], 1):
-            # BRAT surface form is single-line; offsets always refer to unchanged TXT.
-            surface = row["text"].replace("\r", " ").replace("\n", " ").replace("\t", " ")
-            lines.append(
-                f"T{index}\t{row['label']} {row['start_span']} {row['end_span']}\t{surface}\n"
-            )
-        txt.with_suffix(".ann").write_text("".join(lines), encoding="utf-8")
-    (brat / "annotation.conf").write_text(
-        "[entities]\n"
-        + "\n".join(sorted(payload["entities"]))
-        + "\n[relations]\n[events]\n[attributes]\n"
-    )
+    write_brat(output, documents, spans, payload)
     rows = [
         {**row, **{k: payload[k] for k in ("language", "submitter_name", "submitter_email")}}
         for row in spans

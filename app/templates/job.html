@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your request · TEMU / BSC</title><link rel="stylesheet" href="/static/style.css"><script src="/static/job.js" defer></script></head><body><main><header><div class="institution">TEMU / BARCELONA SUPERCOMPUTING CENTER</div><p class="eyebrow">YOUR ANNOTATION REQUEST</p><h1 id="heading">Checking your request…</h1><p class="intro">Save this private link to return later. You can close this page while your documents are processed.</p></header><section class="status-card"><p id="state" class="badge" role="status">Loading</p><dl id="details"></dl><p id="status-message" aria-live="polite"></p><pre id="summary" hidden></pre><div id="downloads" hidden><a class="button" id="brat">Download BRAT ZIP</a><a class="button secondary" id="tsv">Download TSV</a><a id="statistics">Download statistics (.json)</a></div><p id="expiry" class="notice"></p></section><footer><a href="/">Submit another request</a><p>Anyone with this link can access the results during their retention period.</p></footer></main></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="app-prefix" content="{{ prefix }}" />
+    <title>Your request · Multilingual NER</title>
+    <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
+    <script src="{{ prefix }}/static/job.js" defer></script>
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="brand" href="{{ prefix }}/"
+        ><span class="brand-symbol">N</span> Multilingual NER</a
+      ><span class="institution">TEMU · Barcelona Supercomputing Center</span>
+    </nav>
+    <main class="results">
+      <header>
+        <p class="eyebrow">ANNOTATION WORKSPACE / REQUEST STATUS</p>
+        <h1 id="heading">Checking your request…</h1>
+        <p class="intro">
+          Save this private link. You can return after your documents are
+          processed.
+        </p>
+      </header>
+      <section class="status-card">
+        <p id="state" class="badge" role="status">Loading</p>
+        <dl id="details"></dl>
+        <p id="status-message" aria-live="polite"></p>
+        <div id="summary" class="metrics" hidden></div>
+        <div id="downloads" hidden>
+          <a class="button" id="explore">Explore annotations →</a
+          ><a class="button secondary" id="brat">Download BRAT ZIP</a
+          ><a class="button secondary" id="tsv">Download TSV</a
+          ><a id="statistics">Download statistics (.json)</a>
+        </div>
+        <p id="expiry" class="notice"></p>
+      </section>
+      <a class="back-link" href="{{ prefix }}/"
+        >← Start another annotation request</a
+      >
+    </main>
+    <footer class="site-footer">
+      Private results
+      <span
+        >Anyone with this link can access these documents until expiry.</span
+      >
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,66 @@
+# Visualization architecture and reference review
+
+Decision: a custom read-only viewer using native ES modules and safe DOM text
+nodes. It shares original-document annotation contracts with exports, not BRAT
+HTML/SVG or a second NER engine. An external BRAT integration could consume the
+same canonical annotation JSON later, without changing inference or stored spans.
+
+The requested Hugging Face DT4H demo URL and official brat.nlplab.org embed and
+configuration pages were attempted but denied by this environment's HTTP policy
+(403). No claim is made about the demo's inspected appearance, overlap behavior
+or code. No policy bypass or third-party code copy was attempted.
+
+The official nlplab/brat repository was accessible on GitHub and inspected at
+44ecd825810167eed2a5d8ad875d832218e734e8. Its client/src visualizer and client/lib
+show a dedicated SVG/client dependency stack; configurations/CRAFT/annotation.conf
+and server/src/projectconfig.py document overlap policy. In particular the CRAFT
+configuration explicitly explains that <OVL-TYPE>:<ANY> admits crossing overlaps.
+Exports now declare `<OVERLAP> Arg1:<ANY>, Arg2:<ANY>, <OVL-TYPE>:<ANY>`.
+No third-party viewer code or assets are redistributed, so no new frontend
+license/dependency obligation is introduced.
+
+A custom renderer was chosen for responsive wrapping, native keyboard/touch
+interaction, small local dependencies, the existing application's CSP, and full
+control over chunking/selection. BRAT remains an interoperable export target.
+This is not an annotation editor: no label/offset changes or collaborative state.
+
+```mermaid
+flowchart LR
+    W[Sequential worker] --> C[Validated original-coordinate spans]
+    C --> E[BRAT / TSV package]
+    C --> I[Private viewer index]
+    I --> A[Token-protected paginated API]
+    A --> V[Native DOM explorer]
+    R[Retention sweep] --> I
+    R --> E
+```
+
+A private index stores filename, stable document ID, mention counts, labels and
+per-document statistics; each document has its own annotation JSON. IDs are
+SHA-256-derived relative filename identities, scoped by the job capability token.
+Input text is read from original UTF-8 bytes; Python code-point offsets remain
+absolute. The index avoids loading text for 1,000 documents in list responses.
+
+Default listing: 50 documents (maximum 100), filename/annotation-status/label
+filters. Text defaults to 10,000 code points (maximum 50,000); the viewer uses
+5,000-code-point fragments. Annotation responses default 200 (maximum 500) and
+can filter overlaps with the current fragment, label and surface query. A span
+crossing a fragment boundary retains its complete original start/end/surface.
+Whole-document exact-text search returns the next match with absolute offsets
+and wraps after the last match; the client loads its containing fragment.
+The client pages through annotation responses for only the visible fragment;
+mention-list DOM is paged at 50. Details and filters do not alter stored data.
+
+Every API access validates token, completion and expiry before opening data.
+No browser persistent storage, remote requests, inline document HTML or public
+cache is used. The open viewer clears private DOM content at its deadline and
+refuses late responses after expiry. Document-change generations discard stale
+loads. API expiry remains authoritative even if the browser clock is incorrect.
+
+Server readers currently decode one full document (bounded by MAX_DOCUMENT_MB)
+to produce a fragment and read that document's annotation file for filtering.
+They do not memory-map multi-gigabyte corpora or implement a database span index.
+Extremely dense annotations may require many JSON pages and a large active set;
+benchmark real models before increasing corpus/document limits. Accessibility is
+supported by labeled controls, focus states, text labels, keyboard-selectable
+regions and an alternate mention list; no formal WCAG certification is claimed.

@@ -10,10 +10,11 @@ class Settings(BaseSettings):
     model_config_path: Path = Path("catalog/models.yaml")
     model_validation_path: Path = Path("catalog/validated-models.json")
     public_base_url: str = "http://localhost:8000"
+    app_prefix: str = ""
     device: str = "auto"
     worker_concurrency: int = 1
     max_documents_per_job: int = Field(1000, ge=1)
-    job_results_ttl_hours: float = Field(24, gt=0)
+    job_results_ttl_hours: float = Field(72, gt=0)
     rate_limit_seconds: int = Field(60, ge=1)
     max_upload_mb: float = Field(50, gt=0)
     max_uncompressed_mb: float = Field(250, gt=0)
@@ -31,6 +32,13 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def sequential(self):
+        if self.app_prefix and (
+            not self.app_prefix.startswith("/")
+            or self.app_prefix.endswith("/")
+            or ".." in self.app_prefix
+            or "//" in self.app_prefix
+        ):
+            raise ValueError("APP_PREFIX must be empty or an absolute path without trailing slash")
         if self.worker_concurrency != 1:
             raise ValueError("This single-host queue requires WORKER_CONCURRENCY=1")
         return self

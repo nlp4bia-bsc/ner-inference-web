@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="app-prefix" content="{{ prefix }}" />
+    <title>Annotation explorer · Multilingual NER</title>
+    <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
+    <script type="module" src="{{ prefix }}/static/viewer.js"></script>
+  </head>
+  <body class="viewer-page">
+    <nav class="topbar">
+      <a class="brand" href="{{ prefix }}/"
+        ><span class="brand-symbol">N</span> Multilingual NER</a
+      >
+      <div class="nav-actions">
+        <a id="results-link">Request status</a
+        ><a id="download-link" class="button secondary">Download BRAT</a>
+      </div>
+    </nav>
+    <header class="workspace-header">
+      <div>
+        <p class="eyebrow">RESEARCH WORKSPACE</p>
+        <h1>Annotation explorer</h1>
+        <p id="viewer-status" role="status" aria-live="polite">
+          Loading your private workspace…
+        </p>
+      </div>
+      <div id="metrics" class="metrics"></div>
+    </header>
+    <div
+      id="job-distribution"
+      class="corpus-distribution"
+      aria-label="Corpus entity distribution"
+    ></div>
+    <main class="workspace">
+      <aside class="documents-panel panel">
+        <details open>
+          <summary>Documents <span id="document-total"></span></summary>
+          <label for="document-search">Find a document</label
+          ><input
+            id="document-search"
+            type="search"
+            placeholder="Search filename or path"
+          /><label for="document-filter">Show documents</label
+          ><select id="document-filter">
+            <option value="">All documents</option>
+            <option value="true">With annotations</option>
+            <option value="false">Without annotations</option>
+          </select>
+          <div
+            id="document-list"
+            class="document-list"
+            aria-label="Documents"
+          ></div>
+          <div class="pager">
+            <button
+              id="docs-prev"
+              class="secondary"
+              aria-label="Previous documents"
+            >
+              ←</button
+            ><span id="doc-page"></span
+            ><button
+              id="docs-next"
+              class="secondary"
+              aria-label="Next documents"
+            >
+              →
+            </button>
+          </div>
+          <div class="pager">
+            <button id="document-prev" class="secondary">
+              Previous document</button
+            ><button id="document-next" class="secondary">Next document</button>
+          </div>
+        </details>
+      </aside>
+      <section class="reading-panel panel">
+        <div class="reading-heading">
+          <p class="eyebrow">ORIGINAL DOCUMENT</p>
+          <h2 id="filename">Choose a document</h2>
+          <p id="chunk-info" class="hint"></p>
+        </div>
+        <div class="reader-toolbar">
+          <label for="text-search">Find text in this document</label>
+          <div class="search-row">
+            <input
+              id="text-search"
+              type="search"
+              placeholder="Search original text"
+            /><button id="find-next" class="secondary">Find next</button>
+          </div>
+          <div class="pager">
+            <button id="chunk-prev" class="secondary">
+              ← Previous fragment</button
+            ><button id="chunk-next" class="secondary">Next fragment →</button>
+          </div>
+        </div>
+        <div class="legend" id="legend" aria-label="Entity type filters"></div>
+        <p class="hint reader-hint">
+          Select highlighted text to inspect every annotation covering that
+          region. Overlap counts indicate multiple mentions.
+        </p>
+        <div
+          id="annotated-text"
+          class="annotated-text"
+          aria-label="Original annotated document"
+          tabindex="0"
+        ></div>
+        <div
+          id="region-annotations"
+          class="region-annotations"
+          aria-label="Annotations in selected region"
+        ></div>
+      </section>
+      <aside class="annotations-panel panel">
+        <h2>Annotation details</h2>
+        <div id="annotation-details" aria-live="polite">
+          <p class="quiet">
+            Select a mention in the text or the annotation list.
+          </p>
+        </div>
+        <hr />
+        <h3>Mentions in this fragment</h3>
+        <label for="entity-search">Find an entity</label
+        ><input
+          id="entity-search"
+          type="search"
+          placeholder="Search mention text"
+        />
+        <div class="pager">
+          <button
+            id="entity-prev"
+            class="secondary"
+            aria-label="Previous annotation"
+          >
+            ←</button
+          ><span id="entity-position"></span
+          ><button
+            id="entity-next"
+            class="secondary"
+            aria-label="Next annotation"
+          >
+            →
+          </button>
+        </div>
+        <div
+          id="annotation-list"
+          class="annotation-list"
+          aria-label="Annotation list"
+        ></div>
+        <div class="pager">
+          <button id="mentions-prev" class="secondary">Previous 50</button
+          ><span id="mention-page"></span
+          ><button id="mentions-next" class="secondary">Next 50</button>
+        </div>
+        <p id="document-stats" class="quiet"></p>
+      </aside>
+    </main>
+    <footer class="site-footer">
+      Offsets: Unicode code points [start, end)
+      <span id="viewer-expiry">Private results · 72-hour retention</span>
+    </footer>
+  </body>
+</html>

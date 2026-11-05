@@ -61,3 +61,10 @@ no user cancellation, no model sandbox beyond OS/container controls, no gold-bas
 evaluation and no anonymization of clinical corpora. Models should be supplied
 only by trusted administrators. Production readiness requires real checkpoint and
 BSC infrastructure validation; these are not implied by mock/synthetic tests.
+
+Phase 2: all document/annotation/statistics/viewer routes share the existing
+completion/expiry guards. No arbitrary filename is accepted, no innerHTML is used
+for source documents, and no browser persistent storage is created. Viewer indexes
+are private job-directory artifacts and are deleted by the same 72-hour retention
+sweep. Open viewers clear content at their expiry deadline; API checks remain
+authoritative. APP_PREFIX affects routes, not authorization. See RETENTION_POLICY.md.

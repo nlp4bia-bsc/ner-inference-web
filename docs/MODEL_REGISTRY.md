@@ -38,3 +38,7 @@ no Torch and cannot initialize a model. Disabled entities remain visible with
 “Not available for this language”; no available entities means no submission.
 Callable/custom architecture/strategy and ensemble orchestration require explicit
 future adapters; no arbitrary executable configuration is exposed publicly.
+
+Phase 2 requires no catalog migration. The form and explorer share configured
+labels; new entities need no frontend code. Display colors are deterministic aids,
+not label identities. Viewer filters never change model selections or saved spans.

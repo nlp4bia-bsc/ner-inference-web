@@ -2,10 +2,11 @@
 
 The web service and worker need shared private local storage (SQLite WAL/flock
 must not use NFS), Python 3.12, and trusted checkpoints. Configure PUBLIC_BASE_URL
-for the actual public HTTPS origin. The default assumes root mounting. To expose
-`https://temu.bsc.es/ner/`, the proxy must consistently rewrite routes, static assets,
-API and generated URLs; subpath mounting is not implemented in this version.
-Prefer a dedicated root-mounted hostname/service until subpath support is added.
+for the actual public HTTPS origin and APP_PREFIX=/ner for the intended route.
+Set PUBLIC_BASE_URL=https://temu.bsc.es/ner and preserve /ner in upstream requests
+(no trailing slash on Nginx proxy_pass). All templates/static/API links are
+prefix-aware. See README's complete /ner/ Nginx example. Prefix behavior is tested
+locally; BSC TLS/domain deployment has not been performed.
 
 ## Containers
 
@@ -94,7 +95,7 @@ them, so shell/.env values reach both containers. Important adjustments:
 | MAX_QUEUE_SIZE / MAX_CONCURRENT_UPLOADS | 100 pending/active / 4 bounded uploads |
 | MAX_STORAGE_MB / MIN_FREE_DISK_MB | 10000 reservation budget / 500 free floor |
 | MAX_ATTEMPTS / JOB_TIMEOUT_SECONDS | 2 interruption attempts / 7200 seconds |
-| JOB_RESULTS_TTL_HOURS | 24 from terminal completion, including failed jobs |
+| JOB_RESULTS_TTL_HOURS | 72 from terminal completion, including failed jobs |
 | CLEANUP_INTERVAL_SECONDS / TOMBSTONE_HOURS | 60 / 24 |
 
 Storage reservation may reduce effective queue capacity below MAX_QUEUE_SIZE: the
@@ -128,3 +129,5 @@ The site still requires BSC domain/TLS/reverse proxy, checkpoint paths/revisions
 resource limits, backup/privacy policy, monitoring and any GPU mounts. No SMTP or
 external mail service is required. An optional future notifier can react to
 COMPLETED events without changing capability-link retrieval; none is connected.
+
+Phase 2 upgrades and old-job deadlines: see [retention](RETENTION_POLICY.md).

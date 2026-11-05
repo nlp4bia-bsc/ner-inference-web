@@ -83,7 +83,7 @@ def test_retention_and_cleanup(settings):
     db.claim()
     db.finish("job1", {"documents": 1})
     job = db.get(token)
-    assert job["expires_at"] - job["completed_at"] == 24 * 3600
+    assert job["expires_at"] - job["completed_at"] == 72 * 3600
     with db.connect() as c:
         c.execute("UPDATE jobs SET expires_at=?", (time.time() - 1,))
     cleanup(db, storage)

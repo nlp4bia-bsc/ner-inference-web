@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 from time import monotonic
 
+from app.domain.annotations import validate_surface
+
 
 def merge_predictions(
     documents: dict[str, str], batches: list[tuple[dict, list[dict]]]
@@ -20,8 +22,7 @@ def merge_predictions(
                 raise ValueError("Unknown document or non-integer offset")
             start, end = int(start), int(end)
             text = documents[filename]
-            if not 0 <= start < end <= len(text) or text[start:end] != row["text"]:
-                raise ValueError("Prediction offsets do not round-trip")
+            validate_surface(text, start, end, row["text"])
             score = row.get("score")
             if score is not None and (not math.isfinite(float(score)) or not 0 <= score <= 1):
                 raise ValueError("Invalid confidence")

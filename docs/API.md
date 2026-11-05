@@ -57,3 +57,24 @@ private HTML can still render the expiry message while a tombstone exists.
 Download endpoints check the deadline independently of cleanup. No static mapping
 points into input/output storage. All responses carry no-store, no-referrer,
 noindex, nosniff and a same-origin CSP.
+
+## Phase 2 additions and prefix
+
+All routes can be mounted with APP_PREFIX=/ner; set PUBLIC_BASE_URL with the same
+path. Existing unprefixed contracts are unchanged when APP_PREFIX is empty.
+New routes all require a valid completed/unexpired job; 404/409/410 apply before
+reading files. OpenAPI exposes Pydantic document/text/annotation/statistics schemas.
+
+| GET path (append to /api/jobs/{token}) | Parameters / response |
+|---|---|
+| /viewer | Read-only HTML explorer |
+| /documents | offset>=0, limit 1..100 (default 50), q, label, has_annotations; items/total/offset/limit |
+| /documents/{document_id} | start>=0, limit 1..50000 (default 10000); text/start/end/total_characters and filename/ID |
+| /documents/{document_id}/annotations | offset>=0, limit 1..500 (default 200), start/end overlap range, label/q; canonical records with absolute offsets |
+| /documents/{document_id}/search | q (1..200 characters), start>=0; next exact-match start/end, total non-overlapping count, wrapped flag |
+| /documents/{document_id}/statistics | document_id and native per-document statistics |
+
+No filename/path is accepted as a filesystem selector. IDs resolve from the
+job's private index. Fragment clipping changes the text response only; returned
+annotations retain complete original surfaces and document coordinates even when
+crossing the fragment boundary. No text from other documents is bundled.
