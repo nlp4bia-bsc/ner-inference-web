@@ -98,7 +98,10 @@ them, so shell/.env values reach both containers. Important adjustments:
 | CLEANUP_INTERVAL_SECONDS / TOMBSTONE_HOURS | 60 / 24 |
 
 Storage reservation may reduce effective queue capacity below MAX_QUEUE_SIZE: the
-minimum of queue and storage bounds wins. Use a dedicated disk quota for a hard
+minimum of queue and storage bounds wins. Only queued/processing jobs and active
+uploads reserve worst-case space; completed/failed jobs count by their actual
+retained bytes until deletion. Disk free-space checks include reservations for
+queued work, not just new uploads. Use a dedicated disk quota for a hard
 storage limit; model intermediate output can exceed the conservative reservation.
 Provision CPU/RAM/GPU and disk after measuring maximum allowed corpora/model counts.
 Single-host SQLite is unsuitable for horizontally distributed services.

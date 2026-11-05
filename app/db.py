@@ -12,6 +12,7 @@ from contextlib import contextmanager
 
 from app.config import Settings
 from app.errors import ServiceError
+from app.storage import directory_bytes
 
 
 class Database:
@@ -77,13 +78,22 @@ class Database:
             n = c.execute("SELECT count(*) FROM uploads").fetchone()[0]
             if n >= self.s.max_concurrent_uploads:
                 raise ServiceError("The service is busy. Please try again shortly.", 503)
-            pending = c.execute("SELECT count(*) FROM jobs WHERE status!='EXPIRED'").fetchone()[0]
+            pending = c.execute(
+                "SELECT count(*) FROM jobs WHERE status IN ('QUEUED','PROCESSING')"
+            ).fetchone()[0]
+            retained_bytes = sum(
+                directory_bytes(self.s.storage_root / "jobs" / row[0])
+                for row in c.execute("SELECT id FROM jobs WHERE status IN ('COMPLETED','FAILED')")
+            )
             # Reserve eight expanded corpora per admitted job/upload for intermediates/exports.
             reservation_mb = self.s.max_uncompressed_mb * 8 + self.s.max_upload_mb
-            if (pending + n + 1) * reservation_mb > self.s.max_storage_mb:
+            if (
+                retained_bytes / 1024**2 + (pending + n + 1) * reservation_mb
+                > self.s.max_storage_mb
+            ):
                 raise ServiceError("Storage capacity is temporarily unavailable.", 503)
             free_mb = shutil.disk_usage(self.s.storage_root).free / 1024**2
-            if free_mb < self.s.min_free_disk_mb + (n + 1) * reservation_mb:
+            if free_mb < self.s.min_free_disk_mb + (pending + n + 1) * reservation_mb:
                 raise ServiceError("Storage capacity is temporarily unavailable.", 503)
             key = uuid.uuid4().hex
             c.execute("INSERT INTO uploads VALUES (?,?)", (key, time.time()))

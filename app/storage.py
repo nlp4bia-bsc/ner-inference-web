@@ -22,3 +22,8 @@ class LocalStorage:
         path = self.job(job_id)
         if path.exists():
             shutil.rmtree(path)
+
+
+def directory_bytes(path: Path) -> int:
+    """Logical bytes retained by a private job directory (no model/checkpoint files)."""
+    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file() and not p.is_symlink())

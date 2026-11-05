@@ -2,8 +2,8 @@
 
 Executed in the managed Linux workspace on 2026-11-05 (Python 3.12.14).
 
-- `BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`: **66 passed**, no skips,
-  in 16.94 seconds. HTTP dependencies in that environment came from requirements.lock.
+- `BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`: **71 passed**, no skips,
+  in 22.61 seconds. HTTP dependencies in that environment came from requirements.lock.
 - Without browser opt-in, the two Chromium cases are explicitly skipped.
 - `python -m ruff check app scripts tests`: passed.
 - `python -m ruff format --check app scripts tests`: passed.
@@ -45,3 +45,24 @@ capacity and soak tests, GPU runtime, real trusted proxy/TLS/domain integration,
 backup/retention policies and production monitoring. No real institution model is
 marked available by these tests. The checked-in catalog contains no functioning
 model paths or synthetic models.
+
+## Follow-up review of the resubmitted requirements
+
+The second uploaded specification is byte-for-byte identical to the original
+(SHA-256 `6d3624cc7af3b958a5086cb44b544600515d04759d274cf8e38be0e63af8a115`).
+The follow-up review corrected two operational issues without changing the NLP
+contract or adding fake production models:
+
+- Completed/failed jobs now count against the storage budget by their actual
+  retained bytes, instead of keeping a worst-case active-job reservation for the
+  entire retention period. Free-space checks include queued-job reservations.
+- Worker result transfer now uses a private, atomically published JSON file.
+  A result larger than an OS pipe buffer cannot deadlock the supervisor while it
+  waits for child exit. Timeout enforcement covers shutdown after publication;
+  an earlier attempt's result file cannot make a failed retry appear successful.
+
+Five additional regression cases exercise these behaviors using real spawned
+processes (including a 1 MiB summary and a child that stalls after publication).
+The complete 71-case suite also reran browser checks, real ner_lab statistics and
+the actual CPU inference/worker integration with a synthetic checkpoint. Ruff,
+formatting, Docker image build and Compose startup were checked again.

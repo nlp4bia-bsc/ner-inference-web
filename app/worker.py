@@ -90,7 +90,7 @@ def process_job(job: dict, s: Settings, adapter=None, stats_fn=statistics):
     return stats["operational"]
 
 
-def child(job: dict, settings_dict: dict, pipe, parent_pid: int):
+def child(job: dict, settings_dict: dict, parent_pid: int):
     # Linux production: terminate inference if the supervising worker is killed.
     import ctypes
     import signal
@@ -99,14 +99,55 @@ def child(job: dict, settings_dict: dict, pipe, parent_pid: int):
     if libc.prctl(1, signal.SIGKILL) != 0 or os.getppid() != parent_pid:
         raise SystemExit("Worker supervision unavailable")
     try:
-        summary = process_job(job, Settings(**settings_dict))
-        pipe.send((True, summary))
+        settings = Settings(**settings_dict)
+        summary = process_job(job, settings)
+        # Disk-backed IPC cannot deadlock on a finite pipe buffer for many models.
+        path = settings.storage_root / "jobs" / job["id"] / "worker-summary.json"
+        temp = path.with_suffix(".tmp")
+        temp.write_text(json.dumps(summary, allow_nan=False), encoding="utf-8")
+        temp.replace(path)
     except Exception as exc:
         # No exception strings: they can contain patient text, names or private paths.
         log.error("job_failed job_id=%s error_type=%s", job["id"], type(exc).__name__)
-        pipe.send((False, None))
+        raise SystemExit(1) from None
+
+
+def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, target=child):
+    """Supervise the entire child lifetime, including result publication and shutdown."""
+    path = storage.job(job["id"]) / "worker-summary.json"
+    path.unlink(missing_ok=True)  # An interrupted attempt must not reuse stale success.
+    path.with_suffix(".tmp").unlink(missing_ok=True)
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(target=target, args=(job, settings.model_dump(), os.getpid()))
+    process.start()
+    deadline = time.monotonic() + settings.job_timeout_seconds
+    timed_out = False
+    try:
+        while process.is_alive():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                break
+            process.join(min(1, remaining))
+            db.heartbeat()
+            cleanup(db, storage)
     finally:
-        pipe.close()
+        if process.is_alive():
+            process.terminate()
+            process.join(5)
+            if process.is_alive():
+                process.kill()
+        process.join()
+    try:
+        if timed_out or process.exitcode != 0 or not path.is_file():
+            return False, None
+        summary = json.loads(path.read_text(encoding="utf-8"))
+        return (True, summary) if isinstance(summary, dict) else (False, None)
+    except (OSError, ValueError):
+        return False, None
+    finally:
+        path.unlink(missing_ok=True)
+        path.with_suffix(".tmp").unlink(missing_ok=True)
 
 
 def run():
@@ -127,27 +168,7 @@ def run():
             if not job:
                 time.sleep(1)
                 continue
-            context = multiprocessing.get_context("spawn")
-            receive, send = context.Pipe(duplex=False)
-            process = context.Process(target=child, args=(job, s.model_dump(), send, os.getpid()))
-            process.start()
-            send.close()
-            deadline = time.monotonic() + s.job_timeout_seconds
-            while process.is_alive() and not receive.poll(1):
-                db.heartbeat()
-                cleanup(db, storage)
-                if time.monotonic() >= deadline:
-                    process.terminate()
-                    process.join(5)
-                    if process.is_alive():
-                        process.kill()
-                    break
-            process.join()
-            try:
-                ok, summary = receive.recv() if receive.poll() else (False, None)
-            except EOFError:
-                ok, summary = False, None
-            receive.close()
+            ok, summary = execute(job, s, db, storage)
             if not ok:
                 shutil.rmtree(storage.job(job["id"]) / "building", ignore_errors=True)
                 shutil.rmtree(storage.job(job["id"]) / "output", ignore_errors=True)

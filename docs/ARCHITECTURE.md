@@ -28,7 +28,11 @@ failures do not monopolize the queue. Each attempt builds in a private fresh
 directory, then renames a complete output directory before committing COMPLETED.
 If the supervisor dies, Linux parent-death signaling kills its inference child.
 A per-job hard timeout terminates the child; heartbeat/retention continue while
-inference runs. Lost completion commits are safe to replay from original input.
+inference runs. Child results are published atomically through a private JSON
+file, rather than a bounded OS pipe: a large multi-model summary cannot block
+sending while the supervisor waits for process exit. The deadline covers shutdown
+after result publication too. Stale summaries are removed before retrying and a
+nonzero child exit never publishes success. Lost completion commits are safe to replay from original input.
 
 There are no partial successes: all selected models, statistics, required exports
 and offset checks must pass. Completed document count is 0 until the entire batch
@@ -38,7 +42,10 @@ Admission bounds actual request bytes before multipart parsing, including reques
 without Content-Length. At most MAX_CONCURRENT_UPLOADS are buffered; each has a
 five minute body timeout. Persistent leases expire after ten minutes after crashes.
 A conservative reservation of `8 * MAX_UNCOMPRESSED_MB + MAX_UPLOAD_MB` per admitted
-job/upload and disk free-space checks constrain total storage admission. This is
+QUEUED/PROCESSING job and active upload, plus the actual retained bytes of
+COMPLETED/FAILED jobs, constrains total storage admission. Finished jobs release
+unused reservations immediately without waiting for retention expiry. Free-space
+checks also reserve room for queued jobs, which have not yet produced their outputs. This is
 capacity planning, not a kernel disk quota: use a dedicated filesystem quota for
 hard disk enforcement, especially model-generated intermediate amplification.
 Model memory/CPU are bounded operationally by container resources and job timeout.
