@@ -1,0 +1,14 @@
+{% extends "auth_base.html" %}
+{% block content %}
+<h1>{{ t('admin') }}</h1><form method="get"><label>{{ t('search') }}<input name="q" maxlength="200"></label><button>{{ t('search') }}</button></form>
+<h2>{{ t('metrics') }}</h2><pre>{{ metrics }}</pre>
+<table><thead><tr><th>{{ t('full_name') }} / {{ t('email') }}</th><th>{{ t('institution') }}</th><th>{{ t('professional_role') }}</th><th>{{ t('verification') }}</th><th>{{ t('save') }}</th></tr></thead>
+<tbody>{% for row in users %}<tr><td>{{ row.full_name }}<br>{{ row.email }}</td><td>{{ row.institution }}</td><td>{{ t(row.professional_role) }}</td><td>{{ t('yes') if row.email_verified_at else t('no') }}</td><td>
+<form method="post" action="{{ prefix }}/admin/users/{{ row.id }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+<label>{{ t('tier') }}<select name="access_tier">{% for tier in ('STANDARD','EXTENDED','UNLIMITED') %}<option {% if row.access_tier==tier %}selected{% endif %}>{{ tier }}</option>{% endfor %}</select></label>
+<label>{{ t('status') }}<select name="account_status">{% for status in ('ACTIVE','SUSPENDED') %}<option value="{{ status }}" {% if row.account_status==status %}selected{% endif %}>{{ t(status) }}</option>{% endfor %}</select></label>
+<label>{{ t('system_role') }}<select name="system_role">{% for role in ('USER','ADMIN') %}<option {% if row.system_role==role %}selected{% endif %}>{{ role }}</option>{% endfor %}</select></label><button>{{ t('save') }}</button></form>
+<form method="post" action="{{ prefix }}/admin/users/{{ row.id }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="operation" value="revoke"><button>{{ t('revoke') }}</button></form>
+</td></tr>{% endfor %}</tbody></table>
+<h2>{{ t('audit') }}</h2><table><thead><tr><th>ID</th><th>{{ t('created') }}</th><th>{{ t('status') }}</th></tr></thead><tbody>{% for event in history %}<tr><td>{{ event.id }}</td><td>{{ event.at }}</td><td>{{ event.action }} · {{ event.details }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

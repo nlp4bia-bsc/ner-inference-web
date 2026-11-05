@@ -14,6 +14,8 @@ const titles = {
 async function render(progress) {
   if (expired) return;
   const response = await fetch(endpoint, { cache: "no-store" });
+  if (response.status === 401)
+    window.dispatchEvent(new Event("temu-session-expired"));
   if (response.status === 410) return expire();
   if (!response.ok) throw new Error("Status unavailable");
   const data = await response.json();

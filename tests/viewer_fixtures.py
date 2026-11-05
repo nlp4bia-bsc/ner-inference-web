@@ -20,11 +20,14 @@ def seed_viewer(settings):
     )
     # Admission uses the same code path; test-only model availability, never deployed config.
     service.registry.languages["es"]["entities"]["DISEASE"]["available"] = True
-    accepted = service.submit(
-        form,
-        [("nested/sample.txt", TEXT.encode()), ("empty-predictions.txt", b"No mentions here.")],
-        "fixture-ip",
-    )
+    from tests.auth_helpers import acting_as
+
+    with acting_as(app):
+        accepted = service.submit(
+            form,
+            [("nested/sample.txt", TEXT.encode()), ("empty-predictions.txt", b"No mentions here.")],
+            "fixture-ip",
+        )
     job = service.db.claim()
     docs = {"nested/sample.txt": TEXT.encode(), "empty-predictions.txt": b"No mentions here."}
     start = TEXT.index("Severe")

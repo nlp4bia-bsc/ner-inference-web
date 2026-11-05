@@ -17,13 +17,13 @@ from unittest.mock import patch
 
 
 def case(count, size, batch, baseline=False):
-    from fastapi.testclient import TestClient
-
     from app.api.schemas import Submission
     from app.config import Settings
     from app.main import create_app
+    from app.permissions.policies import user
     from app.persistence.progress import ProgressRepository
     from app.services.pipeline import process_job
+    from tests.auth_helpers import AccountClient as TestClient
     from tests.test_incremental import Predictor, controlled_stats
 
     with tempfile.TemporaryDirectory(prefix="ner-benchmark-") as temporary:
@@ -33,10 +33,20 @@ def case(count, size, batch, baseline=False):
             for i in range(count):
                 archive.writestr(f"folder/{i:04}.txt", b"a" * size)
         settings = Settings(
-            storage_root=root / "data", inference_document_batch_size=batch, min_free_disk_mb=0
+            storage_root=root / "data",
+            inference_document_batch_size=batch,
+            min_free_disk_mb=0,
+            app_env="test",
+            cookie_secure=False,
+            mail_backend="memory",
         )
         app = create_app(settings)
         app.state.registry.languages["es"]["entities"]["DISEASE"]["available"] = True
+        client = TestClient(app)
+        client.__enter__()
+        with app.state.db.connect() as c:
+            c.execute("UPDATE users SET access_tier='UNLIMITED' WHERE id=?", (user()["id"],))
+        user()["access_tier"] = "UNLIMITED"
         tracemalloc.start()
         started = time.perf_counter()
         if baseline:
@@ -44,12 +54,14 @@ def case(count, size, batch, baseline=False):
                 ["git", "show", "9c95bb5:app/services/documents.py"], text=True
             )
             namespace = {}
-            exec(compile(source, "baseline-documents.py", "exec"), namespace)
+            # trusted source from pinned historical git revision; benchmark only
+            exec(compile(source, "baseline-documents.py", "exec"), namespace)  # nosec B102
             data = namespace["load_documents"](
                 [("corpus.zip", archive_path.read_bytes())], settings
             )
             _, peak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
+            client.__exit__(None, None, None)
             return {
                 "mode": "v2-ingestion",
                 "documents": len(data),
@@ -81,8 +93,6 @@ def case(count, size, batch, baseline=False):
             publications.append(time.perf_counter() - origin)
             return result
 
-        client = TestClient(app)
-
         def during(model, documents):
             before = time.perf_counter()
             response = client.get("/api/jobs/" + accepted["token"] + "/progress")
@@ -110,6 +120,7 @@ def case(count, size, batch, baseline=False):
         client.get("/api/jobs/" + accepted["token"] + "/documents?limit=50")
         listing = time.perf_counter() - before
         intervals = [b - a for a, b in zip(publications, publications[1:])]
+        client.__exit__(None, None, None)
         return {
             "mode": "v3-microbatch",
             "documents": count,

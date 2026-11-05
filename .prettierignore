@@ -1,0 +1,6 @@
+# Vanilla HTML formatting corrupts Jinja conditions inside HTML attributes.
+# These templates are compiled in regression tests and exercised in Chromium.
+app/templates/auth.html
+app/templates/auth_base.html
+app/templates/admin.html
+app/templates/dashboard.html

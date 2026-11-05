@@ -1,4 +1,10 @@
-# V3 architecture
+# V4 authenticated architecture
+
+A default-deny session/CSRF gate precedes upload spooling. Central and service
+owner guards protect every job locator/alias. Account/MFA/role/tier repositories
+are separate from scientific inference. Atomic admission validates a live verified
+owner and the actual whole-batch quota. History is owner-filtered; administration
+has no clinical-owner bypass. See AUTHENTICATION_V4.md for the account architecture.
 
 The composition root creates FastAPI, private local storage, SQLite repositories
 and routers; it performs no NLP. HTTP routes validate transport contracts, job

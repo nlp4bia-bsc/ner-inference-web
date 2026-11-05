@@ -42,3 +42,22 @@ with zero selected/available checkpoints, rather than fabricated clinical result
 The previous screenshots above remain historical views of earlier releases.
 
 ![Primary categories, location checkpoints and independent multilingual models](previews/catalog-selector.png)
+
+# V4 authentication and personal dashboard
+
+Actual Chromium flows in root and /ner, using synthetic accounts/jobs and a
+private captured test mailbox. These screenshots contain no passwords, cookies,
+email action tokens, MFA secrets or recovery codes. The modest forms/dashboard
+serve the authentication phase; the full visual redesign remains a later phase.
+
+![V4 login](previews/auth-login.png)
+
+![V4 registration](previews/auth-register.png)
+
+![V4 dashboard with only the authenticated synthetic user's job](previews/auth-dashboard.png)
+
+![V4 prefixed login](previews/auth-login-prefix.png)
+
+![V4 prefixed registration](previews/auth-register-prefix.png)
+
+![V4 prefixed personal dashboard](previews/auth-dashboard-prefix.png)

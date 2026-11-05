@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.errors import ServiceError
+from app.permissions.policies import document_limit, require_owner, user
 from app.persistence.progress import ProgressRepository
 from app.services.documents import ingest
 from app.services.registry import model_snapshot, statistics_reference
@@ -27,6 +28,14 @@ class JobService:
         return self.submit_streams(form, [(name, io.BytesIO(data)) for name, data in uploaded], ip)
 
     def submit_streams(self, form, streams, ip, source_type="TXT_UPLOAD", lease=None):
+        account = user()
+        if not account["email_verified_at"]:
+            raise ServiceError("verification_required", 403)
+        form = form.model_copy(
+            update={"submitter_name": account["full_name"], "submitter_email": account["email"]}
+        )
+        limit = document_limit(account["access_tier"], self.settings.max_documents_per_job)
+        ingestion_settings = self.settings.model_copy(update={"max_documents_per_job": limit})
         selected = self.registry.select(form.language, form.entities, form.models)
         reference, reference_digest = statistics_reference(
             self.registry.languages[form.language], selected
@@ -53,7 +62,7 @@ class JobService:
 
         try:
             references = ingest(
-                streams, staging / "input", self.settings, source_type, on_bytes=grow
+                streams, staging / "input", ingestion_settings, source_type, on_bytes=grow
             )
             payload = {
                 **form.model_dump(),
@@ -68,7 +77,17 @@ class JobService:
                 "selected_models": model_snapshot(selected),
             }
             staging.rename(self.storage.job(job_id))
-            self.db.accept(job_id, token, payload, len(references), ip, lease=lease)
+            self.db.accept(
+                job_id,
+                token,
+                payload,
+                len(references),
+                ip,
+                lease=lease,
+                owner_user_id=account["id"],
+                access_tier=account["access_tier"],
+                owner_session_hash=account["session_hash"],
+            )
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
             self.storage.delete(job_id)
@@ -77,11 +96,11 @@ class JobService:
             "job_id": job_id,
             "status": "QUEUED",
             "token": token,
-            "url": self.settings.public_base_url.rstrip("/") + "/jobs/" + token,
+            "url": self.settings.public_base_url.rstrip("/") + "/jobs/" + job_id,
         }
 
     def available(self, token: str) -> dict:
-        job = self.db.get(token)
+        job = require_owner(self.db.get(token))
         if job["status"] == "EXPIRED" or (job["expires_at"] and job["expires_at"] <= time.time()):
             raise ServiceError("Results have expired and downloads are no longer available.", 410)
         return job
@@ -105,7 +124,8 @@ class JobService:
         with self.db.connect() as c:
             position = (
                 c.execute(
-                    "SELECT count(*) FROM jobs WHERE status='QUEUED' AND seq<=?", (job["seq"],)
+                    "SELECT count(*) FROM jobs WHERE status='QUEUED' AND seq<=? AND owner_user_id=?",
+                    (job["seq"], user()["id"]),
                 ).fetchone()[0]
                 if job["status"] == "QUEUED"
                 else None
@@ -126,3 +146,12 @@ class JobService:
             "progress": ProgressRepository(self.db).snapshot(job),
             "server_now": iso(time.time()),
         }
+
+    def history(self, offset=0):
+        account = user()
+        with self.db.connect() as c:
+            rows = c.execute(
+                "SELECT id,status,document_count,processed_documents,created_at,completed_at,expires_at FROM jobs WHERE owner_user_id=? ORDER BY seq DESC LIMIT 100 OFFSET ?",
+                (account["id"], offset),
+            ).fetchall()
+        return [dict(row) for row in rows]

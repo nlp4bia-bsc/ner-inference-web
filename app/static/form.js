@@ -224,10 +224,17 @@ form.addEventListener("submit", async (event) => {
         "pasted-text.txt",
       );
     }
+    const identityResponse = await fetch(base + "/api/auth/session");
+    if (!identityResponse.ok) {
+      location.assign(base + "/login");
+      return;
+    }
+    const identity = await identityResponse.json();
     const data = await new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
       request.open("POST", base + "/api/jobs");
       request.responseType = "json";
+      request.setRequestHeader("X-CSRF-Token", identity.csrf_token);
       document.querySelector("#upload-state").hidden = false;
       request.upload.onprogress = (event) => {
         if (event.lengthComputable) {

@@ -7,13 +7,23 @@ from fastapi.responses import HTMLResponse
 def router(service, templates):
     api = APIRouter()
 
-    @api.get("/", response_class=HTMLResponse, include_in_schema=False)
+    @api.get("/annotate", response_class=HTMLResponse, include_in_schema=False)
     def index(request: Request):
+        from app.errors import ServiceError
+        from app.permissions.policies import document_limit, user
+
+        account = user()
+        if not account["email_verified_at"]:
+            raise ServiceError("verification_required", 403)
         return templates.TemplateResponse(
             request=request,
             name="index.html",
             context={
-                "max_documents": service.settings.max_documents_per_job,
+                "max_documents": document_limit(
+                    account["access_tier"], service.settings.max_documents_per_job
+                ),
+                "account": account,
+                "csrf": request.app.state.auth.csrf(account["csrf_seed"]),
                 "max_upload_mb": service.settings.max_upload_mb,
                 "ttl": service.settings.job_results_ttl_hours,
                 "prefix": service.settings.app_prefix,
@@ -22,7 +32,7 @@ def router(service, templates):
 
     @api.get("/jobs/{token}", response_class=HTMLResponse, include_in_schema=False)
     def job(request: Request, token: str):
-        service.db.get(token)
+        service.available(token)
         return templates.TemplateResponse(
             request=request, name="job.html", context={"prefix": service.settings.app_prefix}
         )

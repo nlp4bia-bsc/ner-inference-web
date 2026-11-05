@@ -1,0 +1,13 @@
+{% extends "auth_base.html" %}
+{% block content %}
+<h1>{{ t('dashboard') }}</h1><p>{{ account.full_name }} · {{ account.institution }} · {{ t(account.professional_role) }}</p>
+<p>{{ t('tier') }}: <strong>{{ account.access_tier }}</strong> · {{ t('limit') }}: <strong id="quota">{{ account.max_documents_per_job if account.max_documents_per_job is not none else t('unlimited') }}</strong></p>
+{% if not account.email_verified_at %}<p role="status">{{ t('verification_required') }}</p><a href="{{ prefix }}/resend-verification">{{ t('resend') }}</a>{% else %}<a href="{{ prefix }}/annotate">{{ t('new_job') }}</a>{% endif %}
+<h2>{{ t('jobs') }}</h2>
+{% if not jobs %}<p>{{ t('empty') }}</p>{% else %}
+<table><thead><tr><th>ID</th><th>{{ t('status') }}</th><th>{{ t('progress') }}</th><th>{{ t('created') }}</th><th>{{ t('expires') }}</th><th>{{ t('open') }}</th></tr></thead>
+<tbody>{% for job in jobs %}<tr><td>{{ job.id }}</td><td>{{ t(job.status) }}</td><td>{{ job.processed_documents }} / {{ job.document_count }}</td><td>{{ date(job.created_at) }}</td><td>{{ date(job.expires_at) }}</td><td>
+{% if job.status!='EXPIRED' %}<a href="{{ prefix }}/jobs/{{ job.id }}">{{ t('open') }}</a>{% if job.processed_documents %} · <a href="{{ prefix }}/jobs/{{ job.id }}/viewer">{{ t('viewer') }}</a>{% endif %}{% if job.status in ('COMPLETED','COMPLETED_WITH_ERRORS') %} · <a href="{{ prefix }}/api/jobs/{{ job.id }}/download/brat">BRAT</a> · <a href="{{ prefix }}/api/jobs/{{ job.id }}/download/tsv">TSV</a>{% endif %}{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+<nav>{% if offset>0 %}<a href="{{ prefix }}/?offset={{ [0,offset-100]|max }}&amp;lang={{ locale }}">{{ t('previous') }}</a>{% endif %}{% if jobs|length==100 %}<a href="{{ prefix }}/?offset={{ offset+100 }}&amp;lang={{ locale }}">{{ t('next') }}</a>{% endif %}</nav>
+{% endblock %}

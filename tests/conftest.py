@@ -1,10 +1,10 @@
 import secrets
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from tests.auth_helpers import AccountClient as TestClient
 
 
 @pytest.fixture
@@ -13,6 +13,9 @@ def settings(tmp_path):
         storage_root=tmp_path / "storage",
         model_config_path="catalog/models.yaml",
         min_free_disk_mb=0,
+        app_env="test",
+        cookie_secure=False,
+        mail_backend="memory",
     )
 
 

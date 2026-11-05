@@ -52,7 +52,7 @@ def iter_documents(files, s: Settings):
         ):
             raise ServiceError("Conflicting file and directory paths.")
         seen.add(name.casefold())
-        if len(documents) >= s.max_documents_per_job:
+        if s.max_documents_per_job is not None and len(documents) >= s.max_documents_per_job:
             raise ServiceError(
                 f"A request may contain at most {s.max_documents_per_job} documents."
             )

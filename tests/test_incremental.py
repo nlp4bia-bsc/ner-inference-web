@@ -4,12 +4,12 @@ import json
 from unittest.mock import patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.api.schemas import Submission
 from app.main import create_app
 from app.persistence.progress import ProgressRepository
 from app.services.pipeline import process_job
+from tests.auth_helpers import AccountClient as TestClient
 
 
 def controlled_stats(documents, spans, language, reference):
@@ -40,7 +40,10 @@ def setup_job(settings, count=3, multi=False):
         language="es",
         entities=["DISEASE", "SYMPTOM"] if multi else ["DISEASE"],
     )
-    accepted = app.state.jobs.submit(form, [(f"{i}.txt", b"abc") for i in range(count)], "one")
+    from tests.auth_helpers import acting_as
+
+    with acting_as(app):
+        accepted = app.state.jobs.submit(form, [(f"{i}.txt", b"abc") for i in range(count)], "one")
     return app, accepted, app.state.db.claim(), settings
 
 

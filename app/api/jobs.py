@@ -57,13 +57,18 @@ def router(service):
         from starlette.datastructures import UploadFile
 
         async with request.form(
-            max_files=service.settings.max_documents_per_job,
+            max_files=service.settings.max_zip_entries,
             max_part_size=int(service.settings.max_document_mb * 1024**2),
         ) as data:
+            from app.permissions.policies import user
+
+            account = user()
+            if any(key in data for key in ("owner_user_id", "system_role", "access_tier")):
+                raise ServiceError("invalid_form", 422)
             try:
                 form = Submission(
-                    submitter_name=data.get("submitter_name", ""),
-                    submitter_email=data.get("submitter_email", ""),
+                    submitter_name=data.get("submitter_name", account["full_name"]),
+                    submitter_email=data.get("submitter_email", account["email"]),
                     language=data.get("language", ""),
                     entities=data.getlist("entities"),
                     models=data.getlist("models") if "models" in data else None,

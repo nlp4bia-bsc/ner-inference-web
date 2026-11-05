@@ -1,9 +1,8 @@
 import json
 import time
 
-from fastapi.testclient import TestClient
-
 from app.services.cleanup import cleanup
+from tests.auth_helpers import AccountClient as TestClient
 from tests.viewer_fixtures import TEXT, seed_viewer
 
 
@@ -36,6 +35,9 @@ def test_document_contracts_pagination_and_unicode(settings):
 
 
 def test_72_hour_retention_every_private_route(settings, monkeypatch):
+    settings = settings.model_copy(
+        update={"session_max_seconds": 360000, "session_idle_seconds": 360000}
+    )
     app, accepted, _, _ = seed_viewer(settings)
     db = app.state.db
     job = db.get(accepted["token"])
@@ -92,7 +94,7 @@ def test_prefix_routes_origin_and_links(settings):
     with TestClient(create_app(settings)) as client:
         client.app.state.registry.languages["es"]["entities"]["DISEASE"]["available"] = True
         assert client.get("/ner/").status_code == 200
-        assert "/ner/static/form.js" in client.get("/ner/").text
+        assert "/ner/static/form.js" in client.get("/ner/annotate").text
         assert client.get("/ner/health").status_code == 200
         docs = client.get("/ner/docs")
         assert docs.status_code == 200
@@ -166,7 +168,15 @@ def test_thousand_document_index_and_cross_fragment_spans(settings):
     )
     text = "😀" + ("a" * 11999)
     documents = {f"doc-{i:04}.txt": text.encode() if i == 0 else b"x" for i in range(1000)}
-    accepted = service.submit(form, list(documents.items()), "test-ip")
+    from tests.auth_helpers import acting_as
+
+    with acting_as(app):
+        from app.permissions.policies import user
+
+        with app.state.db.connect() as c:
+            c.execute("UPDATE users SET access_tier='EXTENDED' WHERE id=?", (user()["id"],))
+        user()["access_tier"] = "EXTENDED"
+        accepted = service.submit(form, list(documents.items()), "test-ip")
     job = service.db.claim()
     span = {
         "filename": "doc-0000.txt",

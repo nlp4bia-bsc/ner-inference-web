@@ -31,6 +31,8 @@ async function api(path) {
     expire();
     throw new Error("Results have expired.");
   }
+  if (response.status === 401)
+    window.dispatchEvent(new Event("temu-session-expired"));
   if (response.status === 410) {
     expire();
     throw new Error("Results have expired.");

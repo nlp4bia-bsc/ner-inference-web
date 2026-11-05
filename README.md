@@ -1,10 +1,23 @@
 # Multilingual NER · TEMU / Barcelona Supercomputing Center
 
-Explore, annotate and analyze multilingual documents. This account-free service
-accepts pasted text, UTF-8 TXT or nested-folder ZIP corpora, queues incremental
-inference, and offers a
-responsive, read-only annotation explorer plus BRAT/TSV exports. Results remain
-private behind a capability link for **72 hours after completion**.
+Explore, annotate and analyze multilingual documents with registered accounts.
+Pasted text, UTF-8 TXT and nested-folder ZIP corpora use incremental ner_lab
+inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
+requires login and strict ownership; an old private link alone grants no access.
+Files remain available to their owner for **72 hours after completion**.
+
+V4 adds email verification, Argon2id, server sessions/CSRF, personal dashboards,
+account-derived 100 / 1000 / UNLIMITED tiers and audited administration with TOTP.
+It preserves the scientific pipeline and existing viewer without a visual redesign.
+See [authentication and operations](docs/AUTHENTICATION_V4.md),
+[security audit](docs/SECURITY_AUDIT_V4.md),
+[independent review](docs/SECURITY_REVIEW_V4.md) and
+[every protected route](docs/ROUTE_SECURITY_V4.md).
+
+The HTTP dependency audit is clean at the recorded run. The optional neural
+profiles retain two advisories in upstream-pinned torch2.10.0; their resolution
+requires an upstream-compatible update. Do not treat the neural production profile
+as fully hardened. Details and limitations are recorded in the security audit.
 
 All NLP uses [ner_lab](https://github.com/nlp4bia-bsc/ner_lab), pinned to
 `8640d4797b081a5f6b66d9b45c11269542a79a26`. No checkpoints are supplied or silently
@@ -17,7 +30,8 @@ only in tests; they do not represent biomedical model performance.
 ```mermaid
 flowchart LR
     B[Browser: templates / ES modules] --> P[HTTPS proxy /ner/]
-    P --> A[FastAPI routers]
+    P --> G[Live session / CSRF / strict owner gate]
+    G --> A[FastAPI routers]
     A --> J[Job use cases / input streams]
     J --> Q[SQLite WAL: FIFO / document states / rate limits]
     J --> S[Private local storage]
@@ -86,9 +100,13 @@ In another terminal with the same working directory/environment:
 python -m app.worker
 ```
 
-Open http://localhost:8000. An idle worker and disabled model catalog are usable
-without NLP packages. `/health` checks HTTP liveness; `/ready` checks database and
-worker heartbeat and separately reports models_available. No SMTP is needed.
+Open http://localhost:8000 after copying the local-development .env example.
+Anonymous access redirects to login. Register, read the private captured email
+under storage/test-mail, confirm its link and sign in; the dashboard shows the
+STANDARD100-document tier. Use /annotate for a new job. Account/email/session
+flows work without NLP packages; inference still requires validated checkpoints.
+/health and /ready expose only minimal status. Production requires HTTPS/Secure
+cookies and real SMTP; local capture mail is rejected in production.
 For actual CPU inference install the revision-pinned CPU dependency set:
 
 ```sh
@@ -100,6 +118,49 @@ profile and requirements-nlp.lock the CUDA NER profile, both with the exact upst
 revision archive. Upstream also includes training/search
 packages, making this image large. Local installation/test commands were exercised;
 no clinical production checkpoint is part of this checkout.
+
+## Account and administrator setup
+
+V4 delivery: [implementation, acceptance results and remaining limits](docs/DELIVERY_V4.md).
+
+The .env example is **local development only**: loopback HTTP, insecure local
+cookies and private file-captured mail. For production set APP_ENV=production,
+COOKIE_SECURE=true, PUBLIC_BASE_URL=https://temu.bsc.es/ner, APP_PREFIX=/ner,
+MAIL_BACKEND=smtp and your authorized SMTP_HOST/PORT/USERNAME/PASSWORD/FROM.
+STARTTLS and certificate verification are mandatory. Keep .env/credentials private
+and untracked. Missing mail returns503; it never bypasses email verification.
+
+```sh
+python -m scripts.create_admin
+# In Docker, use the configured web container and an interactive terminal:
+docker compose exec web python -m scripts.create_admin
+```
+
+The command prompts securely; no default/password argument/first-registrant rule
+exists. Verify the email, sign in, open /mfa, enroll an authenticator and save the
+eight one-use recovery codes shown once. Enrollment revokes its session: sign in
+again with TOTP or a recovery code, then open /admin. An administrator can search
+accounts, assign tiers/roles, suspend/reactivate, revoke sessions and inspect
+aggregate metrics/audit history. ADMIN never bypasses clinical job ownership.
+
+STANDARD=100 documents, EXTENDED=1000, UNLIMITED=null administrative cap. Tier
+changes apply to new requests; every batch is counted/validated in full, including
+ZIP folders. UNLIMITED retains byte/expansion/ZIP-entry/storage/queue/time/resource
+bounds. MAX_DOCUMENTS_PER_JOB is an optional technical ceiling, unset by default;
+remove an old global1000 setting if it should not constrain UNLIMITED.
+
+Sessions default to12h absolute/30min idle. Logout, logout-all, suspension and
+password changes revoke server records. Automatic polling does not renew idle;
+actual browser interaction does. CSRF is required for every write, including login.
+Production host-prefixed cookies use Path=/ even under /ner, with a distinct name
+for the prefix. The UI keeps English by default and translates auth/profile flows
+into Spanish/Catalan. See [full configuration and workflows](docs/AUTHENTICATION_V4.md)
+and [account/deployment recovery](docs/RECOVERY_V4.md).
+
+Upgrade with both web/worker drained/stopped and a consistent protected SQLite/key
+backup. Startup applies additive migration3; it does not reset FIFO, rewrite
+clinical artifacts or extend deadlines. Old ownerless jobs are closed, not claimed
+by matching email. Never roll back to anonymous v3 while exposing an owned database.
 
 ## Model catalog correction
 
@@ -165,15 +226,19 @@ be writable by administrators. Drain the queue before changing checkpoints.
 The entity appears selectable after coordinated restart and a successful preflight.
 The full process is covered by a synthetic tiny-BERT CPU integration test.
 
-A real request after provisioning your authorized checkpoint/corpus:
+An authenticated request after provisioning a checkpoint and obtaining a session
+cookie file and CSRF proof through the documented login workflow (do not put a
+password in shell arguments):
 
 ```sh
 curl -X POST http://localhost:8000/api/jobs \
-  -F submitter_name=Researcher -F submitter_email=user@example.org \
+  --cookie /private/session-cookies --header 'X-CSRF-Token: <session-csrf-proof>' \
   -F language=es -F entities=DISEASE -F 'files=@corpus.zip'
 ```
 
-Save the returned private URL. No account/login or email verification is involved.
+Save the returned locator URL. It remains protected by login, ownership and
+expiry; sharing a token does not transfer access. Name/email come from the account.
+See docs/API.md for repeated checkpoint IDs and all authentication contracts.
 
 ## Docker deployment
 
@@ -190,8 +255,9 @@ docker compose stop
 ```
 
 No database password/Redis secret is required: those services are not used. A
-private rate-limit HMAC key is generated automatically in STORAGE_ROOT; capability
-tokens use 256 random bits and only their hashes are persisted. Keep the named
+private HMAC/encryption root key is generated automatically in STORAGE_ROOT.
+Session/action/job identifiers use 256 random bits with only verifiers persisted.
+Protect both database and key backups; account secrets/outbox data are encrypted. Keep the named
 `ner-data` volume private. Runtime UID is 10001; model and catalog mounts are
 read-only, data is writable. Do not use `down -v` unless discarding retained jobs.
 
@@ -382,15 +448,19 @@ See [verification](docs/VERIFICATION.md) for actual results and untested limits.
 
 ## Security, layout and limits
 
-No accounts or verified identity: anyone with a capability link can access its
-results while valid. Keep TLS, trusted proxy boundaries, private storage, rate
-limits, upload bounds and no-store/no-referrer/noindex/CSP. Administrators must
+Login, verified email for processing, strict job ownership and live server
+permissions are mandatory. Administrators manage accounts without automatic
+clinical access. Keep TLS, trusted proxy boundaries, private storage, rate limits,
+upload bounds and no-store/no-referrer/noindex/CSP. Administrators must
 approve the institution's data-handling/retention policy and trusted checkpoints.
 The service does not anonymize documents. See [security](docs/SECURITY.md).
 
 ```text
 app/main.py              composition root
-app/api/                 routers, HTTP middleware/errors and schemas
+app/api/                 NER routers, transport middleware/errors and schemas
+app/auth/                sessions, Argon2id, CSRF, email/actions, MFA, localized flows
+app/users/, permissions/ validated profiles, roles/tiers and strict owner policies
+app/admin/               audited account management; no clinical owner bypass
 app/domain/              original-coordinate annotation contracts
 app/services/jobs.py     admission/status/result use cases
 app/services/pipeline.py ner_lab/statistics/export/index orchestration
@@ -432,7 +502,7 @@ The HTTP API still accepts legacy file-only multipart submissions without input_
 
 ```sh
 curl -X POST http://localhost:8000/api/jobs \
-  -F submitter_name=Researcher -F submitter_email=user@example.org \
+  --cookie /private/session-cookies --header 'X-CSRF-Token: <session-csrf-proof>' \
   -F language=es -F entities=DISEASE -F input_mode=PASTED_TEXT \
   -F 'pasted_text=Authorized example text.'
 ```
@@ -454,7 +524,7 @@ inside an admission transaction. Reservations grow before expanded entries are
 written; artifact/packaging budgets reject excessive output before writing. Use
 an OS filesystem quota and container memory limits for the hard infrastructure
 boundary. Administrative out-of-band changes require explicit accounting repair
-(Database.record_storage), not a global directory scan on each public request.
+(Database.record_storage), not a global directory scan on each admission.
 
 GitHub Actions is configured for lint, non-neural regressions, isolated browser
 servers, package builds and no-NLP Docker smoke tests. It downloads no private

@@ -27,6 +27,9 @@ def viewer_server(tmp_path_factory):
         storage_root=root / "storage",
         app_prefix="/ner",
         public_base_url=f"http://127.0.0.1:{port}/ner",
+        app_env="test",
+        cookie_secure=False,
+        mail_backend="memory",
     )
     _, accepted, _, _ = seed_viewer(s)
     env = {
@@ -34,6 +37,11 @@ def viewer_server(tmp_path_factory):
         "STORAGE_ROOT": str(s.storage_root),
         "APP_PREFIX": "/ner",
         "PUBLIC_BASE_URL": s.public_base_url,
+        "APP_ENV": "test",
+        "COOKIE_SECURE": "false",
+        "MAIL_BACKEND": "file",
+        "AUTH_RATE_EMAIL_ATTEMPTS": "100",
+        "AUTH_RATE_IP_ATTEMPTS": "300",
     }
     with (root / "server.log").open("w") as log:
         server = subprocess.Popen(
@@ -83,6 +91,9 @@ def test_responsive_viewer_and_all_overlaps(viewer_server, width):
         page = browser.new_page(viewport={"width": width, "height": 900})
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
         page.goto(base + "/api/jobs/" + token + "/viewer")
         page.wait_for_selector("#annotation-list button")
         assert page.locator("#annotated-text").text_content() == TEXT
@@ -142,7 +153,10 @@ def test_segment_algorithm(viewer_server):
             args=["--no-sandbox"],
         )
         page = browser.new_page()
-        page.goto(base + "/")
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
+        page.goto(base + "/annotate")
         result = page.evaluate("""async () => {
           const {segments,lanes}=await import('/ner/static/spans.js');
           const text='😀a\\r\\n漢é xyz';

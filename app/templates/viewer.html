@@ -3,10 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="authenticated-user"
+      content="{{ request.scope['auth_user']['id'] }}"
+    />
     <meta name="app-prefix" content="{{ prefix }}" />
     <title>Annotation explorer · Multilingual NER</title>
     <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
     <script type="module" src="{{ prefix }}/static/viewer.js"></script>
+    <script type="module" src="{{ prefix }}/static/session.js"></script>
   </head>
   <body class="viewer-page">
     <nav class="topbar">

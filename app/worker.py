@@ -34,7 +34,11 @@ def child(job: dict, settings_dict: dict, parent_pid: int):
     if libc.prctl(1, signal.SIGKILL) != 0 or os.getppid() != parent_pid:
         raise SystemExit("Worker supervision unavailable")
     try:
-        settings = Settings(**settings_dict)
+        # Scientific children do not need email credentials or .env parsing.
+        for name in tuple(os.environ):
+            if name.startswith("SMTP_"):
+                os.environ.pop(name, None)
+        settings = Settings(**settings_dict, _env_file=None)
         summary = process_job(job, settings)
         # Disk-backed IPC cannot deadlock on a finite pipe buffer for many models.
         path = settings.storage_root / "jobs" / job["id"] / "worker-summary.json"
@@ -53,7 +57,21 @@ def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, 
     path.unlink(missing_ok=True)  # An interrupted attempt must not reuse stale success.
     path.with_suffix(".tmp").unlink(missing_ok=True)
     context = multiprocessing.get_context("spawn")
-    process = context.Process(target=target, args=(job, settings.model_dump(), os.getpid()))
+    process = context.Process(
+        target=target,
+        args=(
+            job,
+            {
+                **settings.model_dump(
+                    exclude={
+                        name for name in type(settings).model_fields if name.startswith("smtp_")
+                    }
+                ),
+                "mail_backend": "none",
+            },
+            os.getpid(),
+        ),
+    )
     process.start()
     deadline = time.monotonic() + settings.job_timeout_seconds
     timed_out = False

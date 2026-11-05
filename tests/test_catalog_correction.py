@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from fastapi.testclient import TestClient
 
 from app.api.schemas import Submission
 from app.errors import ServiceError
@@ -15,6 +14,7 @@ from app.main import create_app
 from app.services.inference import merge_predictions
 from app.services.pipeline import process_job
 from app.services.registry import Registry, model_snapshot
+from tests.auth_helpers import AccountClient as TestClient
 from tests.test_incremental import controlled_stats
 
 
@@ -253,16 +253,19 @@ def test_mapping_snapshot_changes_fail_and_legacy_snapshots_still_work(settings)
     app = create_app(settings)
     registry = app.state.registry
     registry.models["es-disease"]["available"] = True
-    accepted = app.state.jobs.submit(
-        Submission(
-            submitter_name="Test",
-            submitter_email="x@example.org",
-            language="es",
-            entities=["DISEASE"],
-        ),
-        [("a.txt", b"abc")],
-        "ip",
-    )
+    from tests.auth_helpers import acting_as
+
+    with acting_as(app):
+        accepted = app.state.jobs.submit(
+            Submission(
+                submitter_name="Test",
+                submitter_email="x@example.org",
+                language="es",
+                entities=["DISEASE"],
+            ),
+            [("a.txt", b"abc")],
+            "ip",
+        )
     job = app.state.db.claim()
     payload = json.loads(job["payload"])
     assert payload["catalog_version"] == 2
@@ -281,7 +284,8 @@ def test_mapping_snapshot_changes_fail_and_legacy_snapshots_still_work(settings)
             process_job(
                 job, settings, Predictor(), controlled_stats, registry_factory=lambda _: registry
             )
-    assert app.state.jobs.available(accepted["token"])
+    with acting_as(app):
+        assert app.state.jobs.available(accepted["token"])
 
 
 def test_dependent_stage_receives_upstream_spans_and_is_not_called_as_detector(catalog_settings):
@@ -292,16 +296,19 @@ def test_dependent_stage_receives_upstream_spans_and_is_not_called_as_detector(c
     registry = app.state.registry
     for model in registry.models.values():
         model["available"] = True  # Controlled dependency-aware fixture only.
-    app.state.jobs.submit(
-        Submission(
-            submitter_name="Test",
-            submitter_email="dep@example.org",
-            language="es",
-            models=["location-b"],
-        ),
-        [("a.txt", b"Madrid")],
-        "dep",
-    )
+    from tests.auth_helpers import acting_as
+
+    with acting_as(app):
+        app.state.jobs.submit(
+            Submission(
+                submitter_name="Test",
+                submitter_email="dep@example.org",
+                language="es",
+                models=["location-b"],
+            ),
+            [("a.txt", b"Madrid")],
+            "dep",
+        )
     job = app.state.db.claim()
     calls = []
 

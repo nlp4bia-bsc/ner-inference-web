@@ -133,12 +133,39 @@ class Database:
             c.execute("DELETE FROM uploads WHERE id=?", (key,))
 
     def accept(
-        self, job_id: str, token: str, payload: dict, count: int, ip: str, lease: str | None = None
+        self,
+        job_id: str,
+        token: str,
+        payload: dict,
+        count: int,
+        ip: str,
+        lease: str | None = None,
+        owner_user_id: str | None = None,
+        access_tier: str | None = None,
+        owner_session_hash: str | None = None,
     ):
         now = time.time()
         keys = [self.rate_hash("ip:" + ip), self.rate_hash("email:" + payload["submitter_email"])]
         with self.connect() as c:
             c.execute("BEGIN IMMEDIATE")
+            if owner_user_id is not None:
+                from app.auth.sessions import require_live
+                from app.permissions.policies import document_limit
+
+                require_live(c, {"id": owner_user_id, "session_hash": owner_session_hash}, self.s)
+                owner = c.execute(
+                    "SELECT account_status,email_verified_at FROM users WHERE id=?",
+                    (owner_user_id,),
+                ).fetchone()
+                if (
+                    not owner
+                    or owner["account_status"] != "ACTIVE"
+                    or not owner["email_verified_at"]
+                ):
+                    raise ServiceError("authentication_required", 401)
+                maximum = document_limit(access_tier, self.s.max_documents_per_job)
+                if maximum is not None and count > maximum:
+                    raise ServiceError(f"A request may contain at most {maximum} documents.", 422)
             for key in keys:
                 row = c.execute("SELECT accepted_at FROM limits WHERE key=?", (key,)).fetchone()
                 if row and now - row[0] < self.s.rate_limit_seconds:
@@ -159,9 +186,9 @@ class Database:
             upload = c.execute("SELECT reserved_bytes FROM uploads WHERE id=?", (lease,)).fetchone()
             self.capacity(c, reserve, upload[0] if upload else 0)
             c.execute(
-                """INSERT INTO jobs(id,token_hash,status,payload,document_count,created_at)
-                         VALUES (?,?,'QUEUED',?,?,?)""",
-                (job_id, self.token_hash(token), json.dumps(payload), count, now),
+                """INSERT INTO jobs(id,token_hash,status,payload,document_count,created_at,owner_user_id)
+                         VALUES (?,?,'QUEUED',?,?,?,?)""",
+                (job_id, self.token_hash(token), json.dumps(payload), count, now, owner_user_id),
             )
             c.execute(
                 "UPDATE jobs SET storage_bytes=?,reserved_bytes=?,stage=?,updated_at=? WHERE id=?",
@@ -186,12 +213,15 @@ class Database:
             self.event(c, job_id, "QUEUED", now)
 
     def get(self, token: str):
-        if len(token) != 43 or not all(x.isalnum() or x in "-_" for x in token):
+        if len(token) == 32 and all(x in "0123456789abcdef" for x in token):
+            column, value = "id", token
+        elif len(token) == 43 and token.isascii() and all(x.isalnum() or x in "-_" for x in token):
+            column, value = "token_hash", self.token_hash(token)
+        else:
             raise ServiceError("Request not found.", 404)
         with self.connect() as c:
-            row = c.execute(
-                "SELECT * FROM jobs WHERE token_hash=?", (self.token_hash(token),)
-            ).fetchone()
+            # identifier comes from fixed internal allowlist; all data is bound
+            row = c.execute(f"SELECT * FROM jobs WHERE {column}=?", (value,)).fetchone()  # nosec B608
         if not row:
             raise ServiceError("Request not found.", 404)
         return dict(row)

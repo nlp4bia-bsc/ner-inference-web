@@ -40,6 +40,18 @@ def cleanup(db: Database, storage: LocalStorage):
         c.execute("DELETE FROM limits WHERE accepted_at<?", (now - db.s.rate_limit_seconds,))
         # Upload middleware has a hard 5 minute body timeout. Lease sweep after 10 minutes.
         c.execute("DELETE FROM uploads WHERE created_at<?", (now - 600,))
+        for table in ("sessions", "email_verifications", "password_resets"):
+            # identifier comes from fixed internal allowlist; all data is bound
+            c.execute(f"DELETE FROM {table} WHERE expires_at<?", (now - 86400,))  # nosec B608
+        c.execute("DELETE FROM mfa_setups WHERE expires_at<?", (now,))
+        c.execute(
+            "DELETE FROM auth_limits WHERE window_start<?", (now - db.s.auth_rate_window_seconds,)
+        )
+        c.execute(
+            "DELETE FROM mail_outbox WHERE expires_at<? OR (status='SENT' AND created_at<?)",
+            (now, now - 86400),
+        )
+        c.execute("DELETE FROM audit_events WHERE at<?", (now - db.s.audit_retention_days * 86400,))
         registered = {r[0] for r in c.execute("SELECT id FROM jobs")}
         registered.update(
             r[0] for r in c.execute("SELECT staging_id FROM uploads WHERE staging_id IS NOT NULL")

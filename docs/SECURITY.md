@@ -1,84 +1,71 @@
-# Security and privacy
+# Security and privacy — V4
 
-Public input is untrusted; checkpoint directories/YAML/receipts are trusted
-administrator inputs. There is no registration, verified personal identity or
-email notification. Name/email identify request metadata only, never NLP entities.
-Deploy only with the data policy applicable to the institution and corpus.
+All work routes now require live server sessions and strict job ownership. A token
+alone grants no access. Default-deny middleware covers old aliases, catalog,
+documents/progress/downloads, HTML, API docs and OpenAPI. APIs deny anonymous users
+with401; HTML redirects to login. Foreign and historical unowned jobs return404,
+including for administrators. Every object access is also guarded in JobService;
+no storage directory is mounted publicly. See AUTHENTICATION_V4.md and the complete
+method/route/authorization matrix in ROUTE_SECURITY_V4.md.
 
-Capability tokens use secrets.token_urlsafe(32); SQLite stores only SHA-256 hashes.
-Invalid tokens receive the same 404 as unknown ones. Possessing a valid link grants
-access to texts, annotations and submitter metadata inside the downloads. Do not
-share these links. Status API intentionally omits submitter PII. HTTPS is required
-in production, with no-store/no-referrer/noindex/nosniff/CSP headers. No third-party
-assets load on form/status pages. Disable request URL logging in Uvicorn, proxy and
-APM. Application logs record job ID and exception type only; full exceptions can
-contain clinical text and are deliberately not emitted.
+Users register with normalized email, profile, legal acknowledgment and Argon2id
+passwords. Profession grants no privileges. System roles are USER/ADMIN; access
+tiers are STANDARD100/EXTENDED1000/UNLIMITED. Public/profile schemas forbid role,
+tier and owner mass assignment. Verified email is mandatory for processing and
+administration. Administrators must enroll TOTP and use a verified-MFA session;
+password-protected enrollment generates protected one-use recovery codes. No first
+registrant, default password or public bootstrap/testing bypass creates an admin.
 
-Rate keys are HMAC-SHA256 of IP/email using a private persistent local key. Separate
-IP/email checks and updates are atomic with job admission in SQLite, so changing
-only email cannot bypass IP limits. Emails are normalized lowercase, not verified;
-this is an abuse control, not proof of identity. Proxy forwarding is disabled by
-default and can only be enabled for a strictly configured trusted proxy chain.
-No cookies/session authentication exist. Same-origin browser form submissions are
-checked against PUBLIC_BASE_URL when Origin is supplied; origin-free API clients
-remain supported. No permissive CORS policy is installed.
+Sessions/action identifiers use256 random bits and hashed verifiers. Production
+cookies are HttpOnly/Secure/SameSite=Lax, host-prefixed with Path=/, and carry no
+role payload. State-changing operations require CSRF and trusted-origin checks.
+Login rotates identity; logout/revocation, idle/absolute expiry, suspension and
+password changes are enforced in the database. Sensitive writes revalidate the
+session atomically, even after delayed bodies. Automatic polling does not renew
+idle activity. API/HTML output never exposes hashes, MFA secrets or session values.
+No credentials, clinical text or tokens enter browser persistent storage.
 
-TXT/ZIP ingestion checks actual byte sizes, per-document/aggregate limits, count,
-entry count, compression ratio, path traversal/absolute/drive/backslash/control
-paths, encrypted/special/link entries, duplicates (casefold), binary controls,
-UTF-8 decoding and conflicting directory/file paths. Nested ZIPs and non-TXT entries
-are rejected, not ignored. Empty text is rejected to match ner_lab's corpus
-contract. ZIP contents are never extractall'ed; bounded bytes are written into a
-new private staging directory after validation. ZIP metadata, archives and original
-names are never trusted as unrestricted filesystem paths. Original TXT bytes are
-preserved; no silent newline/unicode normalization affects offsets.
+Email verification/recovery are single-use, revocable and expiring. GET links do
+not consume tokens. An encrypted durable SMTP outbox retries delivery with TLS;
+missing production mail fails503 and never auto-verifies users. Local/file/memory
+capture mail is development/test-only, with no public inbox endpoint. Credentials
+are not accepted as administrative CLI arguments, echoed in validation errors,
+written into logs, or passed to scientific children. Keep the private rate-key
+and encrypted volume/backup access under institutional control.
 
-Request admission is bounded before multipart parsing, even without Content-Length.
-Persistent upload leases, hard body timeout and conservative storage reservations
-protect disk/memory. Use proxy connection/rate bounds, container resource limits,
-a dedicated filesystem quota and restricted egress for stronger protection against
-resource exhaustion. The inference supervisor has a hard job timeout, child death
-handling and a lifetime lock. Only trusted local checkpoints may execute; no
-public model/path/URL injection and no arbitrary runtime model downloads.
+All inputs remain untrusted. TXT/ZIP/paste validation preserves original bytes,
+checks UTF-8, file type/count, expansion, compression ratio, duplicate/conflicting
+paths, traversal, control characters, encrypted/special/link entries and bounded
+body size. ZIP content is not extractall'ed. Per-account limits are derived from
+the session and checked on the actual whole batch, atomically with persistent
+admission. UNLIMITED retains technical resource limits. Keep external proxy,
+connection, filesystem and CPU/memory/GPU budgets; application quotas are not an
+OS disk quota or a distributed abuse-control system.
 
-Private storage is never statically served. Every download checks token, terminal
-state and expiry; hiding UI controls is not an access control. Cleanup runs without
-browser visits, removes input/output/temp files, scrubs live PII and removes
-minimal tombstones after the configured period. Expired downloads return 410 even
-before the next sweep. Retention cannot run while the host is stopped. Filesystem
-unlink and SQLite deletion are not forensic erasure; backups, WAL/media encryption
-and institutional data-retention procedures remain deployment responsibilities.
+Model files/catalog/receipts are trusted administrative deployment inputs. No
+public model/path/URL upload or arbitrary download is available. The supervisor
+remains lifetime-exclusive, runs one bounded job child at a time and cleans up
+interrupted attempts. Native scientific encoding, offsets, statistics and exports
+remain ner_lab. The HTTP dependency audit is clean at the recorded run, but the
+upstream neural extra pins torch2.10.0, with two recorded advisories. Do not claim
+a fully hardened neural production profile until upstream resolves them; see
+SECURITY_AUDIT_V4.md for identifiers, scope, mitigations and audit artifacts.
 
-BRAT/TSV/JSON export preserves offsets and original text. TSV uses ordinary quoted
-fields for interoperability; spreadsheet users must import columns as text because
-untrusted surfaces/names may begin with formula characters. Escaping them in the
-canonical file would change scientific data. No HTML rendering of uploaded text
-occurs; JS uses textContent and templates autoescape values.
+Responses use no-store/no-referrer/noindex/nosniff/CSP with no third-party auth
+assets. Uploaded text is rendered using textContent, never executable HTML.
+Templates autoescape profile/catalog values. BRAT/TSV/JSON preserve canonical
+scientific text/offsets: spreadsheet consumers must import untrusted surfaces as
+text to avoid formula interpretation. No frontend filter alters saved artifacts.
 
-Known limits: single host/local disk, no distributed rate limits across separate
-storage roots, no authentication beyond bearer capabilities, no antivirus scanner,
-no user cancellation, no model sandbox beyond OS/container controls, no gold-based
-evaluation and no anonymization of clinical corpora. Models should be supplied
-only by trusted administrators. Production readiness requires real checkpoint and
-BSC infrastructure validation; these are not implied by mock/synthetic tests.
+Private files and partial publications still expire72h after terminal completion.
+Owner checks happen before expiry/existence metadata is disclosed. Cleanup runs
+without browser visits and removes originals, publications, exports, intermediates
+and caches, then scrubs job metadata. Persistent account data/audit has a separate
+policy. Deletion/unlink is not forensic SSD/backup erasure; encrypt storage and
+apply institutional retention to backups. Existing deadlines are not prolonged.
 
-Phase 2: all document/annotation/statistics/viewer routes share the existing
-completion/expiry guards. No arbitrary filename is accepted, no innerHTML is used
-for source documents, and no browser persistent storage is created. Viewer indexes
-are private job-directory artifacts and are deleted by the same 72-hour retention
-sweep. Open viewers clear content at their expiry deadline; API checks remain
-authoritative. APP_PREFIX affects routes, not authorization. See RETENTION_POLICY.md.
-
-V3 paste/file modes are mutually exclusive on the server. Paste is treated as
-sensitive source data and follows identical TXT validation, rate limits and TTL.
-Multipart bodies are disk-spooled and byte-bounded; ZIP entries remain bounded
-per document, with leases expanded before additional disk writes. Admission uses
-persisted byte counters/reservations rather than traversing terminal directories.
-A conservative output budget complements (not replaces) encrypted volume quotas.
-
-All live document reads require ANNOTATED state, a valid job capability and an
-unexpired job. Individual partial results are explicit; unvalidated model/batch
-files are never exposed. Failed jobs cannot offer batch exports. Expiry deletes
-partial publications too. Server-clock UI countdowns clear loaded data but cannot
-revoke files/clipboard material a user already downloaded/copied. No text or tokens
-are stored in browser persistence. Session caches are job-child scoped and offline.
+Production still requires the institution's legal notices/data policy, trusted
+TLS/HSTS/proxy configuration, real mail-provider validation, key/MFA recovery,
+monitoring and capacity validation. Administrators manage accounts/operational
+metrics, not clinical access across owners. Local synthetic tests and independent
+code review are evidence within their scope, not certification or invulnerability.

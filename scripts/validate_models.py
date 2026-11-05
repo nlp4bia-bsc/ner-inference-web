@@ -24,7 +24,8 @@ def main():
         if reference:
             if not Path(reference).is_dir():
                 raise ValueError("Statistics tokenizer must be a local directory")
-            AutoTokenizer.from_pretrained(reference, local_files_only=True, use_fast=True)
+            # validated local directory and local_files_only=True; no Hub access
+            AutoTokenizer.from_pretrained(reference, local_files_only=True, use_fast=True)  # nosec B615
     for identity, entity in registry.models.items():
         if not entity.get("enabled"):
             continue

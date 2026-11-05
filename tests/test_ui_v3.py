@@ -56,15 +56,16 @@ def test_paste_mode_counters_and_acceptance_dialog(viewer_server):
                 ),
             ),
         )
-        page.goto(base + "/")
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
+        page.goto(base + "/annotate")
         page.wait_for_selector("#entities input", state="attached")
         page.locator('[data-category="DISEASE"] > summary').click()
         page.locator('#entities input[value="DISEASE"]').check()
         page.get_by_role("tab", name="Paste text").click()
         page.locator("#pasted-text").fill("😀 abc\n漢字")
         assert "8 characters" in page.locator("#paste-counter").text_content()
-        page.locator("#name").fill("Test")
-        page.locator("#email").fill("test@example.org")
         page.locator("#submit").click()
         page.wait_for_selector("dialog[open]")
         assert "Request accepted" in page.locator("dialog").text_content()
@@ -104,6 +105,9 @@ def test_progress_collapse_completion_and_clock_skew(viewer_server):
             route.fulfill(content_type="application/json", body=json.dumps(data))
 
         page.route("**/progress", progress)
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
         page.goto(base + "/jobs/" + token)
         page.wait_for_function(
             "() => document.querySelector('.global-progress progress')?.value===50"
@@ -130,6 +134,9 @@ def test_table_selection_and_document_tree(viewer_server):
     with sync_playwright() as p:
         browser = launch(p)
         page = browser.new_page()
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
         page.goto(base + "/jobs/" + token + "/viewer")
         page.wait_for_selector("#annotation-list button")
         assert page.locator("#document-list details summary").first.text_content() == "nested"
@@ -169,6 +176,9 @@ def test_expiry_clears_text_table_and_individual_downloads(viewer_server):
             "**/progress",
             lambda route: route.fulfill(content_type="application/json", body=json.dumps(payload)),
         )
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
         page.goto(base + "/jobs/" + token + "/viewer")
         page.wait_for_selector("#annotation-list button")
         page.wait_for_function(
@@ -217,7 +227,10 @@ def test_flat_catalog_explicit_multi_selection_and_multilingual_choice(viewer_se
                 ),
             ),
         )
-        page.goto(base + "/")
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
+        page.goto(base + "/annotate")
         page.wait_for_selector(".model-category")
         assert page.locator(".model-category").count() == 13
         assert page.locator('[data-category="LOCATION"]').count() == 1
@@ -236,8 +249,6 @@ def test_flat_catalog_explicit_multi_selection_and_multilingual_choice(viewer_se
         assert not page.get_by_text("Other entity types", exact=True).count()
         page.get_by_role("tab", name="Paste text").click()
         page.locator("#pasted-text").fill("Madrid")
-        page.locator("#name").fill("Test")
-        page.locator("#email").fill("test@example.org")
         with page.expect_request("**/api/jobs") as sent:
             page.locator("#submit").click()
         body = sent.value.post_data
@@ -284,6 +295,9 @@ def test_annotation_provenance_is_visible_in_inspector_and_mobile_sheet(viewer_s
             route.fulfill(response=response, json=data)
 
         page.route("**/annotations?*", annotate)
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
         page.goto(base + "/jobs/" + token + "/viewer")
         page.wait_for_selector('[data-table-annotation="T2"]', state="attached")
         page.locator(".annotation-table-wrap summary").click()

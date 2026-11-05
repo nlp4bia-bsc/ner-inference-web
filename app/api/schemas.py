@@ -1,11 +1,13 @@
 """Public request and job response contracts."""
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.domain.identity import EmailAddress
 
 
 class Submission(BaseModel):
     submitter_name: str = Field(min_length=1, max_length=120)
-    submitter_email: EmailStr
+    submitter_email: EmailAddress
     language: str = Field(pattern="^[a-z]{2}$")
     entities: list[str] = Field(default_factory=list, max_length=100)
     models: list[str] | None = Field(default=None, min_length=1, max_length=100)

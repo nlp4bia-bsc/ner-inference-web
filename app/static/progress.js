@@ -97,6 +97,8 @@ export function startProgress(
         cache: "no-store",
       });
       const data = await response.json();
+      if (response.status === 401)
+        window.dispatchEvent(new Event("temu-session-expired"));
       if (response.status === 410) {
         expire();
         return;

@@ -55,7 +55,10 @@ def test_dynamic_form(viewport, viewer_server):
                 ),
             ),
         )
-        page.goto(viewer_server[0] + "/")
+        from tests.auth_helpers import browser_login
+
+        browser_login(page, viewer_server[0])
+        page.goto(viewer_server[0] + "/annotate")
         page.wait_for_selector('#entities input[value="SYMPTOM"]', state="attached")
         page.locator('[data-category="DISEASE"] > summary').click()
         page.locator('[data-category="SYMPTOM"] > summary').click()

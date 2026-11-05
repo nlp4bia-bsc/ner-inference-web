@@ -9,7 +9,8 @@ its events/row disappear. Tombstones are not document retention.
 All content is private: originals, ANN, TSV, ZIP, native/operational statistics,
 viewer indexes, incremental published documents, incomplete microbatches and worker intermediates. The API's
 JobService.available/completed guards are shared by status, downloads, statistics,
-viewer HTML and every new document route. Exactly at expiry these return 410;
+viewer HTML and every new document route. All these routes also require a live session and strict ownership. Exactly at
+expiry an authenticated owner receives410; foreign/unowned locators remain404;
 unknown/deleted capabilities return 404. No static mount exposes storage.
 
 API and worker sweep periodically without browser visits. Removal deletes the
@@ -44,3 +45,11 @@ performance time after server synchronization, not an assumed browser wall clock
 The open viewer clears text, annotation table, inspector, selection and download
 links on expiry. It never puts content in localStorage/IndexedDB. Browser tests
 exercise clock skew and expiration with loaded data; API tests enforce actual TTL.
+
+V4 account persistence does not extend job files or deadlines. Migration3 only
+adds nullable ownership and account/security tables. Historical ownerless jobs
+remain inaccessible and expire on schedule; email matching never transfers them.
+Session cookies expire independently from job retention. Login again to read an
+owned, still-valid result. Password reset/logout/suspension do not revive or
+transfer results. Account/audit retention and protected backups are separate
+institutional policies; see AUTHENTICATION_V4.md and RECOVERY_V4.md.

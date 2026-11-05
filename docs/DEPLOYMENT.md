@@ -75,8 +75,9 @@ location / {
 ```
 
 Do not log capability paths or query strings in reverse proxies/APM. `/health`
-checks web liveness; `/ready` checks worker heartbeat and reports model availability.
-Alert separately on models_available=false when production expects checkpoints.
+checks web liveness; `/ready` checks the worker heartbeat with minimal status; model catalog/metrics
+require authentication. Check provisioned models through an authenticated catalog
+request or trusted offline preflight.
 
 ## Environment
 
@@ -88,7 +89,7 @@ them, so shell/.env values reach both containers. Important adjustments:
 | DEVICE, WORKER_CONCURRENCY | auto, 1 (other concurrency rejected) |
 | MODEL_CONFIG_PATH / MODEL_VALIDATION_PATH | catalog YAML and private preflight receipt |
 | STORAGE_ROOT / PUBLIC_BASE_URL | private local data / public origin |
-| MAX_DOCUMENTS_PER_JOB | 1000 |
+| MAX_DOCUMENTS_PER_JOB | optional technical cap; per-account tiers are100/1000/null |
 | MAX_UPLOAD_MB / MAX_UNCOMPRESSED_MB / MAX_DOCUMENT_MB | 50 / 250 / 5 MiB |
 | MAX_ZIP_ENTRIES / MAX_COMPRESSION_RATIO | 5000 / 100 |
 | RATE_LIMIT_SECONDS | 60, separately enforced for IP and email |
@@ -130,9 +131,10 @@ interrupted jobs replay at their original FIFO sequence up to MAX_ATTEMPTS.
 Inference exceptions/timeouts fail terminally without partial downloads.
 
 The site still requires BSC domain/TLS/reverse proxy, checkpoint paths/revisions,
-resource limits, backup/privacy policy, monitoring and any GPU mounts. No SMTP or
-external mail service is required. An optional future notifier can react to
-COMPLETED events without changing capability-link retrieval; none is connected.
+resource limits, backup/privacy policy, monitoring and any GPU mounts. Production now requires configured STARTTLS SMTP for account verification/recovery,
+HTTPS/Secure cookies and administrator MFA. The local file-mail example is for
+loopback development only. See AUTHENTICATION_V4.md for exact settings/bootstrap
+and RECOVERY_V4.md for coordinated upgrade/restore and MFA recovery.
 
 Phase 2 upgrades and old-job deadlines: see [retention](RETENTION_POLICY.md).
 
@@ -142,3 +144,19 @@ Do not automatically run migrate_retention: old deadlines must remain unchanged.
 See MIGRATIONS_V3.md. COMPLETED_WITH_ERRORS allows explicitly partial batch exports;
 FAILED jobs may retain individual valid published documents. Both expire from
 terminal completion. Live publication and recovery are in INCREMENTAL_PROCESSING.md.
+
+## V4 rollout
+
+Drain/stop both services, protect a consistent SQLite/key backup, configure the
+HTTPS origin/prefix, Secure cookies and SMTP, then deploy together. Migration3 is
+additive; old ownerless links are closed without changing their TTL. Do not claim
+historical jobs by email, and do not expose a v3 rollback against the v4 database.
+The web container alone receives SMTP credentials. Bootstrap with
+`docker compose exec web python -m scripts.create_admin` in an interactive terminal,
+verify mail, enroll TOTP and save recovery codes before administering accounts.
+
+The full native CPU regression uses a synthetic checkpoint. Clinical checkpoints,
+GPU/full-neural images and real SMTP/BSC edge delivery have not been validated.
+The upstream torch2.10.0 pin retains two published advisories; resolve the neural
+profile risk before declaring that deployment hardened. HTTP dependency/security
+results are recorded separately in SECURITY_AUDIT_V4.md.

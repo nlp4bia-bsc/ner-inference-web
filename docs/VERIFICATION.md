@@ -1,4 +1,83 @@
-# Latest: model catalog correction
+# Latest: V4 authentication, ownership and quotas
+
+Baseline: b8d4d4f on branch work, **128 passed in83.68s** before implementation.
+Final full regression on Python3.12.14:
+
+```sh
+SCREENSHOT_OUTPUT=work/auth-screens BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q
+```
+
+**168 passed in145.76s**, zero failures/skips. This includes actual Chromium
+registration, captured email confirmation, login/session/CSRF, two independent
+owners and cross-account denials, historical-token aliases, quotas, reset/logout,
+admin bootstrap/MFA/recovery-code display and permission changes, and EN/ES/CA
+forms under both root and APP_PREFIX=/ner. Cross-tab account switches clear the
+previous owner's view. Existing incremental publication, native tiny-BERT CPU,
+overlap/viewer/export, admission/recovery and72h retention regressions also pass.
+The controlled browser predictor is synthetic; native inference tests separately
+exercise ner_lab with random tiny weights, not clinical-model accuracy.
+
+A clean HTTP/test environment without Torch/ner_lab ran **128 passed,40 skipped in
+20.65s**. Skips explicitly cover browser opt-in and optional native NLP cases.
+One compatible Starlette/httpx deprecation warning remains. The full run above
+executes all168 cases, including those integrations. All acceptance scenarios A–H
+and their evidence are mapped in [SECURITY_AUDIT_V4.md](SECURITY_AUDIT_V4.md).
+
+Other executed checks:
+
+- Ruff lint and format (89 Python files), Prettier for matching static/legacy
+  template files, Jinja compilation regression, and git diff --check pass.
+- Bandit app/scripts at medium/high severity: zero unsuppressed findings. The
+  narrow reviewed suppressions and independent findings/corrections are documented
+  in [SECURITY_REVIEW_V4.md](SECURITY_REVIEW_V4.md) and the audit.
+- HTTP pinned dependency audit: zero known advisories. Cryptography was upgraded
+  to50.0.2 following audit findings. CPU/GPU lock registry audits retain **two
+  upstream Torch advisories**, detailed below; no ignore filter hides them.
+- sdist/wheel0.4.0 build successfully. Wheel authentication/admin modules, assets
+  and templates were inspected; the source distribution includes the bootstrap
+  script. Docker/repository deployments provide python -m scripts.create_admin.
+- The existing mechanics benchmark was adapted to actual test registration/login.
+  An8-document/32-byte smoke completed with synthetic predictions, including
+  incremental publication and exports. This is not a load or clinical benchmark.
+- Final no-NLP Docker image built with the session CA secret; Compose configuration
+  validates. Web/worker restarted together, remain running and ready. The actual
+  pre-upgrade runtime database had **zero jobs**; additive owner/auth tables were
+  checked after migration. Populated legacy-copy preservation, FIFO/deadlines,
+  rollback-on-DDL-failure and idempotence are verified by migration tests.
+- Root and isolated /ner containers return minimal health/readiness200, private
+  HTML303 to login, and private APIs/catalog/OpenAPI401. The isolated prefix
+  container additionally completed real registration -> captured file mail ->
+  confirmation -> login -> dashboard/OpenAPI0.4.0 -> logout -> session401. It was
+  removed after verification. Initial prefix readiness503 before its worker
+  heartbeat was expected; the repeated smoke after worker startup passed.
+- No actual external email was sent. The persistent production-default container
+  has no SMTP configuration and safely refuses mail-dependent account actions;
+  a real registration probe returned503 without inserting an account. It does not
+  auto-verify users. No persistent administrator or test user was
+  created there. Unrelated existing database/cache containers and volumes remain.
+
+GitHub Actions now gates auth/security regressions, browser scenarios, Ruff,
+Bandit and HTTP dependency auditing. These are local results, not a claim that a
+hosted Actions run or a BSC production deployment completed.
+
+## Remaining deployment limits
+
+Both optional neural locks report PYSEC-2026-139 and PYSEC-2025-194 for upstream
+Torch2.10.0, required exactly by the pinned ner_lab revision. The latter audit
+lists2.13.0 as fixed; the former lists no fixed version. HTTP clients cannot load
+checkpoints/JIT/pt2, and runtime checkpoints must be immutable/offline-validated;
+these controls do not resolve package advisories. Resolve upstream before calling
+the neural production profile hardened. Reports are versioned in [security/](security/).
+
+Real SMTP delivery, institution TLS/HSTS/proxy integration, legal notices, key/
+backup/MFA recovery operations, clinical checkpoints/GPU/full neural images and
+external load/penetration testing remain unvalidated. SQLite is single-host.
+See [deployment](DEPLOYMENT.md), [authentication](AUTHENTICATION_V4.md) and
+[recovery](RECOVERY_V4.md). No certification or invulnerability is claimed.
+
+---
+
+# Historical: model catalog correction
 
 Baseline: V3 commit 5f0fb4c, 117 passing tests. Final regression on Python 3.12.14:
 `SCREENSHOT_OUTPUT=work/screenshots-catalog BROWSER_TESTS=1 work/locked-env/bin/python -m pytest -q`

@@ -34,7 +34,6 @@ def router(service):
         return JSONResponse(
             {
                 "status": "ready" if prepared else "unavailable",
-                "models_available": any(e["available"] for e in service.registry.public()),
             },
             status_code=200 if prepared else 503,
         )

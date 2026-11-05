@@ -77,6 +77,7 @@ def test_rejected(files, settings):
 
 @pytest.mark.parametrize("count,accepted", [(1000, True), (1001, False)])
 def test_document_limit(count, accepted, settings):
+    settings = settings.model_copy(update={"max_documents_per_job": 1000})
     files = zipped([(f"folder/{i}.txt", b"abc") for i in range(count)])
     if accepted:
         assert len(load_documents(files, settings)) == 1000

@@ -22,7 +22,9 @@ class AdmissionMiddleware:
         headers = {k.lower(): v for k, v in scope["headers"]}
 
         async def secure_send(message):
-            if message["type"] == "http.response.start":
+            if message["type"] == "http.response.start" and not scope.get(
+                "security_headers_applied"
+            ):
                 message["headers"] += [
                     (b"cache-control", b"no-store"),
                     (b"referrer-policy", b"no-referrer"),
@@ -46,6 +48,7 @@ class AdmissionMiddleware:
             origin = headers.get(b"origin")
             if (
                 origin
+                and not scope.get("csrf_verified")
                 and origin.decode().rstrip("/")
                 != urlsplit(self.s.public_base_url).scheme
                 + "://"

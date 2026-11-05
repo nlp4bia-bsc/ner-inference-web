@@ -1,0 +1,105 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  color: #17304c;
+  background: #f3f6fa;
+}
+body {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 1rem;
+}
+header,
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+header a {
+  margin-right: auto;
+  font-weight: 700;
+}
+a {
+  color: #125e9a;
+  overflow-wrap: anywhere;
+}
+main {
+  background: white;
+  border: 1px solid #d2ddeb;
+  border-radius: 0.7rem;
+  padding: clamp(1rem, 4vw, 2rem);
+  overflow-x: auto;
+}
+form {
+  max-width: 38rem;
+  margin-block: 1rem;
+}
+label {
+  display: block;
+  margin-top: 0.8rem;
+}
+input,
+select,
+button {
+  font: inherit;
+  box-sizing: border-box;
+  padding: 0.65rem;
+  border: 1px solid #8699ac;
+  border-radius: 0.3rem;
+}
+input,
+form select {
+  display: block;
+  width: 100%;
+}
+button {
+  cursor: pointer;
+  color: white;
+  background: #135f9c;
+  margin-top: 1rem;
+}
+.check {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+input[type="checkbox"] {
+  width: auto;
+}
+.notice {
+  border-left: 4px solid #2169a7;
+  padding: 0.8rem;
+  background: #eef5fd;
+}
+.hint {
+  font-size: 0.9rem;
+}
+[hidden] {
+  display: none !important;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+td,
+th {
+  text-align: left;
+  padding: 0.65rem;
+  border-bottom: 1px solid #d2ddeb;
+  overflow-wrap: anywhere;
+}
+code {
+  overflow-wrap: anywhere;
+}
+nav form {
+  margin: 0;
+}
+nav button {
+  margin: 0;
+}
+:focus-visible {
+  outline: 3px solid #ef991a;
+  outline-offset: 3px;
+}

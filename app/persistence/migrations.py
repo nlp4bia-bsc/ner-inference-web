@@ -52,3 +52,46 @@ def _migration_two(database):
 def migrate(database):
     _migration_one(database)
     _migration_two(database)
+    _migration_three(database)
+
+
+def _migration_three(database):
+    """All DDL is transactional, including the ledger; historical jobs remain unowned."""
+    statements = [
+        """CREATE TABLE users(id TEXT PRIMARY KEY, full_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE, institution TEXT NOT NULL, professional_role TEXT NOT NULL,
+        professional_role_other TEXT NOT NULL DEFAULT '', password_hash TEXT NOT NULL,
+        email_verified_at REAL, account_status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(account_status IN ('ACTIVE','SUSPENDED')),
+        system_role TEXT NOT NULL DEFAULT 'USER' CHECK(system_role IN ('USER','ADMIN')),
+        access_tier TEXT NOT NULL DEFAULT 'STANDARD' CHECK(access_tier IN ('STANDARD','EXTENDED','UNLIMITED')),
+        preferred_locale TEXT NOT NULL DEFAULT 'en', created_at REAL NOT NULL,updated_at REAL NOT NULL,
+        legal_accepted_at REAL NOT NULL, auth_version INTEGER NOT NULL DEFAULT 1,
+        mfa_secret TEXT,mfa_enabled INTEGER NOT NULL DEFAULT 0,mfa_last_counter INTEGER DEFAULT -1,
+        mfa_recovery_hashes TEXT NOT NULL DEFAULT '[]')""",
+        """CREATE TABLE sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,
+        created_at REAL NOT NULL,last_seen_at REAL NOT NULL,expires_at REAL NOT NULL,
+        revoked_at REAL,auth_version INTEGER NOT NULL,csrf_seed TEXT NOT NULL,mfa_verified INTEGER DEFAULT 0)""",
+        "CREATE INDEX session_owner ON sessions(user_id)",
+        *[
+            f"""CREATE TABLE {table}(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,
+        created_at REAL NOT NULL,expires_at REAL NOT NULL,used_at REAL,revoked_at REAL,auth_version INTEGER NOT NULL)"""
+            for table in ("email_verifications", "password_resets")
+        ],
+        """CREATE TABLE audit_events(id INTEGER PRIMARY KEY AUTOINCREMENT,actor_user_id TEXT,
+        target_user_id TEXT,action TEXT NOT NULL,at REAL NOT NULL,details TEXT NOT NULL DEFAULT '{}')""",
+        "CREATE INDEX audit_time ON audit_events(at)",
+        """CREATE TABLE auth_limits(key TEXT PRIMARY KEY,window_start REAL NOT NULL,attempts INTEGER NOT NULL)""",
+        """CREATE TABLE mfa_setups(user_id TEXT PRIMARY KEY,secret TEXT NOT NULL,expires_at REAL NOT NULL)""",
+        """CREATE TABLE mail_outbox(id TEXT PRIMARY KEY,payload TEXT NOT NULL,created_at REAL NOT NULL,
+        expires_at REAL NOT NULL,next_attempt REAL NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'PENDING')""",
+        "ALTER TABLE jobs ADD COLUMN owner_user_id TEXT",
+        "CREATE INDEX job_owner ON jobs(owner_user_id,seq)",
+    ]
+    with database.connect() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT 1 FROM schema_migrations WHERE version=3").fetchone():
+            return
+        for statement in statements:
+            c.execute(statement)
+        c.execute("INSERT INTO schema_migrations VALUES (3,?)", (time.time(),))
