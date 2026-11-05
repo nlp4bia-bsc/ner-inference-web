@@ -1,49 +1,28 @@
-let dialogSequence = 0;
-/** Persisted progress and server-clock countdown shared by status and viewer pages. */
-export function showDialog(title, message, actions = []) {
-  const dialog = document.createElement("dialog");
-  dialog.className = "notification-dialog";
-  const heading = document.createElement("h2");
-  heading.textContent = title;
-  heading.id = `notification-title-${++dialogSequence}`;
-  dialog.setAttribute("aria-labelledby", heading.id);
-  const text = document.createElement("p");
-  text.textContent = message;
-  dialog.append(heading, text);
-  for (const action of actions) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = action.label;
-    button.onclick = () => action.run(dialog);
-    dialog.append(button);
-  }
-  const close = document.createElement("button");
-  close.type = "button";
-  close.className = "secondary";
-  close.textContent = "Close";
-  close.onclick = () => dialog.close();
-  dialog.append(close);
-  dialog.addEventListener("close", () => dialog.remove());
-  document.body.append(dialog);
-  dialog.showModal();
-  return dialog;
-}
+import {
+  t,
+  number,
+  date,
+  currentLocale,
+  onLocaleChange,
+  openDialog,
+} from "./auth.js";
+export const showDialog = openDialog;
+/** Persisted document progress and monotonic server-clock countdown. */
 export function startProgress(
   endpoint,
   { onChange = () => {}, onExpire = () => {} } = {},
 ) {
-  const host = document.getElementById("global-progress");
-  const panel = document.createElement("details");
+  const host = document.getElementById("global-progress"),
+    panel = document.createElement("details");
   panel.open = true;
   panel.className = "global-progress";
   const summary = document.createElement("summary"),
     description = document.createElement("p"),
     bar = document.createElement("progress"),
     counts = document.createElement("p"),
-    countdown = document.createElement("p");
+    countdown = document.createElement("div");
   bar.max = 100;
   bar.value = 0;
-  bar.setAttribute("aria-label", "Annotated document progress");
   description.setAttribute("role", "status");
   countdown.className = "countdown";
   panel.append(summary, description, bar, counts, countdown);
@@ -55,34 +34,96 @@ export function startProgress(
     deadline = null,
     previous = null,
     observedPending = false,
-    expired = false;
+    expired = false,
+    latest = null;
   const terminal = ["COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED", "EXPIRED"];
+  function render() {
+    bar.setAttribute("aria-label", t("Annotated document progress"));
+    if (expired) {
+      description.textContent = t("Results have expired.");
+      summary.textContent = t("Expired");
+      countdown.textContent = t(
+        "Results have been deleted or are scheduled for deletion.",
+      );
+      return;
+    }
+    if (!latest) return;
+    const data = latest;
+    summary.textContent = `${t(data.status)} · ${new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 1 }).format(data.progress_percent)}% · ${t(panel.open ? "Hide progress" : "Show progress")}`;
+    description.textContent =
+      data.stage === "PREPARING_DOWNLOADS"
+        ? t("Preparing downloads")
+        : data.status === "QUEUED"
+          ? t("Waiting in queue · Position: {count}", {
+              count: data.queue_position ?? "—",
+            })
+          : data.status === "COMPLETED"
+            ? t("All documents annotated successfully")
+            : data.status === "COMPLETED_WITH_ERRORS"
+              ? t(
+                  "Completed with document errors · valid partial results available",
+                )
+              : data.status === "FAILED"
+                ? t(
+                    "Processing failed · published documents, if any, are partial results",
+                  )
+                : t("Processing your documents");
+    bar.value = data.progress_percent;
+    counts.textContent =
+      t(
+        "{done} / {total} annotated · {processing} processing · {pending} pending · {failed} failed",
+        {
+          done: number(data.annotated_documents),
+          total: number(data.total_documents),
+          processing: number(data.processing_documents),
+          pending: number(data.pending_documents),
+          failed: number(data.failed_documents),
+        },
+      ) +
+      ". " +
+      t("Document completion, not elapsed-time progress.");
+  }
+  panel.ontoggle = render;
   function expire() {
     if (expired) return;
     expired = true;
     stopped = true;
     clearTimeout(timer);
     clearInterval(clock);
-    description.textContent = "Results have expired.";
-    summary.textContent = "Expired";
-    countdown.textContent =
-      "Results have been deleted or are scheduled for deletion.";
+    render();
     onExpire();
   }
   function tick() {
+    if (expired) return;
     if (!deadline) {
-      countdown.textContent =
-        "72-hour availability begins after processing finishes.";
+      countdown.textContent = t(
+        "72-hour availability begins after processing finishes.",
+      );
       return;
     }
     const remaining =
       deadline.remaining - (performance.now() - deadline.observed);
     if (remaining <= 0) return expire();
     const seconds = Math.ceil(remaining / 1000),
-      days = Math.floor(seconds / 86400),
-      hours = Math.floor(seconds / 3600) % 24,
-      minutes = Math.floor(seconds / 60) % 60;
-    countdown.textContent = `Your results will be deleted in: ${days} days : ${hours} hours : ${minutes} minutes : ${seconds % 60} seconds. Scheduled deletion: ${new Date(deadline.absolute).toLocaleString()}`;
+      parts = [
+        Math.floor(seconds / 86400),
+        Math.floor(seconds / 3600) % 24,
+        Math.floor(seconds / 60) % 60,
+        seconds % 60,
+      ];
+    const label = document.createElement("span"),
+      value = document.createElement("strong"),
+      schedule = document.createElement("small");
+    label.textContent = t("Results expire in");
+    value.textContent = parts
+      .map(
+        (part, index) =>
+          String(part).padStart(2, "0") + ["d", "h", "m", "s"][index],
+      )
+      .join(" : ");
+    schedule.textContent =
+      t("Scheduled deletion") + ": " + date(deadline.absolute);
+    countdown.replaceChildren(label, value, schedule);
     countdown.className =
       "countdown " +
       (remaining < 3600000 ? "urgent" : remaining < 86400000 ? "warning" : "");
@@ -94,9 +135,9 @@ export function startProgress(
     clearTimeout(timer);
     try {
       const response = await fetch(endpoint + "/progress", {
-        cache: "no-store",
-      });
-      const data = await response.json();
+          cache: "no-store",
+        }),
+        data = await response.json();
       if (response.status === 401)
         window.dispatchEvent(new Event("temu-session-expired"));
       if (response.status === 410) {
@@ -105,25 +146,10 @@ export function startProgress(
       }
       if (!response.ok) throw new Error();
       retries = 0;
+      if (!latest && terminal.includes(data.status)) panel.open = false;
+      latest = data;
       observedPending ||= ["QUEUED", "PROCESSING"].includes(data.status);
-      summary.textContent = `${data.status} · ${data.progress_percent.toFixed(1)}% · ${panel.open ? "Hide progress" : "Show progress"}`;
-      panel.ontoggle = () => {
-        summary.textContent = `${data.status} · ${data.progress_percent.toFixed(1)}% · ${panel.open ? "Hide progress" : "Show progress"}`;
-      };
-      description.textContent =
-        data.stage === "PREPARING_DOWNLOADS"
-          ? "Preparing downloads"
-          : data.status === "QUEUED"
-            ? `Waiting in queue · Position: ${data.queue_position ?? "—"}`
-            : data.status === "COMPLETED"
-              ? "All documents annotated successfully"
-              : data.status === "COMPLETED_WITH_ERRORS"
-                ? "Completed with document errors · valid partial results available"
-                : data.status === "FAILED"
-                  ? "Processing failed · published documents, if any, are partial results"
-                  : "Processing your documents";
-      bar.value = data.progress_percent;
-      counts.textContent = `${data.annotated_documents} / ${data.total_documents} annotated · ${data.processing_documents} processing · ${data.pending_documents} pending · ${data.failed_documents} failed. This is document completion, not elapsed-time progress.`;
+      render();
       if (data.expires_at)
         deadline = {
           remaining: Date.parse(data.expires_at) - Date.parse(data.server_now),
@@ -135,21 +161,47 @@ export function startProgress(
       if (terminal.includes(data.status)) {
         stopped = true;
         if (observedPending && previous !== data.status) {
+          const prefix = document.querySelector(
+              "meta[name=app-prefix]",
+            ).content,
+            id = endpoint.split("/").pop(),
+            viewer = prefix + "/jobs/" + id + "/viewer";
+          const actions = [];
+          if (data.annotated_documents > 0)
+            actions.push({
+              label: t("Explore annotations"),
+              run: (dialog) => {
+                if (location.pathname === viewer) {
+                  dialog.close();
+                  document.querySelector("#annotated-text")?.focus();
+                } else location.assign(viewer + "?lang=" + currentLocale());
+              },
+            });
+          if (["COMPLETED", "COMPLETED_WITH_ERRORS"].includes(data.status))
+            for (const format of ["brat", "tsv"])
+              actions.push({
+                label: t(format === "brat" ? "Download BRAT" : "Download TSV"),
+                run: () => location.assign(endpoint + "/download/" + format),
+              });
           showDialog(
-            data.status === "COMPLETED"
-              ? "Annotations ready"
-              : data.status === "COMPLETED_WITH_ERRORS"
-                ? "Partial results ready"
-                : "Processing failed",
+            t(
+              data.status === "COMPLETED"
+                ? "Annotations ready"
+                : data.status === "COMPLETED_WITH_ERRORS"
+                  ? "Partial results ready"
+                  : "Processing failed",
+            ),
             description.textContent,
+            actions,
           );
         }
       }
       previous = data.status;
     } catch (_) {
       retries++;
-      description.textContent =
-        "Connection interrupted. Retrying automatically…";
+      description.textContent = t(
+        "Connection interrupted. Retrying automatically…",
+      );
     } finally {
       polling = false;
       if (!stopped)
@@ -164,6 +216,10 @@ export function startProgress(
   };
   document.addEventListener("visibilitychange", refresh);
   window.addEventListener("focus", refresh);
+  onLocaleChange(() => {
+    render();
+    tick();
+  });
   poll();
   return {
     refresh: poll,

@@ -1,0 +1,95 @@
+{
+  "scope": "Design-token color pairs only; does not resolve every browser/overlap contrast assessment or certify conformance.",
+  "pairs": [
+    {
+      "component": "body",
+      "foreground": "#192b48",
+      "background": "#ffffff",
+      "contrast": 14.18
+    },
+    {
+      "component": "metadata",
+      "foreground": "#59677d",
+      "background": "#ffffff",
+      "contrast": 5.74
+    },
+    {
+      "component": "links",
+      "foreground": "#213970",
+      "background": "#ffffff",
+      "contrast": 11.15
+    },
+    {
+      "component": "hero",
+      "foreground": "#d8e3f6",
+      "background": "#1c3465",
+      "contrast": 9.39
+    },
+    {
+      "component": "success",
+      "foreground": "#246449",
+      "background": "#e9f4ef",
+      "contrast": 6.23
+    },
+    {
+      "component": "warning",
+      "foreground": "#805512",
+      "background": "#fff4df",
+      "contrast": 5.97
+    },
+    {
+      "component": "error",
+      "foreground": "#a02b37",
+      "background": "#fff0f0",
+      "contrast": 6.55
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#eaf0ff",
+      "contrast": 12.43
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#fff0df",
+      "contrast": 12.69
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#e3f4ef",
+      "contrast": 12.46
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#f4eafa",
+      "contrast": 12.16
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#ffeaf0",
+      "contrast": 12.35
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#e5f2fc",
+      "contrast": 12.45
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#f7f3d9",
+      "contrast": 12.68
+    },
+    {
+      "component": "entity-text",
+      "foreground": "#192b48",
+      "background": "#eef0f5",
+      "contrast": 12.44
+    }
+  ]
+}

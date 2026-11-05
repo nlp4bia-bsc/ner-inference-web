@@ -1,4 +1,8 @@
-# Multilingual NER · TEMU / Barcelona Supercomputing Center
+# NLP4BIA · Multilingual NER Platform
+
+**Clinical and Biomedical Text Annotation**
+
+Developed by NLP4BIA · Barcelona Supercomputing Center
 
 Explore, annotate and analyze multilingual documents with registered accounts.
 Pasted text, UTF-8 TXT and nested-folder ZIP corpora use incremental ner_lab
@@ -8,7 +12,9 @@ Files remain available to their owner for **72 hours after completion**.
 
 V4 adds email verification, Argon2id, server sessions/CSRF, personal dashboards,
 account-derived 100 / 1000 / UNLIMITED tiers and audited administration with TOTP.
-It preserves the scientific pipeline and existing viewer without a visual redesign.
+V5 adds the shared institutional interface, research workspace, responsive catalog/
+annotation viewer and complete EN/ES/CA controls. Scientific offsets and consolidation
+remain unchanged. Existing authentication/ownership checks remain mandatory.
 See [authentication and operations](docs/AUTHENTICATION_V4.md),
 [security audit](docs/SECURITY_AUDIT_V4.md),
 [independent review](docs/SECURITY_REVIEW_V4.md) and
@@ -24,6 +30,59 @@ All NLP uses [ner_lab](https://github.com/nlp4bia-bsc/ner_lab), pinned to
 downloaded. The example catalog deliberately disables inference until a trusted
 administrator provisions and validates local models. Synthetic fixtures exist
 only in tests; they do not represent biomedical model performance.
+
+
+## Research interface
+
+The public welcome is the protected platform's Sign in screen. After actual email
+verification/login, Research Workspace shows only your retained job metrics/history,
+with New annotation, My jobs, Models and Profile navigation. The model catalog is
+also private. Administration requires verified ADMIN plus MFA and never grants
+clinical-document access to other owners.
+
+![NLP4BIA sign in with the original BSC institutional logo](docs/previews/v5/login-desktop.png)
+
+![Personal research workspace with synthetic test data](docs/previews/v5/dashboard-desktop.png)
+
+New annotation separates input, document language, explicit entity/model choices
+and review/admission. TXT, nested-folder ZIP and pasted text retain their existing
+backend behavior. The wide viewer preserves overlaps, original Unicode offsets,
+model provenance, keyboard selection, partial results and BRAT/TSV/TXT/ANN exports.
+Progress and72h expiry always use actual server state. Phones use a compact menu,
+stacked panels, job cards and a native entity-details sheet. The UI language selector
+retains input files/text, chosen checkpoints, document language and result filters.
+
+Screenshots use explicitly synthetic accounts and controlled annotations, including
+adversarial Unicode/overlap/XSS strings. They are not predictions from clinical
+checkpoints. See the [complete gallery and verification](docs/REDESIGN_VERIFICATION.md).
+
+The frontend remains FastAPI/Jinja/ES modules, without a framework migration or
+production UI library. `base.html` and `components.html` share the shell/footer;
+`auth.css` owns reusable tokens/components; `style.css` owns scientific workspace
+layouts. System fonts and all runtime assets load locally. The supplied original
+[BSC SVG](app/static/assets/bsc-blue.svg) is preserved byte-for-byte, audited for
+active/external content and rendered proportionally with alternative text.
+
+The profile includes allowed edits, saved language, verification/tier/limit,
+password/MFA, active-session metadata and logout-all. Account deletion requests
+are audited for institutional review; they are not immediate deletion. Privacy
+and terms links point to explicit drafts requiring institutional review.
+
+[Design system](docs/DESIGN_SYSTEM.md) · [User experience](docs/USER_EXPERIENCE.md) ·
+[Privacy draft](docs/PRIVACY_NOTICE.md) · [Terms draft](docs/TERMS_OF_USE.md).
+
+To update translations and run the actual browser/accessibility matrix:
+
+```sh
+python -m scripts.build_ui_translations
+npm install --prefix work/design-a11y --no-audit --no-fund axe-core@4.14.0
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+SCREENSHOT_OUTPUT=work/design-screens BROWSER_TESTS=1 python -m pytest -q
+```
+
+Playwright and a local Chromium installation are test tools, not runtime frontend
+dependencies. CI installs its browser and gates the visual/auth/security checks.
+Automatic accessibility checks plus keyboard/reflow probes are not WCAG certification.
 
 ## Architecture
 

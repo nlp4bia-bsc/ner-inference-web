@@ -1,0 +1,29 @@
+{% macro copy(key, tag='span', cls='') -%}
+<{{ tag }} data-i18n="{{ key }}"{% if cls %} class="{{ cls }}"{% endif %}>{{ u(key) }}</{{ tag }}>
+{%- endmacro %}
+{% macro icon(name) -%}
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if name=='plus' %}<path d="M12 5v14M5 12h14"/>
+{% elif name=='grid' %}<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+{% elif name=='document' %}<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/>
+{% elif name=='layers' %}<path d="m12 3 10 6-10 6L2 9zM2 13l10 6 10-6M2 17l10 6 10-6"/>
+{% elif name=='check' %}<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
+{% elif name=='clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{% elif name=='shield' %}<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/>
+{% elif name=='arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
+{% elif name=='user' %}<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
+{% elif name=='menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>
+{% elif name=='globe' %}<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>
+{% elif name=='exit' %}<path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4"/>
+{% elif name=='code' %}<path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16"/>
+{% endif %}</svg>
+{%- endmacro %}
+{% macro footer() -%}
+<footer class="site-footer">
+<div class="footer-inner">
+<div class="footer-brand"><strong>NLP4BIA</strong><span>Multilingual NER Platform</span><small>Barcelona Supercomputing Center</small></div>
+<a class="bsc-logo" href="https://www.bsc.es/" aria-label="Barcelona Supercomputing Center"><img src="{{ prefix }}/static/assets/bsc-blue.svg" alt="Barcelona Supercomputing Center — Centro Nacional de Supercomputación" width="283" height="69" loading="lazy"></a>
+<nav aria-label="{{ u('Documentation') }}" data-i18n-aria-label="Documentation" class="footer-links"><a href="https://github.com/nlp4bia-bsc/ner-inference-web">GitHub</a><a href="https://github.com/nlp4bia-bsc/ner-inference-web/blob/work/README.md">{{ copy('Documentation') }}</a><a href="https://github.com/nlp4bia-bsc/ner-inference-web/blob/work/docs/PRIVACY_NOTICE.md">{{ copy('Privacy') }}</a><a href="https://github.com/nlp4bia-bsc/ner-inference-web/blob/work/docs/TERMS_OF_USE.md">{{ copy('Terms of use') }}</a><span>{{ copy('Version') }} {{ ui_version }}</span></nav>
+</div><p class="footer-credit">{{ copy('Developed by NLP4BIA · Barcelona Supercomputing Center') }}</p>
+</footer>
+{%- endmacro %}

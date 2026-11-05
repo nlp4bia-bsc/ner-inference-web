@@ -251,7 +251,7 @@ def test_real_signup_verification_two_user_isolation_logout_and_reset(auth_serve
                 (time.time(), "researcher_a@example.test"),
             )
         page.evaluate("window.dispatchEvent(new Event('focus'))")
-        page.wait_for_url(base + "/login")
+        page.wait_for_url(base + "/login?reason=expired&lang=en")
         assert "SYNTHETIC_PRIVATE_A" not in page.content()
         # A valid login as a different account must clear an older account's DOM too.
         login(page, base, "researcher_a@example.test", new_password)
@@ -261,8 +261,9 @@ def test_real_signup_verification_two_user_isolation_logout_and_reset(auth_serve
         )
         switched = a.new_page()
         login(switched, base, "researcher_b@example.test")
-        page.evaluate("window.dispatchEvent(new Event('focus'))")
-        page.wait_for_url(base + "/login")
+        # BroadcastChannel may already be navigating this page; evaluating in
+        # its destroyed document is a test race, not a failed access control.
+        page.wait_for_url(base + "/login?reason=expired&lang=en")
         assert "SYNTHETIC_PRIVATE_A" not in page.content()
         assert a.request.get(base + "/api/jobs/" + job_a["job_id"]).status == 404
         anon = browser.new_context()
@@ -372,10 +373,14 @@ def test_admin_mfa_recovery_display_and_account_management(auth_server):
         row = page.locator("tbody tr").filter(has_text="managed@example.test")
         row.locator("select[name=access_tier]").select_option("UNLIMITED")
         row.get_by_role("button", name="Save changes", exact=True).click()
+        page.get_by_role("dialog").get_by_role("button", name="Confirm", exact=True).click()
+        page.wait_for_load_state()
         assert user_context.request.get(base + "/api/profile").json()["access_tier"] == "UNLIMITED"
         row = page.locator("tbody tr").filter(has_text="managed@example.test")
         row.locator("select[name=account_status]").select_option("SUSPENDED")
         row.get_by_role("button", name="Save changes", exact=True).click()
+        page.get_by_role("dialog").get_by_role("button", name="Confirm", exact=True).click()
+        page.wait_for_load_state()
         assert user_context.request.get(base + "/api/profile").status == 401
         assert context.request.get(base + "/api/admin/audit").json()
         user_context.close()

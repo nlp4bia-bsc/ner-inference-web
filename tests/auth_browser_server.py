@@ -1,6 +1,8 @@
 """Explicit test-only server: real auth/HTTP/storage, controlled scientific predictions."""
 
 import asyncio
+import os
+import time
 from contextlib import asynccontextmanager
 
 from starlette.concurrency import run_in_threadpool
@@ -13,6 +15,9 @@ from tests.test_incremental import controlled_stats
 
 class Predictor:
     def predict(self, model, documents, output, device):
+        # Controlled latency for observing real queued -> completed UI transitions.
+        # This factory is test-only and cannot run with APP_ENV=production.
+        time.sleep(float(os.environ.get("TEST_PREDICTOR_DELAY_SECONDS", "0")))
         return [
             {
                 "filename": name,

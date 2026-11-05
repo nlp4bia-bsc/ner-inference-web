@@ -1,4 +1,5 @@
 import { startProgress, showDialog } from "./progress.js";
+import { t, date, number, onLocaleChange, localized } from "./auth.js";
 import { segments, lanes, color } from "./spans.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
 const token = location.pathname.split("/").at(-2),
@@ -17,7 +18,9 @@ let records = [],
   expiryTimer,
   listGeneration = 0,
   expiresAt = Infinity,
-  expired = false;
+  expired = false,
+  documentStatistics = null,
+  availabilityDeadline = null;
 const make = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text !== undefined) e.textContent = text;
@@ -29,16 +32,16 @@ async function api(path) {
   const data = await response.json();
   if (expired) {
     expire();
-    throw new Error("Results have expired.");
+    throw new Error(t("Results have expired."));
   }
   if (response.status === 401)
     window.dispatchEvent(new Event("temu-session-expired"));
   if (response.status === 410) {
     expire();
-    throw new Error("Results have expired.");
+    throw new Error(t("Results have expired."));
   }
   if (!response.ok)
-    throw new Error(data.detail || "The request could not be loaded.");
+    throw new Error(t(data.detail) || t("The request could not be loaded."));
   return data;
 }
 function failure(error) {
@@ -69,14 +72,23 @@ function expire() {
     "job-distribution",
   ])
     $(id).replaceChildren();
-  $("viewer-status").textContent =
-    "Your results have expired. Documents are no longer available.";
+  $("viewer-status").textContent = t(
+    "Your results have expired. Documents are no longer available.",
+  );
   $("download-link").removeAttribute("href");
   $("individual-txt").removeAttribute("href");
   $("individual-ann").removeAttribute("href");
   document
     .querySelectorAll("main button,main input,main select")
     .forEach((x) => (x.disabled = true));
+  for (const input of document.querySelectorAll(".workspace input")) {
+    if (input.type === "checkbox") input.checked = false;
+    else input.value = "";
+  }
+  $("model-filter").replaceChildren();
+  $("chunk-info").textContent = "";
+  document.querySelector(".workspace").hidden = true;
+  document.querySelector(".viewer-actions").hidden = true;
   clearTimeout(expiryTimer);
 }
 const safely =
@@ -120,20 +132,20 @@ async function documents() {
       make(
         "small",
         row.annotation_count
-          ? `${row.annotation_count} mentions`
-          : "No annotations",
+          ? t("{count} mentions", { count: number(row.annotation_count) })
+          : t("No annotations"),
       ),
     );
     button.dataset.document = row.document_id;
     button.disabled = !["ANNOTATED", "COMPLETED"].includes(row.status);
     button.querySelector("small").textContent =
-      `${row.status} · ${row.annotation_count} mentions`;
+      `${t(row.status)} · ${t("{count} mentions", { count: number(row.annotation_count) })}`;
     button.onclick = safely(() => openDocument(row.document_id));
     $("document-list").append(button);
   }
   $("doc-page").textContent = docTotal
     ? `${docOffset + 1}–${Math.min(docTotal, docOffset + 50)} / ${docTotal}`
-    : "No documents";
+    : t("No documents");
   $("docs-prev").disabled = docOffset === 0;
   $("docs-next").disabled = docOffset + 50 >= docTotal;
   buildTree();
@@ -153,11 +165,11 @@ async function openDocument(id, start = 0) {
   $("annotation-details").replaceChildren(
     make(
       "p",
-      "Select a mention to inspect its original offsets and model.",
+      t("Select a mention to inspect its original offsets and model."),
       "quiet",
     ),
   );
-  $("viewer-status").textContent = "Loading document…";
+  $("viewer-status").textContent = t("Loading document…");
   const text = await api(`/documents/${id}?start=${start}&limit=5000`);
   if (current !== generation) return;
   const rows = [];
@@ -175,21 +187,42 @@ async function openDocument(id, start = 0) {
   const stats = await api(`/documents/${id}/statistics`);
   if (current !== generation) return;
   chunk = text;
+  documentStatistics = stats.statistics;
   annotations = rows;
   enabled = new Set(rows.map((x) => x.label));
+  const modelSelect = $("model-filter");
+  modelSelect.replaceChildren(new Option(t("All models"), ""));
+  for (const model of new Set(
+    rows
+      .flatMap((row) =>
+        row.model_ids?.length ? row.model_ids : [row.model_id],
+      )
+      .filter(Boolean),
+  ))
+    modelSelect.append(new Option(model, model));
+
   $("entity-search").value = "";
   $("filename").textContent = text.filename;
   $("individual-txt").href = endpoint + "/documents/" + id + "/download/txt";
   $("individual-ann").href = endpoint + "/documents/" + id + "/download/ann";
-  $("chunk-info").textContent =
-    `Characters ${text.start}–${text.end} of ${text.total_characters} · original Unicode code-point offsets`;
+  $("chunk-info").textContent = t(
+    "Characters {start}–{end} of {total} · original Unicode code-point offsets",
+    {
+      start: number(text.start),
+      end: number(text.end),
+      total: number(text.total_characters),
+    },
+  );
   $("chunk-prev").disabled = text.start === 0;
   $("chunk-next").disabled = text.end >= text.total_characters;
   $("document-stats").textContent = Object.entries(stats.statistics)
     .filter(([k]) =>
       ["words", "tokens", "sentences", "entities_total"].includes(k),
     )
-    .map(([k, v]) => `${k.replace("_total", "")}: ${v ?? "unavailable"}`)
+    .map(
+      ([k, v]) =>
+        `${t({ words: "Words", tokens: "Tokens", sentences: "Sentences", entities_total: "Entities" }[k])}: ${v ?? t("Not provided")}`,
+    )
     .join(" · ");
   $("legend").replaceChildren();
   for (const label of [...enabled].sort()) {
@@ -215,13 +248,20 @@ async function openDocument(id, start = 0) {
       button.classList.toggle("active", button.dataset.document === id),
     );
   render();
-  $("viewer-status").textContent =
-    "Read-only exploration · select a highlighted region or an annotation.";
+  $("viewer-status").textContent = t(
+    "Read-only exploration · select a highlighted region or an annotation.",
+  );
 }
 function visible() {
   const query = $("entity-search").value.toLocaleLowerCase();
   return annotations.filter(
-    (x) => enabled.has(x.label) && x.text.toLocaleLowerCase().includes(query),
+    (x) =>
+      enabled.has(x.label) &&
+      x.text.toLocaleLowerCase().includes(query) &&
+      (!$("model-filter").value ||
+        (x.model_ids?.length ? x.model_ids : [x.model_id]).includes(
+          $("model-filter").value,
+        )),
   );
 }
 function render() {
@@ -243,12 +283,17 @@ function render() {
     span.setAttribute("role", "button");
     span.setAttribute(
       "aria-label",
-      `${part.text}: ${part.ids.length} annotation(s), ${part.ids.map((id) => byId.get(id).label).join(", ")}`,
+      `${part.text}: ${t("{count} annotation(s)", { count: number(part.ids.length) })}, ${part.ids.map((id) => byId.get(id).label).join(", ")}`,
     );
     const activate = () => {
       const choices = make("div");
       choices.append(
-        make("strong", `${part.ids.length} annotation(s) in this region`),
+        make(
+          "strong",
+          t("{count} annotation(s) in this region", {
+            count: number(part.ids.length),
+          }),
+        ),
       );
       for (const id of part.ids) {
         const button = make(
@@ -289,19 +334,21 @@ function renderList(rows) {
       ),
       make(
         "span",
-        `${row.label} · ${row.start}–${row.end} · lane ${levels.get(row.id) + 1}`,
+        `${row.label} · ${row.start}–${row.end} · ${t("Lane")} ${levels.get(row.id) + 1}`,
       ),
     );
     button.onclick = () => select(row.id, true);
     $("annotation-list").append(button);
   }
   renderTable(rows.slice(mentionOffset, mentionOffset + 50));
-  $("mention-page").textContent = `${rows.length} mentions`;
+  $("mention-page").textContent = t("{count} mentions", {
+    count: number(rows.length),
+  });
   $("mentions-prev").disabled = mentionOffset === 0;
   $("mentions-next").disabled = mentionOffset + 50 >= rows.length;
   $("entity-position").textContent = selected
     ? `${rows.findIndex((x) => x.id === selected) + 1} / ${rows.length}`
-    : `${rows.length} mentions`;
+    : t("{count} mentions", { count: number(rows.length) });
 }
 function select(id, scroll = false) {
   const a = annotations.find((x) => x.id === id);
@@ -314,28 +361,31 @@ function select(id, scroll = false) {
     surface = make("blockquote", a.text),
     list = make("dl");
   for (const [name, value] of [
-    ["Annotation", a.id],
-    ["Start / end", `${a.start} / ${a.end}`],
+    [t("Annotation"), a.id],
+    [t("Start / end"), `${a.start} / ${a.end}`],
     [
-      "Model",
+      t("Model"),
       (a.model_ids?.length ? a.model_ids.join(", ") : a.model_id) ||
-        "Not provided",
+        t("Not provided"),
     ],
-    ["Original sublabels", a.original_labels?.join(", ") || a.label],
-    ["Model version", a.model_version || "Not provided"],
+    [t("Original sublabels"), a.original_labels?.join(", ") || a.label],
+    [t("Model version"), a.model_version || t("Not provided")],
     [
-      "Overlaps",
+      t("Overlaps"),
       annotations
         .filter((b) => b.id !== a.id && b.start < a.end && b.end > a.start)
         .map((b) => b.id + " " + b.label)
-        .join(", ") || "None",
+        .join(", ") || t("None"),
     ],
-    ["Confidence", a.score === null ? "Not provided" : a.score.toFixed(4)],
+    [
+      t("Confidence"),
+      a.score === null ? t("Not provided") : a.score.toFixed(4),
+    ],
   ])
     list.append(make("dt", name), make("dd", value));
-  const copy = make("button", "Copy entity", "secondary");
+  const copy = make("button", t("Copy entity"), "secondary");
   copy.onclick = safely(() => navigator.clipboard.writeText(a.text));
-  const offsets = make("button", "Copy offsets", "secondary");
+  const offsets = make("button", t("Copy offsets"), "secondary");
   offsets.onclick = safely(() =>
     navigator.clipboard.writeText(`${a.start}\t${a.end}`),
   );
@@ -427,7 +477,7 @@ $("find-next").onclick = safely(async () => {
   );
   if (documentId !== identity) return;
   if (match.start === null) {
-    $("viewer-status").textContent = "No matches in this document.";
+    $("viewer-status").textContent = t("No matches in this document.");
     return;
   }
   if (match.start < chunk.start || match.end > chunk.end)
@@ -477,27 +527,33 @@ $("find-next").onclick = safely(async () => {
     selection.addRange(range);
     first.node.parentElement.scrollIntoView({ block: "center" });
   }
-  $("viewer-status").textContent =
-    `Text match at ${match.start}–${match.end} · ${match.total} match(es) in this document.`;
+  $("viewer-status").textContent = t(
+    "Text match at {start}–{end} · {total} match(es) in this document.",
+    {
+      start: number(match.start),
+      end: number(match.end),
+      total: number(match.total),
+    },
+  );
 });
-$("results-link").href = base + "/jobs/" + token;
+$("results-link").href = localized(base + "/jobs/" + token);
 $("download-link").href = endpoint + "/download/brat";
 safely(async () => {
   const job = await api("");
+  availabilityDeadline = job.expires_at;
   $("viewer-expiry").textContent =
-    "Available until " +
-    (job.expires_at
-      ? new Date(job.expires_at).toLocaleString()
-      : "after processing finishes");
+    t("Available until") +
+    " " +
+    (job.expires_at ? date(job.expires_at) : t("after processing finishes"));
   if (job.expires_at)
     expiresAt =
       Date.now() + Date.parse(job.expires_at) - Date.parse(job.server_now);
   for (const [label, key] of [
-    ["Documents", "documents"],
-    ["Words", "words"],
-    ["Tokens", "tokens"],
-    ["Sentences", "sentences"],
-    ["Entities", "annotations"],
+    [t("Documents"), "documents"],
+    [t("Words"), "words"],
+    [t("Tokens"), "tokens"],
+    [t("Sentences"), "sentences"],
+    [t("Entities"), "annotations"],
   ]) {
     const card = make("div");
     card.append(
@@ -507,10 +563,20 @@ safely(async () => {
       ),
       make("span", label),
     );
+    const name = card.querySelector("span");
+    name.dataset.i18n = {
+      documents: "Documents",
+      words: "Words",
+      tokens: "Tokens",
+      sentences: "Sentences",
+      annotations: "Entities",
+    }[key];
     $("metrics").append(card);
   }
   const distribution = $("job-distribution");
-  distribution.append(make("strong", "Corpus distribution"));
+  distribution.hidden = !Object.keys(job.summary?.mentions_by_label || {})
+    .length;
+  distribution.append(make("strong", t("Corpus distribution")));
   for (const [label, count] of Object.entries(
     job.summary?.mentions_by_label || {},
   )) {
@@ -621,12 +687,15 @@ startProgress(endpoint, {
     ];
     for (let i = 0; i < cards.length; i++)
       cards[i].querySelector("strong").textContent = values[i] ?? "—";
-    $("metrics-scope").textContent =
+    const scopeKey =
       snapshot.status === "COMPLETED"
         ? "Final statistics"
         : snapshot.status === "COMPLETED_WITH_ERRORS"
           ? "Final statistics for annotated documents; failed documents excluded"
           : "Provisional statistics: annotated documents only";
+    $("metrics-scope").dataset.i18n = scopeKey;
+    $("metrics-scope").textContent = t(scopeKey);
+    availabilityDeadline = snapshot.expires_at;
     const key = [
       snapshot.annotated_documents,
       snapshot.failed_documents,
@@ -663,12 +732,15 @@ function showEntitySheet(id) {
   const a = annotations.find((row) => row.id === id);
   if (!a) return;
   const dialog = showDialog(a.label, a.text, [
-    { label: "Copy entity", run: () => navigator.clipboard.writeText(a.text) },
+    {
+      label: t("Copy entity"),
+      run: () => navigator.clipboard.writeText(a.text),
+    },
   ]);
   dialog.classList.add("entity-sheet");
   const offsets = make(
     "p",
-    `Offsets ${a.start}–${a.end} · ${a.model_id || "Model not provided"} · confidence ${a.score ?? "not provided"}`,
+    `${t("Offsets")} ${a.start}–${a.end} · ${a.model_id || t("Not provided")} · ${t("Confidence")} ${a.score ?? t("Not provided")}`,
   );
   dialog.append(offsets, sourceDetails(a));
   for (const other of annotations.filter(
@@ -689,16 +761,88 @@ $("entity-sheet-trigger").onclick = () => showEntitySheet(selected);
 function sourceDetails(annotation) {
   const details = make("div", "", "annotation-sources");
   if (!annotation.sources?.length) return details;
-  details.append(make("h4", "Supporting predictions"));
+  details.append(make("h4", t("Supporting predictions")));
   for (const source of annotation.sources) {
     const row = make("p");
     row.append(make("strong", source.model_id));
     row.append(
       document.createTextNode(
-        ` · ${source.model_version || "version not provided"} · ${source.original_label} · score ${source.score ?? "not provided"}`,
+        ` · ${source.model_version || t("Not provided")} · ${source.original_label} · ${t("Score")} ${source.score ?? t("Not provided")}`,
       ),
     );
     details.append(row);
   }
   return details;
 }
+
+$("model-filter").onchange = () => {
+  mentionOffset = 0;
+  selected = null;
+  $("region-annotations").replaceChildren();
+  $("annotation-details").replaceChildren();
+  render();
+};
+onLocaleChange(() => {
+  $("results-link").href = localized(base + "/jobs/" + token);
+  if (expired) {
+    $("viewer-status").textContent = t(
+      "Your results have expired. Documents are no longer available.",
+    );
+    return;
+  }
+  for (const button of $("document-list").querySelectorAll(
+    "button[data-document]",
+  )) {
+    const row = records.find(
+      (row) => row.document_id === button.dataset.document,
+    );
+    if (row)
+      button.querySelector("small").textContent =
+        `${t(row.status)} · ${t("{count} mentions", { count: number(row.annotation_count) })}`;
+  }
+  $("model-filter").options[0].textContent = t("All models");
+  $("viewer-expiry").textContent =
+    t("Available until") +
+    " " +
+    (availabilityDeadline
+      ? date(availabilityDeadline)
+      : t("after processing finishes"));
+  const regionHeading = $("region-annotations").querySelector("strong");
+  if (regionHeading)
+    regionHeading.textContent = t("{count} annotation(s) in this region", {
+      count: number($("region-annotations").querySelectorAll("button").length),
+    });
+  if (chunk) {
+    $("document-stats").textContent = Object.entries(documentStatistics || {})
+      .filter(([key]) =>
+        ["words", "tokens", "sentences", "entities_total"].includes(key),
+      )
+      .map(
+        ([key, value]) =>
+          t(
+            {
+              words: "Words",
+              tokens: "Tokens",
+              sentences: "Sentences",
+              entities_total: "Entities",
+            }[key],
+          ) +
+          ": " +
+          (value ?? t("Not provided")),
+      )
+      .join(" · ");
+    $("viewer-status").textContent = t(
+      "Read-only exploration · select a highlighted region or an annotation.",
+    );
+    $("chunk-info").textContent = t(
+      "Characters {start}–{end} of {total} · original Unicode code-point offsets",
+      {
+        start: number(chunk.start),
+        end: number(chunk.end),
+        total: number(chunk.total_characters),
+      },
+    );
+    render();
+    if (selected) select(selected);
+  }
+});

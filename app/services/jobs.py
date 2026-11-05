@@ -151,7 +151,33 @@ class JobService:
         account = user()
         with self.db.connect() as c:
             rows = c.execute(
-                "SELECT id,status,document_count,processed_documents,created_at,completed_at,expires_at FROM jobs WHERE owner_user_id=? ORDER BY seq DESC LIMIT 100 OFFSET ?",
-                (account["id"], offset),
+                """SELECT id,CASE WHEN expires_at<=? THEN 'EXPIRED' ELSE status END AS status,
+                document_count,processed_documents,created_at,completed_at,expires_at,
+                json_extract(payload,'$.language') AS language,
+                json_extract(payload,'$.documents[0]') AS name,
+                json_extract(payload,'$.selected_models') AS selected_models
+                FROM jobs WHERE owner_user_id=? ORDER BY seq DESC LIMIT 100 OFFSET ?""",
+                (time.time(), account["id"], offset),
             ).fetchall()
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["models"] = [
+                m["model_id"] for m in json.loads(item.pop("selected_models") or "[]")
+            ]
+            item["name"] = item["name"] or item["id"][:8]
+            result.append(item)
+        return result
+
+    def workspace_metrics(self):
+        """Aggregate only this owner's retained jobs, independently of history pagination."""
+        with self.db.connect() as c:
+            row = c.execute(
+                """SELECT COALESCE(sum(status IN ('QUEUED','PROCESSING')),0) AS active,
+                COALESCE(sum(status IN ('COMPLETED','COMPLETED_WITH_ERRORS')),0) AS completed,
+                COALESCE(sum(processed_documents>0 AND status!='EXPIRED'
+                  AND (expires_at IS NULL OR expires_at>?)),0) AS available
+                FROM jobs WHERE owner_user_id=?""",
+                (time.time(), user()["id"]),
+            ).fetchone()
+        return dict(row)

@@ -35,7 +35,12 @@ PUBLIC_API = {
         "reset-password",
     )
 }
-PUBLIC_ASSETS = {"/static/auth.css", "/static/auth.js"}
+PUBLIC_ASSETS = {
+    "/static/auth.css",
+    "/static/auth.js",
+    "/static/i18n.js",
+    "/static/assets/bsc-blue.svg",
+}
 SAFE = {"GET", "HEAD", "OPTIONS"}
 
 

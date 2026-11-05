@@ -1,45 +1,26 @@
 import { showDialog } from "./progress.js";
+import { t, number, onLocaleChange, localized } from "./auth.js";
+import { mountCatalog } from "./catalog.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
-/* UI messages are centralized here; templates contain the English page copy. */
-const messages = {
-  noModels:
-    "No validated models are available for this language. Inference is currently unavailable.",
-  choose: "Expand a category and choose one or more checkpoints.",
-  unavailable: "Not available for this language",
-  loadingError:
-    "The model catalog could not be loaded. Please reload this page.",
-  uploadError: "The request could not be submitted. Please try again.",
-};
 const form = document.querySelector("#request-form");
 const language = document.querySelector("#language");
 const entities = document.querySelector("#entities");
 const files = document.querySelector("#files");
 const button = document.querySelector("#submit");
 const error = document.querySelector("#error");
-let catalog = [],
-  busy = false;
+let busy = false;
+const catalog = mountCatalog({ onChange: update });
 function selected() {
-  return [
-    ...new Set(
-      [...entities.querySelectorAll("input:checked")].map((x) => x.value),
-    ),
-  ];
+  return catalog.selected();
 }
 function selectedCategories() {
-  const active = new Set(selected());
-  return [
-    ...new Set(
-      catalog
-        .filter((row) => active.has(row.model_id || row.entity))
-        .map((row) => row.display_name),
-    ),
-  ];
+  return catalog.selectedCategories();
 }
 function update() {
   for (const detail of entities.querySelectorAll("details[data-category]")) {
     const active = new Set(selected());
     const ids = new Set(
-      catalog
+      catalog.rows
         .filter(
           (row) =>
             row.entity === detail.dataset.category &&
@@ -47,161 +28,35 @@ function update() {
         )
         .map((row) => row.model_id || row.entity),
     );
-    detail.querySelector(".model-count").textContent = `${ids.size} active`;
+    detail.querySelector(".model-count").textContent = t("{count} active", {
+      count: number(ids.size),
+    });
   }
   const pasted = document.querySelector("#input-mode").value === "PASTED_TEXT";
   const value = document.querySelector("#pasted-text").value;
-  document.querySelector("#paste-counter").textContent =
-    `${Array.from(value).length} characters · ${new TextEncoder().encode(value).length} UTF-8 bytes`;
+  document.querySelector("#paste-counter").textContent = t(
+    "{count} characters · {bytes} UTF-8 bytes",
+    {
+      count: number(Array.from(value).length),
+      bytes: number(new TextEncoder().encode(value).length),
+    },
+  );
   button.disabled =
     busy ||
     !selected().length ||
     (pasted ? !value.trim() : !files.files.length);
   if (pasted) {
     document.querySelector("#summary").textContent =
-      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${new TextEncoder().encode(value).length} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${selected().length} model(s)`;
+      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${number(new TextEncoder().encode(value).length)} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${t("{count} model(s)", { count: number(selected().length) })}`;
     return;
   }
   const names = [...files.files].map((x) => x.name);
   const bytes = [...files.files].reduce((sum, x) => sum + x.size, 0);
   const isZip = names.length === 1 && names[0].toLowerCase().endsWith(".zip");
   document.querySelector("#summary").textContent = names.length
-    ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? "ZIP document count is checked by the server" : names.length + " document(s)"}\nLanguage: ${language.selectedOptions[0]?.textContent || ""} · Entities: ${selectedCategories().join(", ") || "None"} · ${selected().length} model(s)`
-    : "No documents selected.";
+    ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? t("ZIP document count is checked by the server") : t("{count} document(s)", { count: number(names.length) })}\n${t("Language")}: ${language.selectedOptions[0]?.textContent || ""} · ${t("Entities")}: ${selectedCategories().join(", ") || t("None")} · ${t("{count} model(s)", { count: number(selected().length) })}`
+    : t("No documents selected.");
 }
-function modelChoice(row, retained, categories = []) {
-  const label = document.createElement("label");
-  const supported = !row.languages || row.languages.includes(language.value);
-  const available = row.available && supported;
-  label.className = `entity${available ? "" : " unavailable"}`;
-  const check = document.createElement("input");
-  check.type = "checkbox";
-  check.name = "models";
-  check.value = row.model_id || row.entity;
-  check.disabled = !available;
-  check.checked = available && retained.has(check.value);
-  const copy = document.createElement("span");
-  copy.textContent = row.model_name || row.model_id || row.display_name;
-  const detail = document.createElement("small");
-  detail.textContent = available
-    ? row.description || categories.join(", ") || row.display_name
-    : !supported
-      ? "Not validated for this document language."
-      : row.unavailable_reason || messages.unavailable;
-  copy.append(detail);
-  if (categories.length) {
-    const categoryList = document.createElement("small");
-    categoryList.textContent = categories.join(" · ");
-    copy.append(categoryList);
-  }
-  label.append(check, copy);
-  const container = document.createElement("div");
-  container.className = "model-choice";
-  container.append(label);
-  if (row.model_id) {
-    const info = document.createElement("details");
-    info.className = "model-information";
-    const summary = document.createElement("summary");
-    summary.textContent = "Model information";
-    const content = document.createElement("p");
-    content.textContent = `${row.model_id}${row.version ? " · version " + row.version : ""}${row.languages ? " · Languages: " + row.languages.join(", ") : ""}`;
-    info.append(summary, content);
-    if (
-      row.repository &&
-      /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(row.repository)
-    ) {
-      const link = document.createElement("a");
-      link.href = "https://huggingface.co/" + row.repository;
-      link.textContent = row.repository;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      info.append(link);
-    }
-    const metrics = document.createElement("p");
-    metrics.textContent = Object.keys(row.metrics || {}).length
-      ? "Verified metrics: " + JSON.stringify(row.metrics)
-      : "No independently verified metrics registered.";
-    info.append(metrics);
-    container.append(info);
-  }
-  return container;
-}
-function render() {
-  // A language change may retain compatible multilingual choices, never create selections.
-  const retained = new Set(selected());
-  entities.replaceChildren();
-  const rows = catalog.filter((row) => row.language === language.value);
-  const multilingual = catalog.filter((row) => row.language === "mul");
-  const categories = new Map();
-  for (const row of [...rows, ...multilingual]) {
-    if (!categories.has(row.entity))
-      categories.set(row.entity, row.display_name);
-  }
-  const local = document.createElement("div");
-  local.className = "category-list";
-  for (const [key, name] of categories) {
-    const category = document.createElement("details");
-    category.dataset.category = key;
-    category.className = "model-category";
-    const heading = document.createElement("summary");
-    heading.textContent = name;
-    const count = document.createElement("span");
-    count.className = "model-count";
-    heading.append(count);
-    category.append(heading);
-    const choices = rows.filter((row) => row.entity === key);
-    for (const row of choices) category.append(modelChoice(row, retained));
-    if (!choices.length) {
-      const hint = document.createElement("p");
-      hint.className = "hint";
-      hint.textContent =
-        "See Multilingual models below for registered checkpoints.";
-      category.append(hint);
-    }
-    local.append(category);
-  }
-  entities.append(local);
-  const global = document.createElement("section");
-  global.id = "multilingual-models";
-  const title = document.createElement("h3");
-  title.textContent = "Multilingual models";
-  global.append(title);
-  const unique = new Map();
-  for (const row of multilingual) {
-    if (!row.model_id) continue;
-    if (!unique.has(row.model_id))
-      unique.set(row.model_id, { row, categories: [] });
-    unique.get(row.model_id).categories.push(row.display_name);
-  }
-  for (const { row, categories } of unique.values())
-    global.append(modelChoice(row, retained, categories));
-  if (!unique.size) {
-    const hint = document.createElement("p");
-    hint.className = "hint";
-    hint.textContent = "No multilingual checkpoints registered.";
-    global.append(hint);
-  }
-  entities.append(global);
-  document.querySelector("#catalog-message").textContent = [
-    ...rows,
-    ...multilingual,
-  ].some(
-    (row) =>
-      row.available &&
-      (!row.languages || row.languages.includes(language.value)),
-  )
-    ? messages.choose
-    : messages.noModels;
-  update();
-}
-language.addEventListener("change", render);
-entities.addEventListener("change", (event) => {
-  if (event.target.matches("input[type=checkbox]"))
-    for (const check of entities.querySelectorAll("input[type=checkbox]"))
-      if (check.value === event.target.value && !check.disabled)
-        check.checked = event.target.checked;
-  update();
-});
 files.addEventListener("change", update);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -209,7 +64,7 @@ form.addEventListener("submit", async (event) => {
   busy = true;
   error.hidden = true;
   update();
-  button.textContent = "Submitting…";
+  button.textContent = t("Submitting…");
   try {
     const body = new FormData(form);
     body.delete("models");
@@ -240,72 +95,66 @@ form.addEventListener("submit", async (event) => {
         if (event.lengthComputable) {
           document.querySelector("#upload-progress").value =
             (event.loaded / event.total) * 100;
-          document.querySelector("#upload-message").textContent =
-            `Uploading: ${event.loaded} / ${event.total} bytes`;
+          document.querySelector("#upload-message").textContent = t(
+            "Uploading: {loaded} / {total} bytes",
+            { loaded: number(event.loaded), total: number(event.total) },
+          );
         }
       };
       request.upload.onload = () => {
-        document.querySelector("#upload-message").textContent =
-          "Upload complete. Validating and registering your request…";
+        document.querySelector("#upload-message").textContent = t(
+          "Upload complete. Validating and registering your request…",
+        );
       };
       request.onload = () => {
         if (request.status === 202) resolve(request.response);
         else
-          reject(new Error(request.response?.detail || messages.uploadError));
+          reject(
+            new Error(
+              t(request.response?.detail) ||
+                t("The request could not be submitted. Please try again."),
+            ),
+          );
       };
-      request.onerror = () => reject(new Error(messages.uploadError));
+      request.onerror = () =>
+        reject(
+          new Error(t("The request could not be submitted. Please try again.")),
+        );
       request.send(body);
     });
     const accepted = showDialog(
-      "Request accepted",
-      "Your documents have entered the persistent queue. Save your private link.",
+      t("Request accepted"),
+      t(
+        "Your documents have entered the persistent queue. Only your account can access this job.",
+      ),
       [
         {
-          label: "Copy private link",
-          run: () => navigator.clipboard.writeText(data.url),
+          label: t("Copy private link"),
+          run: () => navigator.clipboard.writeText(localized(data.url)),
         },
-        { label: "Continue to request", run: () => location.assign(data.url) },
+        {
+          label: t("Continue to request"),
+          run: () => location.assign(localized(data.url)),
+        },
       ],
     );
     const link = document.createElement("a");
-    link.href = data.url;
-    link.textContent = data.url;
+    link.href = localized(data.url);
+    link.textContent = localized(data.url);
     link.className = "private-link";
     accepted.append(link);
-    accepted.addEventListener("close", () => location.assign(data.url));
+    accepted.addEventListener("close", () =>
+      location.assign(localized(data.url)),
+    );
   } catch (exc) {
-    error.textContent = exc.message || messages.uploadError;
+    error.textContent =
+      exc.message || t("The request could not be submitted. Please try again.");
     error.hidden = false;
     busy = false;
-    button.textContent = "Start annotation →";
+    button.textContent = t("Start annotation") + " →";
     update();
   }
 });
-(async () => {
-  try {
-    const responses = await Promise.all([
-      fetch(base + "/api/languages"),
-      fetch(base + "/api/models"),
-    ]);
-    if (responses.some((x) => !x.ok)) throw new Error();
-    const [languages, models] = await Promise.all(
-      responses.map((x) => x.json()),
-    );
-    catalog = models;
-    language.replaceChildren();
-    for (const row of languages) {
-      const option = document.createElement("option");
-      option.value = row.code;
-      option.textContent = row.display_name;
-      language.append(option);
-    }
-    render();
-  } catch (_) {
-    document.querySelector("#catalog-message").textContent =
-      messages.loadingError;
-  }
-})();
-
 const dropZone = document.querySelector("#drop-zone");
 for (const event of ["dragover", "dragenter"])
   dropZone.addEventListener(event, (e) => {
@@ -345,8 +194,8 @@ for (const tab of document.querySelectorAll("[data-mode]")) {
       .forEach((x) => (x.tabIndex = x === tab ? 0 : -1));
     document.querySelector("#upload-hint").textContent =
       mode === "ZIP_ENTRY"
-        ? "One ZIP archive · nested TXT folders supported"
-        : "UTF-8 TXT · multiple files supported";
+        ? t("One ZIP archive · nested TXT folders supported")
+        : t("UTF-8 TXT · multiple files supported");
     files.accept = mode === "ZIP_ENTRY" ? ".zip" : ".txt";
     files.multiple = mode !== "ZIP_ENTRY";
     files.value = "";
@@ -377,8 +226,8 @@ function renderFiles() {
     name.textContent = file.name;
     remove.type = "button";
     remove.className = "secondary";
-    remove.textContent = "Remove";
-    remove.setAttribute("aria-label", "Remove " + file.name);
+    remove.textContent = t("Remove");
+    remove.setAttribute("aria-label", t("Remove") + " " + file.name);
     remove.onclick = () => {
       const transfer = new DataTransfer();
       [...files.files]
@@ -402,3 +251,13 @@ document.querySelector("#clear-text").onclick = () => {
 };
 document.querySelector("#copy-text").onclick = () =>
   navigator.clipboard.writeText(document.querySelector("#pasted-text").value);
+
+onLocaleChange(() => {
+  renderFiles();
+  update();
+  document.querySelector("#upload-hint").textContent = t(
+    document.querySelector("#input-mode").value === "ZIP_ENTRY"
+      ? "One ZIP archive · nested TXT folders supported"
+      : "UTF-8 TXT · multiple files supported",
+  );
+});

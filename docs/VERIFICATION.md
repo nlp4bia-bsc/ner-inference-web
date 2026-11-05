@@ -1,4 +1,28 @@
-# Latest: V4 authentication, ownership and quotas
+# Latest: V5 institutional interface (0.5.0)
+
+Baseline 967e87d, with 40 phase-one security/migration/browser cases passed before
+redesign (46.03s). Final complete regression: **188 passed in 305.86s**, no
+failures/skips. Clean HTTP-only: **132 passed, 56 skipped in 41.24s**, with one
+compatible Starlette/httpx deprecation warning. Full execution includes browsers
+and native random tiny-BERT CPU integration; it does not assert clinical accuracy.
+
+The eight-resolution/two-prefix matrix covers the new institutional screens and
+real account flows, model selection, overlap/keyboard interactions, admin/MFA,
+confirmation/cancellation and revocation. Axe-core 4.14.0 ran 60 EN/ES/CA scans with
+zero automatic WCAG-tagged violations; incomplete contrast checks are disclosed.
+Ruff, Jinja/static format, Bandit medium/high, HTTP dependency audit, wheel/sdist
+and no-NLP Docker pass. Runtime root/prefix checks preserve private401/303 gates
+and complete real prefix registration/captured mail/verification/login/logout.
+
+See [REDESIGN_VERIFICATION.md](REDESIGN_VERIFICATION.md) for the13-part delivery,
+captures, commands, measurements and remaining limits; [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
+and [USER_EXPERIENCE.md](USER_EXPERIENCE.md) for maintained frontend contracts.
+No new schema migration or scientific consolidation/offset change was introduced.
+The earlier Torch, SMTP, TLS/BSC, legal-review and clinical/GPU limitations remain.
+
+---
+
+# Historical: V4 authentication, ownership and quotas
 
 Baseline: b8d4d4f on branch work, **128 passed in83.68s** before implementation.
 Final full regression on Python3.12.14:

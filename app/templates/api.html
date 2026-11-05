@@ -1,31 +1,18 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>API reference · Multilingual NER</title>
-    <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
-    <script type="module" src="{{ prefix }}/static/session.js"></script>
-  </head>
-  <body>
-    <nav class="topbar">
-      <a class="brand" href="{{ prefix }}/">Multilingual NER</a
-      ><span class="institution">TEMU · API reference</span>
-    </nav>
-    <main class="results">
+{% extends 'base.html' %}
+{% block title %}{{ u('API reference') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ prefix }}/static/style.css">{% endblock %}
+{% block content %}
+    <main class="content-width results">
       <header>
-        <p class="eyebrow">DEVELOPER REFERENCE</p>
-        <h1>Multilingual NER API</h1>
-        <p class="intro">
-          Submit corpora, follow private jobs and explore original-coordinate
-          annotations.
-        </p>
+        <p class="eyebrow">{{ copy("API reference") }}</p>
+        <h1>{{ copy("NLP4BIA API") }}</h1>
+        <p class="intro">{{ copy("Submit corpora, follow private jobs and explore original-coordinate annotations.") }}</p>
         <a class="button" href="{{ prefix }}/openapi.json"
-          >Download OpenAPI schema</a
+          >{{ copy("Download OpenAPI schema") }}</a
         >
       </header>
       <section class="status-card">
-        <h2>Operations</h2>
+        <h2>{{ copy("Operations") }}</h2>
         {% for path, methods in schema.paths.items() %}{% for method, operation
         in methods.items() %}
         <details>
@@ -43,7 +30,7 @@
         {% endfor %}{% endfor %}
       </section>
       <section class="status-card">
-        <h2>Data models</h2>
+        <h2>{{ copy("Data models") }}</h2>
         {% for name, model in schema.components.schemas.items() %}
         <details>
           <summary>{{ name }}</summary>
@@ -58,5 +45,4 @@
         {% endfor %}
       </section>
     </main>
-  </body>
-</html>
+{% endblock %}

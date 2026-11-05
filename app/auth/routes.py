@@ -1,6 +1,7 @@
 """Localized HTML flows and JSON APIs share the same validated account operations."""
 
 import secrets
+import time
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
@@ -14,6 +15,7 @@ from app.auth.service import public_user
 from app.domain.identity import EmailAddress
 from app.errors import ServiceError
 from app.permissions.policies import user
+from app.ui_i18n import translate as ui_translate
 from app.users.schemas import Login, PasswordChange, Profile, Register, SafeModel
 
 
@@ -92,7 +94,8 @@ def router(auth, templates, jobs):
                 "prefix": prefix,
                 "csrf": auth.csrf(seed),
                 "account": public_user(account, auth.s) if account else None,
-                "message": translate(message, language) if message else None,
+                "message": ui_translate(message, language) if message else None,
+                "message_key": message,
                 "token": request.query_params.get("token", ""),
                 **extra,
             },
@@ -331,6 +334,7 @@ def router(auth, templates, jobs):
 
     @api.get("/", include_in_schema=False)
     @api.get("/dashboard", include_in_schema=False)
+    @api.get("/my-jobs", include_in_schema=False)
     def dashboard(request: Request, offset: int = 0):
         if offset < 0:
             raise ServiceError("invalid_form", 422)
@@ -346,6 +350,7 @@ def router(auth, templates, jobs):
                 "locale": language,
                 "t": lambda key: translate(key, language),
                 "jobs": jobs.history(offset),
+                "workspace_metrics": jobs.workspace_metrics(),
                 "offset": offset,
                 "date": lambda value: (
                     datetime.fromtimestamp(value, timezone.utc).isoformat(timespec="minutes")
@@ -353,6 +358,62 @@ def router(auth, templates, jobs):
                     else "—"
                 ),
             },
+        )
+
+    def active_sessions():
+        account = user()
+        now = time.time()
+        with auth.db.connect() as c:
+            rows = c.execute(
+                """SELECT created_at,last_seen_at,expires_at,token_hash=? AS current
+                FROM sessions WHERE user_id=? AND auth_version=? AND revoked_at IS NULL
+                AND expires_at>? AND last_seen_at>? ORDER BY created_at DESC LIMIT 100""",
+                (
+                    account["session_hash"],
+                    account["id"],
+                    account["auth_version"],
+                    now,
+                    now - auth.s.session_idle_seconds,
+                ),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    @api.get("/api/auth/sessions")
+    def sessions_api():
+        return active_sessions()
+
+    @api.get("/sessions", include_in_schema=False)
+    def sessions_page(request: Request):
+        return render(
+            request,
+            "sessions",
+            sessions=active_sessions(),
+            date=lambda value: datetime.fromtimestamp(value, timezone.utc).isoformat(),
+        )
+
+    @api.get("/account-deletion", include_in_schema=False)
+    def deletion_page(request: Request):
+        return render(request, "deletion")
+
+    @api.post("/account-deletion", include_in_schema=False)
+    async def deletion_request(request: Request):
+        from app.auth.service import audit
+        from app.auth.sessions import require_live
+
+        if await data(request):
+            raise ServiceError("invalid_form", 422)
+        account = user()
+        auth.throttle(
+            "deletion-request",
+            account["email"],
+            request.client.host if request.client else "unknown",
+        )
+        with auth.db.connect() as c:
+            c.execute("BEGIN IMMEDIATE")
+            require_live(c, account, auth.s)
+            audit(c, account["id"], account["id"], "ACCOUNT_DELETION_REQUESTED")
+        return render(
+            request, "deletion", "Your deletion request has been recorded for institutional review."
         )
 
     @api.patch("/api/profile")

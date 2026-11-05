@@ -69,3 +69,15 @@ TLS/HSTS/proxy configuration, real mail-provider validation, key/MFA recovery,
 monitoring and capacity validation. Administrators manage accounts/operational
 metrics, not clinical access across owners. Local synthetic tests and independent
 code review are evidence within their scope, not certification or invulnerability.
+
+## Institutional interface (V5)
+
+The redesign adds no public work page. Only the shared auth vocabulary and the
+provided static logo join the exact public asset allowlist. Sessions metadata is
+owner-filtered and excludes IDs/verifiers/seeds/IPs; deletion requests reject extra
+fields, enforce CSRF/throttling and revalidate the actor transactionally. They are
+audited for institutional review. Owner-only dashboard projections do not expose
+other accounts' queue counts or source documents. Administration confirmations
+are additional UX: the existing live ADMIN/MFA/CSRF checks remain authoritative.
+Native dialogs, local SVG/fonts and ES modules preserve the strict CSP.
+See REDESIGN_VERIFICATION.md for repeated authorization/browser checks.

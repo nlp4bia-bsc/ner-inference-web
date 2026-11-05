@@ -1,5 +1,8 @@
 # Entrega V4: autenticación y aislamiento
 
+Documento histórico de la fase de autenticación. El rediseño posterior se documenta
+en [REDESIGN_VERIFICATION.md](REDESIGN_VERIFICATION.md).
+
 ## 1. Implementación
 
 Registro, verificación de email, login, recuperación/cambio de contraseña,

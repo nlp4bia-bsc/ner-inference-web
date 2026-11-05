@@ -1,60 +1,36 @@
-{% extends "auth_base.html" %}
-{% block content %}
-{% set titles={'login':'login','register':'register','verify':'verify','forgot':'forgot','reset':'reset','resend':'resend','profile':'profile','password':'change_password','mfa':'mfa'} %}
-<h1>{{ t(titles[mode]) }}</h1>
-{% if message %}<p role="status" class="notice">{{ message }}</p>{% endif %}
+{% extends "base.html" %}
+{% set titles={'login':'login','register':'register','verify':'verify','forgot':'forgot','reset':'reset','resend':'resend','profile':'profile','password':'change_password','mfa':'mfa','sessions':'Active sessions','deletion':'Account deletion request'} %}
+{% set public_auth=mode in ('login','register','verify','forgot','reset','resend') %}
+{% block title %}{{ u(titles[mode]) }}{% endblock %}
+{% block body_class %}{{ 'auth-page' if public_auth else 'account-page' }}{% endblock %}
 {% macro field(name,type='text',autocomplete='',value='',required=true) %}
-<label for="{{ name }}">{{ t(name) }}</label>
-<input id="{{ name }}" name="{{ name }}" type="{{ type }}" autocomplete="{{ autocomplete }}" value="{{ value }}" {% if required %}required{% endif %} {% if type!='password' %}maxlength="200"{% endif %}>
+<div class="field{% if name=='institution' %} full-width{% endif %}"><label for="{{ name }}">{{ copy(name) }}</label><div class="input-wrap"><input id="{{ name }}" name="{{ name }}" type="{{ type }}" autocomplete="{{ autocomplete }}" value="{{ value }}"{% if required %} required{% endif %}{% if type!='password' %} maxlength="200"{% endif %}>{% if type=='password' %}<button type="button" class="password-toggle" data-password="{{ name }}" aria-controls="{{ name }}" aria-pressed="false">{{ copy('Show password') }}</button>{% endif %}</div></div>
 {% endmacro %}
+{% block content %}
+{% if public_auth %}<main class="auth-layout"><section class="auth-presentation" aria-label="NLP4BIA"><p class="eyebrow">NLP4BIA / {{ copy('Research tools') }}</p><h2>{{ copy('From text to structured insight.') }}</h2><p class="presentation-subtitle">{{ copy('Clinical and Biomedical Text Annotation') }}</p><p>{{ copy('Annotate clinical and biomedical text, inspect every mention and export results for your research.') }}</p><div class="research-graphic" aria-hidden="true"><svg viewBox="0 0 440 90" fill="none"><path d="M12 45h80l50-28h100l40 56h110M92 45l50 28h100l40-56h110M242 17v56" stroke="currentColor"/><g fill="currentColor"><circle cx="92" cy="45" r="5"/><circle cx="142" cy="17" r="5"/><circle cx="142" cy="73" r="5"/><circle cx="242" cy="17" r="5"/><circle cx="242" cy="73" r="5"/><circle cx="282" cy="17" r="5"/><circle cx="282" cy="73" r="5"/></g></svg></div><div class="presentation-features">{% for symbol,title,description in [('layers','Interactive annotations','Explore nested and overlapping entities in their original context.'),('grid','Multiple models','Choose language-specific and multilingual checkpoints explicitly.'),('code','Open research formats','BRAT and TSV exports for your annotation workflows.')] %}<div>{{ icon(symbol) }}<div>{{ copy(title,'strong') }}{{ copy(description,'p') }}</div></div>{% endfor %}</div><div class="institution-line">BARCELONA SUPERCOMPUTING CENTER <span>—</span> NLP4BIA</div></section><section class="auth-card {{ 'registration-card' if mode=='register' else '' }}">
+{% else %}<main class="content-width account-layout"><header class="page-heading"><p class="eyebrow">NLP4BIA / {{ copy('Research account') }}</p><h1 data-i18n="{{ titles[mode] }}">{{ u(titles[mode]) }}</h1></header><section class="account-card card">{% endif %}
+{% if public_auth %}<p class="eyebrow">{{ copy('Research access') }}</p><h1 data-i18n="{{ titles[mode] }}">{{ u(titles[mode]) }}</h1><p class="muted">{{ copy('Use your verified research account to continue.' if mode=='login' else 'Join the research workspace' if mode=='register' else 'Clinical and Biomedical Text Annotation') }}</p>{% endif %}
+{% if message %}<p role="status" class="notice"{% if message_key %} data-i18n="{{ message_key }}"{% endif %}>{{ message }}</p>{% endif %}
+{% if mode=='login' and request.query_params.get('reason')=='expired' %}<p role="status" class="notice">{{ copy('Session expired. Sign in again to continue.') }}</p>{% endif %}
+{% if mode=='profile' %}<div class="profile-summary"><span class="large-avatar">{{ account.full_name[:1]|upper }}</span><div><h2>{{ account.full_name }}</h2><p>{{ account.email }}</p><span class="status-pill">{{ copy('Verified email' if account.email_verified_at else 'Email not yet verified') }}</span></div><span class="tier-badge">{{ account.access_tier }}</span></div>{% endif %}
 {% if mode in ('login','register','forgot','resend','profile','password','reset') %}
 {% set actions={'login':'login','register':'register','forgot':'forgot-password','resend':'resend-verification','profile':'profile','password':'change-password','reset':'reset-password'} %}
-<form method="post" action="{{ prefix }}/{{ actions[mode] }}?lang={{ locale }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf }}">
-  {% if mode in ('register','profile') %}
-  {{ field('full_name',autocomplete='name',value=account.full_name if mode=='profile' else '') }}
-  {{ field('institution',autocomplete='organization',value=account.institution if mode=='profile' else '') }}
-  <label for="professional_role">{{ t('professional_role') }}</label>
-  <select id="professional_role" name="professional_role" required>
-  {% for role in ('CLINICIAN','RESEARCHER','DATA_SCIENTIST','NLP_ENGINEER','STUDENT','OTHER') %}
-    <option value="{{ role }}" {% if mode=='profile' and account.professional_role==role %}selected{% endif %}>{{ t(role) }}</option>
-  {% endfor %}
-  </select>
-  <div id="professional-other">{{ field('professional_role_other',value=account.professional_role_other if mode=='profile' else '',required=false) }}</div>
-  <input type="hidden" name="preferred_locale" value="{{ locale }}">
-  {% endif %}
-  {% if mode in ('register','login','forgot','resend') %}{{ field('email','email','username') }}{% endif %}
-  {% if mode=='password' %}{{ field('current_password','password','current-password') }}{% endif %}
-  {% if mode in ('register','login','password','reset') %}
-    {{ field('password','password','current-password' if mode=='login' else 'new-password') }}
-    {% if mode!='login' %}{{ field('password_confirmation','password','new-password') }}<p class="hint">{{ t('password_hint') }}</p>{% endif %}
-  {% endif %}
-  {% if mode=='login' %}{{ field('otp',autocomplete='one-time-code',required=false) }}{% endif %}
-  {% if mode=='reset' %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
-  {% if mode=='register' %}<p>{{ t('legal_notice') }}</p><label class="check"><input type="checkbox" name="legal_accepted" required>{{ t('legal_accepted') }}</label>{% endif %}
-  <button type="submit">{{ t(titles[mode]) if mode!='profile' else t('save') }}</button>
-</form>
-{% endif %}
-{% if mode=='verify' %}
-<form method="post" action="{{ prefix }}/verify-email?lang={{ locale }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="token" value="{{ token }}"><button>{{ t('verify') }}</button></form>
-{% endif %}
-{% if mode=='profile' %}
-<p>{{ t('tier') }}: {{ account.access_tier }}</p><a href="{{ prefix }}/change-password?lang={{ locale }}">{{ t('change_password') }}</a>
-<form method="post" action="{{ prefix }}/logout-all"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button>{{ t('logout_all') }}</button></form>
-<form method="post" action="{{ prefix }}/rotate-session"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button>{{ t('rotate') }}</button></form>
-{% endif %}
-{% if mode=='mfa' %}
-  {% if recovery_codes %}
-  <p>{{ t('recovery_codes') }}</p><ul id="recovery-codes">{% for code in recovery_codes %}<li>{{ code }}</li>{% endfor %}</ul><a href="{{ prefix }}/login">{{ t('login') }}</a>
-  {% elif secret %}
-  <p>{{ t('mfa_hint') }}</p><code id="mfa-secret">{{ secret }}</code>
-  <form method="post" action="{{ prefix }}/mfa/confirm"><input type="hidden" name="csrf_token" value="{{ csrf }}">{{ field('otp',autocomplete='one-time-code') }}<button>{{ t('mfa_confirm') }}</button></form>
-  {% elif account.mfa_enabled %}<p>{{ t('mfa_enabled') }}</p>
-  {% else %}
-  <form method="post" action="{{ prefix }}/mfa/start"><input type="hidden" name="csrf_token" value="{{ csrf }}">{{ field('current_password','password','current-password') }}<button>{{ t('mfa_start') }}</button></form>
-  {% endif %}
-{% endif %}
-{% if not account %}
-<nav><a href="{{ prefix }}/login?lang={{ locale }}">{{ t('login') }}</a><a href="{{ prefix }}/register?lang={{ locale }}">{{ t('register') }}</a><a href="{{ prefix }}/forgot-password?lang={{ locale }}">{{ t('forgot') }}</a><a href="{{ prefix }}/resend-verification?lang={{ locale }}">{{ t('resend') }}</a></nav>
-{% endif %}
-{% endblock %}
+<form class="account-form {{ 'form-grid' if mode in ('register','profile') else '' }}" method="post" action="{{ prefix }}/{{ actions[mode] }}?lang={{ locale }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+{% if mode in ('register','profile') %}{{ field('full_name',autocomplete='name',value=account.full_name if mode=='profile' else '') }}{% endif %}
+{% if mode in ('register','login','forgot','resend') %}{{ field('email','email','username') }}{% endif %}
+{% if mode in ('register','profile') %}{{ field('institution',autocomplete='organization',value=account.institution if mode=='profile' else '') }}<div class="field full-width"><label for="professional_role">{{ copy('professional_role') }}</label><select id="professional_role" name="professional_role" aria-describedby="profession-caption" required>{% for role in ('CLINICIAN','RESEARCHER','DATA_SCIENTIST','NLP_ENGINEER','STUDENT','OTHER') %}<option value="{{ role }}"{% if mode=='profile' and account.professional_role==role %} selected{% endif %} data-i18n="{{ role }}">{{ u(role) }}</option>{% endfor %}</select><small id="profession-caption" class="hint profession-caption" data-i18n="{{ account.professional_role if mode=='profile' else 'CLINICIAN' }}">{{ u(account.professional_role if mode=='profile' else 'CLINICIAN') }}</small></div><div id="professional-other" class="full-width">{{ field('professional_role_other',value=account.professional_role_other if mode=='profile' else '',required=false) }}</div>{% if mode=='profile' %}<div class="field"><label for="preferred-locale">{{ copy('Preferred language') }}</label><select id="preferred-locale" name="preferred_locale">{% for code,name in [('en','English'),('es','Español'),('ca','Català')] %}<option value="{{ code }}"{% if account.preferred_locale==code %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>{% else %}<input type="hidden" name="preferred_locale" value="{{ locale }}">{% endif %}{% endif %}
+{% if mode=='password' %}{{ field('current_password','password','current-password') }}{% endif %}
+{% if mode in ('register','login','password','reset') %}{{ field('password','password','current-password' if mode=='login' else 'new-password') }}{% if mode!='login' %}{{ field('password_confirmation','password','new-password') }}<p class="hint full-width">{{ copy('password_hint') }}</p>{% endif %}{% endif %}
+{% if mode=='login' %}<div class="otp-disclosure">{{ field('otp',autocomplete='one-time-code',required=false) }}<p class="hint">{{ copy('Optional for accounts with an authenticator') }}</p></div><a class="forgot-link" href="{{ prefix }}/forgot-password?lang={{ locale }}">{{ copy('forgot') }}</a>{% endif %}
+{% if mode=='reset' %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+{% if mode=='register' %}<div class="full-width"><p class="hint">{{ copy('legal_notice') }}</p><label class="check"><input type="checkbox" name="legal_accepted" required>{{ copy('legal_accepted') }}</label></div>{% endif %}
+<button type="submit" class="full-width">{{ copy(titles[mode] if mode!='profile' else 'save') }}{{ icon('arrow') }}</button></form>{% endif %}
+{% if mode=='register' %}<p class="quota-note">{{ icon('document') }}{{ copy('New accounts start with a limit of 100 documents per job. Higher limits may be granted by the NLP4BIA team.') }}</p>{% endif %}
+{% if mode=='verify' %}<form method="post" action="{{ prefix }}/verify-email?lang={{ locale }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="token" value="{{ token }}"><button>{{ copy('verify') }}</button></form>{% endif %}
+{% if mode=='profile' %}<section class="profile-access"><h2>{{ copy('tier') }}</h2><p>{{ account.access_tier }} · <strong id="quota">{{ account.max_documents_per_job if account.max_documents_per_job is not none else u('unlimited') }}</strong></p></section><section class="security-actions"><h2>{{ copy('Account security') }}</h2><a href="{{ prefix }}/change-password?lang={{ locale }}">{{ copy('change_password') }} →</a><a href="{{ prefix }}/sessions?lang={{ locale }}">{{ copy('Active sessions') }} →</a><a href="{{ prefix }}/mfa?lang={{ locale }}">{{ copy('mfa') }} →</a><a href="{{ prefix }}/account-deletion?lang={{ locale }}">{{ copy('Account deletion request') }} →</a></section>{% endif %}
+{% if mode=='sessions' %}<p>{{ copy('All times are shown in your local timezone.') }}</p><ul class="session-list">{% for session in sessions %}<li><span class="status-pill">{{ copy('Current session' if session.current else 'Other session') }}</span><p>{{ copy('created') }}: <time datetime="{{ date(session.created_at) }}">{{ date(session.created_at) }}</time></p><p>{{ copy('Last activity') }}: <time datetime="{{ date(session.last_seen_at) }}">{{ date(session.last_seen_at) }}</time></p><p>{{ copy('expires') }}: <time datetime="{{ date(session.expires_at) }}">{{ date(session.expires_at) }}</time></p></li>{% endfor %}</ul>{% endif %}
+{% if mode in ('profile','sessions') %}<div class="action-row"><form method="post" action="{{ prefix }}/logout-all"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">{{ copy('logout_all') }}</button></form><form method="post" action="{{ prefix }}/rotate-session"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">{{ copy('rotate') }}</button></form></div>{% endif %}
+{% if mode=='deletion' %}<p>{{ copy('This records a request for institutional review. It does not immediately delete your account or change job retention.') }}</p><form method="post" action="{{ prefix }}/account-deletion?lang={{ locale }}" data-confirm="true"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="destructive">{{ copy('Request account deletion') }}</button></form>{% endif %}
+{% if mode=='mfa' %}{% if recovery_codes %}<p>{{ copy('recovery_codes') }}</p><ul id="recovery-codes">{% for code in recovery_codes %}<li>{{ code }}</li>{% endfor %}</ul><a href="{{ prefix }}/login">{{ copy('login') }}</a>{% elif secret %}<p>{{ copy('mfa_hint') }}</p><code id="mfa-secret">{{ secret }}</code><form method="post" action="{{ prefix }}/mfa/confirm"><input type="hidden" name="csrf_token" value="{{ csrf }}">{{ field('otp',autocomplete='one-time-code') }}<button>{{ copy('mfa_confirm') }}</button></form>{% elif account.mfa_enabled %}<p>{{ copy('mfa_enabled') }}</p>{% else %}<form method="post" action="{{ prefix }}/mfa/start"><input type="hidden" name="csrf_token" value="{{ csrf }}">{{ field('current_password','password','current-password') }}<button>{{ copy('mfa_start') }}</button></form>{% endif %}{% endif %}
+{% if public_auth %}<nav class="auth-links">{% if mode=='login' %}<p>{{ copy('New to the platform?') }} <a href="{{ prefix }}/register?lang={{ locale }}">{{ copy('register') }}</a></p>{% else %}<a href="{{ prefix }}/login?lang={{ locale }}">{{ copy('login') }}</a>{% if mode!='register' %}<a href="{{ prefix }}/register?lang={{ locale }}">{{ copy('register') }}</a>{% endif %}{% endif %}<a href="{{ prefix }}/resend-verification?lang={{ locale }}">{{ copy('resend') }}</a></nav>{% endif %}
+</section></main>{% endblock %}

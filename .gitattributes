@@ -1,0 +1,3 @@
+# Original BSC asset: preserve CRLF and its one original polygon-line trailing space.
+# Application source keeps the normal whitespace checks.
+app/static/assets/bsc-blue.svg -text whitespace=-blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

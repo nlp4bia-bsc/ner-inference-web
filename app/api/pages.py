@@ -57,4 +57,10 @@ def router(service, templates):
             context={"prefix": service.settings.app_prefix, "schema": request.app.openapi()},
         )
 
+    @api.get("/models", response_class=HTMLResponse, include_in_schema=False)
+    def models(request: Request):
+        return templates.TemplateResponse(
+            request=request, name="models.html", context={"prefix": service.settings.app_prefix}
+        )
+
     return api

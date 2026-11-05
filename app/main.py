@@ -24,6 +24,7 @@ from app.services.cleanup import cleanup
 from app.services.jobs import JobService
 from app.services.registry import Registry
 from app.storage import LocalStorage
+from app.ui import context as ui_context
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -68,8 +69,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await asyncio.gather(task, mail_task, return_exceptions=True)
 
     app = FastAPI(
-        title="TEMU Multilingual NER",
-        version="0.4.0",
+        title="NLP4BIA · Multilingual NER Platform",
+        version="0.5.0",
         lifespan=lifespan,
         redirect_slashes=False,
         docs_url=None,
@@ -85,7 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount(
         settings.app_prefix + "/static", StaticFiles(directory=base / "static"), name="static"
     )
-    templates = Jinja2Templates(directory=base / "templates")
+    templates = Jinja2Templates(directory=base / "templates", context_processors=[ui_context])
     register_errors(app)
     app.include_router(auth_routes.router(auth, templates, service), prefix=settings.app_prefix)
     app.include_router(

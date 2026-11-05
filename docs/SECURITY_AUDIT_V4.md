@@ -136,3 +136,18 @@ trust and operational limits. TOTP is phishable; host compromise/session theft a
 already delivered downloads cannot be undone by the UI. SQLite remains single-host.
 No formal certification or invulnerability claim is made. Exact final regression,
 clean-environment, package and container results are recorded in VERIFICATION.md.
+
+## V5 interface follow-up
+
+The 0.5.0 redesign preserves all V4 authentication/ownership/admission gates. The
+route inventory now has 81 method/route pairs, adding private models/jobs/session
+views and an authenticated audited account-deletion request. Public assets are
+exactly shared auth CSS/JS, translation vocabulary and the supplied unchanged SVG;
+no work/catalog data is made public. Session output has only safe owner metadata;
+the deletion write rejects identity fields, checks CSRF/throttling and revalidates
+the actor within its transaction. Owner-only metric/history projections and
+administrative confirmations do not replace backend checks. No schema/scientific
+offset/consolidation change was needed. The final 188-case regression includes A–H,
+legacy routes, quotas, new actions and actual browsers under root and /ner. See
+REDESIGN_VERIFICATION.md for exact results and scope. This follow-up is a maintainer
+review, not a second independent penetration test or certification.

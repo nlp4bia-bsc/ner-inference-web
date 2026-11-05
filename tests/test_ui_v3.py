@@ -118,10 +118,8 @@ def test_progress_collapse_completion_and_clock_skew(viewer_server):
         assert "Annotations ready" in page.locator("dialog").text_content()
         page.get_by_role("button", name="Close", exact=True).click()
         page.locator(".global-progress summary").click()
-        assert (
-            "2 days" in page.locator(".countdown").text_content()
-            or "3 days" in page.locator(".countdown").text_content()
-        )
+        # The redesigned clock retains the server-skew assertion in its compact format.
+        assert page.locator(".countdown strong").text_content().startswith(("02d", "03d"))
         assert "Scheduled deletion" in page.locator(".countdown").text_content()
         assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
         browser.close()
@@ -237,6 +235,8 @@ def test_flat_catalog_explicit_multi_selection_and_multilingual_choice(viewer_se
         assert page.locator('[data-category="PROFESSION"]').count() == 1
         assert page.locator("#entities input:checked").count() == 0
         page.locator('[data-category="DISEASE"] > summary').click()
+        assert page.locator("#entities input:checked").count() == 0
+        page.locator("#multilingual-models > summary").click()
         assert page.locator("#entities input:checked").count() == 0
         for identity in active:
             page.locator(f'#entities input[value="{identity}"]').check()

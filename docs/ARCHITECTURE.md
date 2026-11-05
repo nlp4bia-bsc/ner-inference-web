@@ -1,4 +1,4 @@
-# V4 authenticated architecture
+# Authenticated architecture with the V5 research interface
 
 A default-deny session/CSRF gate precedes upload spooling. Central and service
 owner guards protect every job locator/alias. Account/MFA/role/tier repositories
@@ -76,3 +76,16 @@ refreshes; the sweep-line renderer/Unicode mapping is preserved.
 See INCREMENTAL_PROCESSING.md, MIGRATIONS_V3.md, VISUALIZATION_ARCHITECTURE.md and
 PERFORMANCE_V3.md for data contracts, crash windows, viewer tradeoffs and measured
 limits. CPU synthetic tests do not establish clinical/GPU/BSC capacity.
+
+## Presentation composition
+
+base.html/components.html share the institutional shell and local BSC asset.
+ui.py supplies presentation context without replacing authentication dependencies.
+ui_i18n.py and the auth vocabulary generate a deterministic browser dictionary;
+explicit data-i18n marks presentation copy and leaves original text/model IDs alone.
+Shared auth.js handles locale/navigation/dialogs, catalog.js serves both Models
+and the request form, and progress.js/viewer.js preserve incremental reads/expiry.
+Owner-scoped SQL aggregates and a limited history projection supply real dashboard
+metrics/filename/language/model metadata. Session listing reveals no verifier;
+deletions are institutional audit requests. DESIGN_SYSTEM.md documents component
+and responsive boundaries; security and scientific services remain authoritative.

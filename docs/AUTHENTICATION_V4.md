@@ -3,7 +3,7 @@
 This release replaces anonymous capability access. Every work page, catalog,
 job/document/progress/export API, API reference and OpenAPI requires a live server
 session. Anonymous HTML requests redirect to login; APIs return401. Only exact
-login/registration/verification/recovery paths, their two essential static assets,
+login/registration/verification/recovery paths, their exact shared auth CSS/JS, translation vocabulary and supplied logo,
 and minimal health endpoints are public. There is no authentication-disable flag.
 
 ## Architecture and account model
@@ -181,3 +181,15 @@ of1000 will also cap UNLIMITED at that technical ceiling, so review old .env fil
 Accounts are persistent, while job files still expire72h after terminal completion.
 Historical jobs with no owner are inaccessible, are not claimed by matching email,
 and keep their original deadlines/FIFO. There is no public ownership-transfer API.
+
+## V5 presentation additions
+
+The institutional redesign preserves these gates. Public resources are restricted
+to auth.css, auth.js, i18n.js and assets/bsc-blue.svg; private catalog/viewer scripts
+and all work routes remain closed. /models and /my-jobs require authentication.
+/sessions and /api/auth/sessions return only the current owner's non-secret session
+metadata. /account-deletion is a CSRF-protected, throttled and transactionally
+revalidated audited request for institutional review, not immediate deletion.
+ADMIN can review that event without acquiring clinical document access. No new
+schema migration is needed; existing migrations1–3 and72h deadlines remain.
+See USER_EXPERIENCE.md and REDESIGN_VERIFICATION.md for current UI evidence.

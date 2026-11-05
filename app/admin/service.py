@@ -97,7 +97,7 @@ class AdminService:
         require_admin()
         with self.db.connect() as c:
             rows = c.execute(
-                "SELECT * FROM audit_events WHERE action LIKE 'ADMIN_%' OR action='ADMIN_BOOTSTRAP' ORDER BY id DESC LIMIT 100 OFFSET ?",
+                "SELECT * FROM audit_events WHERE action LIKE 'ADMIN_%' OR action='ACCOUNT_DELETION_REQUESTED' ORDER BY id DESC LIMIT 100 OFFSET ?",
                 (offset,),
             ).fetchall()
         return [{**dict(row), "details": json.loads(row["details"])} for row in rows]

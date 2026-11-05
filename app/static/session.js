@@ -18,7 +18,10 @@ function clearAndLeave() {
   lost = true;
   getSelection()?.removeAllRanges();
   document.body.replaceChildren();
-  location.replace(base + "/login");
+  const language = ["en", "es", "ca"].includes(document.documentElement.lang)
+    ? document.documentElement.lang
+    : "en";
+  location.replace(base + "/login?reason=expired&lang=" + language);
 }
 window.addEventListener("temu-session-expired", clearAndLeave);
 async function check() {

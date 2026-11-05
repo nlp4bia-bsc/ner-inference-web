@@ -203,14 +203,14 @@ ROWS = {
     "ACTIVE": ("Active", "Activa", "Actiu"),
     "SUSPENDED": ("Suspended", "Suspendida", "Suspès"),
     "verify_subject": (
-        "Verify your TEMU email",
-        "Verifica tu email de TEMU",
-        "Verifica el correu de TEMU",
+        "Verify your NLP4BIA email",
+        "Verifica tu email de NLP4BIA",
+        "Verifica el correu de NLP4BIA",
     ),
     "reset_subject": (
-        "Reset your TEMU password",
-        "Restablece tu contraseña de TEMU",
-        "Restableix la contrasenya de TEMU",
+        "Reset your NLP4BIA password",
+        "Restablece tu contraseña de NLP4BIA",
+        "Restableix la contrasenya de NLP4BIA",
     ),
     "email_body": (
         "Open this link and confirm the operation. It expires and can be used once. If you did not request this, ignore this email.",

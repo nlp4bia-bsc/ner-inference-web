@@ -61,3 +61,18 @@ serve the authentication phase; the full visual redesign remains a later phase.
 ![V4 prefixed registration](previews/auth-register-prefix.png)
 
 ![V4 prefixed personal dashboard](previews/auth-dashboard-prefix.png)
+
+# V5 institutional redesign
+
+The current [complete gallery and verification](REDESIGN_VERIFICATION.md) includes
+actual login/registration, populated/empty workspace, annotation/catalog, desktop/
+mobile viewer, completion, BSC footer, admin/confirmation, profile, sessions, expiry
+and real verification/recovery states. All accounts/documents are synthetic; no
+passwords/cookies/action tokens/MFA secrets are captured. Earlier images are
+historical views, not the current institutional interface.
+
+![NLP4BIA public research access](previews/v5/login-desktop.png)
+
+![NLP4BIA private workspace](previews/v5/dashboard-desktop.png)
+
+![NLP4BIA annotation viewer](previews/v5/viewer-desktop.png)

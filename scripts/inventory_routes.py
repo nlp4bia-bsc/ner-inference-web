@@ -36,7 +36,7 @@ def policy(path, method):
         )
     if path == "/static":
         return (
-            "Session except auth.css/auth.js",
+            "Session except exact public auth assets",
             "No storage mount",
             "No job files",
             "anonymous sweep + browser",
@@ -64,7 +64,7 @@ def policy(path, method):
         )
     if path in ("/docs", "/openapi.json"):
         return "Session", "Authenticated schema access", "No clinical contents", "anonymous sweep"
-    if path in ("/", "/dashboard", "/api/my/jobs"):
+    if path in ("/", "/dashboard", "/api/my/jobs", "/my-jobs"):
         return (
             "Session",
             "Own account and owner-filtered history",
@@ -102,6 +102,10 @@ def main():
             "# V4 route security inventory",
             "",
             "Relative routes; APP_PREFIX is prepended uniformly, including /ner. Anonymous HTML requests redirect303 to login; private APIs/OpenAPI return401. All state-changing requests require CSRF and origin checks. Methods not explicitly routed never bypass the gate.",
+            "",
+            "Public assets: "
+            + ", ".join(sorted(PUBLIC_ASSETS))
+            + ". No data/storage directory is mounted publicly.",
             "",
             "| Method | Route | Authentication | Authorization policy | Ownership | Coverage |",
             "|---|---|---|---|---|---|",

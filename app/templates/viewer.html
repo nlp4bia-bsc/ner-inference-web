@@ -1,216 +1,177 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta
-      name="authenticated-user"
-      content="{{ request.scope['auth_user']['id'] }}"
-    />
-    <meta name="app-prefix" content="{{ prefix }}" />
-    <title>Annotation explorer · Multilingual NER</title>
-    <link rel="stylesheet" href="{{ prefix }}/static/style.css" />
-    <script type="module" src="{{ prefix }}/static/viewer.js"></script>
-    <script type="module" src="{{ prefix }}/static/session.js"></script>
-  </head>
-  <body class="viewer-page">
-    <nav class="topbar">
-      <a class="brand" href="{{ prefix }}/"
-        ><span class="brand-symbol">N</span> Multilingual NER</a
-      >
-      <div class="nav-actions">
-        <a id="results-link">Request status</a
-        ><a id="download-link" class="button secondary">Download BRAT</a>
-      </div>
-    </nav>
+{% extends 'base.html' %}
+{% block title %}{{ u('Annotation explorer') }}{% endblock %}
+{% block body_class %}viewer-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ prefix }}/static/style.css"><script type="module" src="{{ prefix }}/static/viewer.js"></script>{% endblock %}
+{% block content %}
     <div id="global-progress"></div>
     <header class="workspace-header">
       <div>
-        <p class="eyebrow">RESEARCH WORKSPACE</p>
-        <h1>Annotation explorer</h1>
-        <p id="viewer-status" role="status" aria-live="polite">
-          Loading your private workspace…
-        </p>
+        <p class="eyebrow">{{ copy("Research Workspace") }}</p>
+        <h1>{{ copy("Annotation explorer") }}</h1>
+        <p id="viewer-status" role="status" aria-live="polite">{{ copy("Loading your workspace…") }}</p>
       </div>
       <div>
         <div id="metrics" class="metrics"></div>
-        <p id="metrics-scope" class="quiet">
-          Provisional statistics: annotated documents only
-        </p>
+        <p id="metrics-scope" class="quiet">{{ copy("Provisional statistics: annotated documents only") }}</p>
       </div>
     </header>
     <div
-      id="job-distribution"
+      id="job-distribution" role="group"
       class="corpus-distribution"
-      aria-label="Corpus entity distribution"
+      aria-label="{{ u('Corpus entity distribution') }}" data-i18n-aria-label="Corpus entity distribution"
     ></div>
-    <main class="workspace">
+    <div class="viewer-actions"><a id="results-link">{{ copy('Request status') }}</a><a id="download-link" class="button secondary">{{ copy('Download BRAT') }}</a></div><main class="workspace">
       <aside class="documents-panel panel">
         <details open>
-          <summary>Documents <span id="document-total"></span></summary>
-          <label for="document-search">Find a document</label
+          <summary>{{ copy("Documents") }} <span id="document-total"></span></summary>
+          <label for="document-search">{{ copy("Find a document") }}</label
           ><input
             id="document-search"
             type="search"
-            placeholder="Search filename or path"
-          /><label for="document-filter">Show documents</label
+            placeholder="{{ u('Search filename or path') }}" data-i18n-placeholder="Search filename or path"
+          /><label for="document-filter">{{ copy("Show documents") }}</label
           ><select id="document-filter">
-            <option value="">All documents</option>
-            <option value="true">With annotations</option>
-            <option value="false">Without annotations</option>
+            <option value="">{{ copy("All documents") }}</option>
+            <option value="true">{{ copy("With annotations") }}</option>
+            <option value="false">{{ copy("Without annotations") }}</option>
           </select>
-          <label for="document-state">Document state</label
+          <label for="document-state">{{ copy("Document state") }}</label
           ><select id="document-state">
-            <option value="">All states</option>
-            <option>PENDING</option>
-            <option>PROCESSING</option>
-            <option>ANNOTATED</option>
-            <option>FAILED</option>
+            <option value="">{{ copy("All states") }}</option>
+            <option value="PENDING">{{ copy("PENDING") }}</option>
+            <option value="PROCESSING">{{ copy("PROCESSING") }}</option>
+            <option value="ANNOTATED">{{ copy("ANNOTATED") }}</option>
+            <option value="FAILED">{{ copy("FAILED") }}</option>
           </select>
           <label
-            ><input type="checkbox" id="document-sort" /> Sort by name</label
+            ><input type="checkbox" id="document-sort" />{{ copy("Sort by name") }}</label
           >
           <div
-            id="document-list"
+            id="document-list" role="group"
             class="document-list"
-            aria-label="Documents"
+            aria-label="{{ u('Documents') }}" data-i18n-aria-label="Documents"
           ></div>
           <div class="pager">
             <button
               id="docs-prev"
               class="secondary"
-              aria-label="Previous documents"
+              aria-label="{{ u('Previous documents') }}" data-i18n-aria-label="Previous documents"
             >
               ←</button
             ><span id="doc-page"></span
             ><button
               id="docs-next"
               class="secondary"
-              aria-label="Next documents"
+              aria-label="{{ u('Next documents') }}" data-i18n-aria-label="Next documents"
             >
               →
             </button>
           </div>
           <div class="pager">
-            <button id="document-prev" class="secondary">
-              Previous document</button
-            ><button id="document-next" class="secondary">Next document</button>
+            <button id="document-prev" class="secondary">{{ copy("Previous document") }}</button
+            ><button id="document-next" class="secondary">{{ copy("Next document") }}</button>
           </div>
         </details>
       </aside>
       <section class="reading-panel panel">
         <div class="reading-heading">
-          <p class="eyebrow">ORIGINAL DOCUMENT</p>
-          <h2 id="filename">Choose a document</h2>
+          <p class="eyebrow">{{ copy("Original document") }}</p>
+          <h2 id="filename">{{ copy("Choose a document") }}</h2>
           <div class="document-downloads">
-            <a id="individual-txt">Download TXT</a> ·
-            <a id="individual-ann">Download ANN</a>
+            <a id="individual-txt">{{ copy("Download TXT") }}</a>{{ copy("·") }}<a id="individual-ann">{{ copy("Download ANN") }}</a>
           </div>
           <p id="chunk-info" class="hint"></p>
         </div>
         <div class="reader-toolbar">
-          <label for="text-search">Find text in this document</label>
+          <label for="text-search">{{ copy("Find text in this document") }}</label>
           <div class="search-row">
             <input
               id="text-search"
               type="search"
-              placeholder="Search original text"
-            /><button id="find-next" class="secondary">Find next</button>
+              placeholder="{{ u('Search original text') }}" data-i18n-placeholder="Search original text"
+            /><button id="find-next" class="secondary">{{ copy("Find next") }}</button>
           </div>
           <div class="pager">
-            <button id="chunk-prev" class="secondary">
-              ← Previous fragment</button
-            ><button id="chunk-next" class="secondary">Next fragment →</button>
+            <button id="chunk-prev" class="secondary">{{ copy("← Previous fragment") }}</button
+            ><button id="chunk-next" class="secondary">{{ copy("Next fragment →") }}</button>
           </div>
         </div>
-        <div class="legend" id="legend" aria-label="Entity type filters"></div>
-        <p class="hint reader-hint">
-          Select highlighted text to inspect every annotation covering that
-          region. Overlap counts indicate multiple mentions.
-        </p>
+        <div class="model-filter-control"><label for="model-filter">{{ copy('Filter by model') }}</label><select id="model-filter"><option value="">{{ u('All models') }}</option></select></div><div class="legend" id="legend" role="group" aria-label="{{ u('Entity type filters') }}" data-i18n-aria-label="Entity type filters"></div>
+        <p class="hint reader-hint">{{ copy("Select highlighted text to inspect every annotation covering that region. Overlap counts indicate multiple mentions.") }}</p>
         <div
-          id="annotated-text"
+          id="annotated-text" role="group"
           class="annotated-text"
-          aria-label="Original annotated document"
+          aria-label="{{ u('Original annotated document') }}" data-i18n-aria-label="Original annotated document"
           tabindex="0"
         ></div>
         <div
-          id="region-annotations"
+          id="region-annotations" role="group"
           class="region-annotations"
-          aria-label="Annotations in selected region"
+          aria-label="{{ u('Annotations in selected region') }}" data-i18n-aria-label="Annotations in selected region"
         ></div>
         <button
           type="button"
           id="entity-sheet-trigger"
           class="secondary"
           hidden
-        >
-          Open entity details
-        </button>
+        >{{ copy("Open entity details") }}</button>
       </section>
       <aside class="annotations-panel panel">
-        <h2>Annotation details</h2>
+        <h2>{{ copy("Annotation details") }}</h2>
         <div id="annotation-details" aria-live="polite">
-          <p class="quiet">
-            Select a mention in the text or the annotation list.
-          </p>
+          <p class="quiet">{{ copy("Select a mention in the text or the annotation list.") }}</p>
         </div>
         <details class="annotation-table-wrap">
-          <summary>Annotation table</summary>
+          <summary>{{ copy("Annotation table") }}</summary>
           <table class="annotation-table">
             <thead>
               <tr>
-                <th>Entity</th>
-                <th>Label</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Confidence</th>
-                <th>Model</th>
+                <th>{{ copy("Entity") }}</th>
+                <th>{{ copy("Label") }}</th>
+                <th>{{ copy("Start") }}</th>
+                <th>{{ copy("End") }}</th>
+                <th>{{ copy("Confidence") }}</th>
+                <th>{{ copy("Model") }}</th>
               </tr>
             </thead>
             <tbody id="annotation-table-body"></tbody>
           </table>
         </details>
         <hr />
-        <h3>Mentions in this fragment</h3>
-        <label for="entity-search">Find an entity</label
+        <h3>{{ copy("Mentions in this fragment") }}</h3>
+        <label for="entity-search">{{ copy("Find an entity") }}</label
         ><input
           id="entity-search"
           type="search"
-          placeholder="Search mention text"
+          placeholder="{{ u('Search mention text') }}" data-i18n-placeholder="Search mention text"
         />
         <div class="pager">
           <button
             id="entity-prev"
             class="secondary"
-            aria-label="Previous annotation"
+            aria-label="{{ u('Previous annotation') }}" data-i18n-aria-label="Previous annotation"
           >
             ←</button
           ><span id="entity-position"></span
           ><button
             id="entity-next"
             class="secondary"
-            aria-label="Next annotation"
+            aria-label="{{ u('Next annotation') }}" data-i18n-aria-label="Next annotation"
           >
             →
           </button>
         </div>
         <div
-          id="annotation-list"
+          id="annotation-list" role="group"
           class="annotation-list"
-          aria-label="Annotation list"
+          aria-label="{{ u('Annotation list') }}" data-i18n-aria-label="Annotation list"
         ></div>
         <div class="pager">
-          <button id="mentions-prev" class="secondary">Previous 50</button
+          <button id="mentions-prev" class="secondary">{{ copy("Previous 50") }}</button
           ><span id="mention-page"></span
-          ><button id="mentions-next" class="secondary">Next 50</button>
+          ><button id="mentions-next" class="secondary">{{ copy("Next 50") }}</button>
         </div>
         <p id="document-stats" class="quiet"></p>
       </aside>
     </main>
-    <footer class="site-footer">
-      Offsets: Unicode code points [start, end)
-      <span id="viewer-expiry">Private results · 72-hour retention</span>
-    </footer>
-  </body>
-</html>
+<p class="viewer-footer-note" id="viewer-expiry"></p>{% endblock %}

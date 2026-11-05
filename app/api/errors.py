@@ -5,8 +5,8 @@ import sqlite3
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.auth.i18n import translate
 from app.errors import ServiceError
+from app.ui_i18n import translate
 
 
 def register_errors(app):
@@ -36,7 +36,10 @@ def register_errors(app):
         # FastAPI default error bodies echo user inputs; return only safe field locations.
         return JSONResponse(
             {
-                "detail": "Check your name, email, language, entities and files.",
+                "detail": translate(
+                    "Check your name, email, language, entities and files.",
+                    request.scope.get("auth_locale", "en"),
+                ),
                 "fields": [str(e["loc"][-1]) for e in exc.errors()],
             },
             status_code=422,
