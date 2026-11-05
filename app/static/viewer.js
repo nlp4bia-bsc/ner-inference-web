@@ -314,7 +314,12 @@ function select(id, scroll = false) {
   for (const [name, value] of [
     ["Annotation", a.id],
     ["Start / end", `${a.start} / ${a.end}`],
-    ["Model", a.model_id || "Not provided"],
+    [
+      "Model",
+      (a.model_ids?.length ? a.model_ids.join(", ") : a.model_id) ||
+        "Not provided",
+    ],
+    ["Original sublabels", a.original_labels?.join(", ") || a.label],
     ["Model version", a.model_version || "Not provided"],
     [
       "Overlaps",
@@ -336,6 +341,7 @@ function select(id, scroll = false) {
     heading,
     surface,
     list,
+    sourceDetails(a),
     copy,
     offsets,
   );
@@ -583,7 +589,7 @@ function renderTable(rows) {
       a.start,
       a.end,
       a.score === null ? "—" : a.score,
-      a.model_id || "—",
+      (a.model_ids?.length ? a.model_ids.join(", ") : a.model_id) || "—",
     ])
       row.append(make("td", String(value)));
     body.append(row);
@@ -662,7 +668,7 @@ function showEntitySheet(id) {
     "p",
     `Offsets ${a.start}–${a.end} · ${a.model_id || "Model not provided"} · confidence ${a.score ?? "not provided"}`,
   );
-  dialog.append(offsets);
+  dialog.append(offsets, sourceDetails(a));
   for (const other of annotations.filter(
     (row) => row.id !== a.id && row.start < a.end && row.end > a.start,
   )) {
@@ -677,3 +683,20 @@ function showEntitySheet(id) {
 }
 
 $("entity-sheet-trigger").onclick = () => showEntitySheet(selected);
+
+function sourceDetails(annotation) {
+  const details = make("div", "", "annotation-sources");
+  if (!annotation.sources?.length) return details;
+  details.append(make("h4", "Supporting predictions"));
+  for (const source of annotation.sources) {
+    const row = make("p");
+    row.append(make("strong", source.model_id));
+    row.append(
+      document.createTextNode(
+        ` · ${source.model_version || "version not provided"} · ${source.original_label} · score ${source.score ?? "not provided"}`,
+      ),
+    );
+    details.append(row);
+  }
+  return details;
+}

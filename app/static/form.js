@@ -4,7 +4,7 @@ const base = document.querySelector("meta[name=app-prefix]").content;
 const messages = {
   noModels:
     "No validated models are available for this language. Inference is currently unavailable.",
-  choose: "Choose one or more available entity types.",
+  choose: "Expand a category and choose one or more checkpoints.",
   unavailable: "Not available for this language",
   loadingError:
     "The model catalog could not be loaded. Please reload this page.",
@@ -19,9 +19,36 @@ const error = document.querySelector("#error");
 let catalog = [],
   busy = false;
 function selected() {
-  return [...entities.querySelectorAll("input:checked")].map((x) => x.value);
+  return [
+    ...new Set(
+      [...entities.querySelectorAll("input:checked")].map((x) => x.value),
+    ),
+  ];
+}
+function selectedCategories() {
+  const active = new Set(selected());
+  return [
+    ...new Set(
+      catalog
+        .filter((row) => active.has(row.model_id || row.entity))
+        .map((row) => row.display_name),
+    ),
+  ];
 }
 function update() {
+  for (const detail of entities.querySelectorAll("details[data-category]")) {
+    const active = new Set(selected());
+    const ids = new Set(
+      catalog
+        .filter(
+          (row) =>
+            row.entity === detail.dataset.category &&
+            active.has(row.model_id || row.entity),
+        )
+        .map((row) => row.model_id || row.entity),
+    );
+    detail.querySelector(".model-count").textContent = `${ids.size} active`;
+  }
   const pasted = document.querySelector("#input-mode").value === "PASTED_TEXT";
   const value = document.querySelector("#pasted-text").value;
   document.querySelector("#paste-counter").textContent =
@@ -32,47 +59,149 @@ function update() {
     (pasted ? !value.trim() : !files.files.length);
   if (pasted) {
     document.querySelector("#summary").textContent =
-      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${new TextEncoder().encode(value).length} bytes · ${language.value} · ${selected().join(", ")}`;
+      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${new TextEncoder().encode(value).length} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${selected().length} model(s)`;
     return;
   }
   const names = [...files.files].map((x) => x.name);
   const bytes = [...files.files].reduce((sum, x) => sum + x.size, 0);
   const isZip = names.length === 1 && names[0].toLowerCase().endsWith(".zip");
   document.querySelector("#summary").textContent = names.length
-    ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? "ZIP document count is checked by the server" : names.length + " document(s)"}\nLanguage: ${language.selectedOptions[0]?.textContent || ""} · Entities: ${selected().join(", ") || "None"}`
+    ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? "ZIP document count is checked by the server" : names.length + " document(s)"}\nLanguage: ${language.selectedOptions[0]?.textContent || ""} · Entities: ${selectedCategories().join(", ") || "None"} · ${selected().length} model(s)`
     : "No documents selected.";
 }
-function render() {
-  entities.replaceChildren();
-  const rows = catalog.filter((x) => x.language === language.value);
-  for (const row of rows) {
-    const label = document.createElement("label");
-    label.className = `entity${row.available ? "" : " unavailable"}`;
-    const check = document.createElement("input");
-    check.type = "checkbox";
-    check.name = "entities";
-    check.value = row.entity;
-    check.disabled = !row.available;
-    check.checked = row.available;
-    const copy = document.createElement("span");
-    copy.textContent = row.display_name;
-    const detail = document.createElement("small");
-    detail.textContent = row.available
-      ? row.description || row.entity
-      : messages.unavailable;
-    copy.append(detail);
-    label.append(check, copy);
-    entities.append(label);
+function modelChoice(row, retained, categories = []) {
+  const label = document.createElement("label");
+  const supported = !row.languages || row.languages.includes(language.value);
+  const available = row.available && supported;
+  label.className = `entity${available ? "" : " unavailable"}`;
+  const check = document.createElement("input");
+  check.type = "checkbox";
+  check.name = "models";
+  check.value = row.model_id || row.entity;
+  check.disabled = !available;
+  check.checked = available && retained.has(check.value);
+  const copy = document.createElement("span");
+  copy.textContent = row.model_name || row.model_id || row.display_name;
+  const detail = document.createElement("small");
+  detail.textContent = available
+    ? row.description || categories.join(", ") || row.display_name
+    : !supported
+      ? "Not validated for this document language."
+      : row.unavailable_reason || messages.unavailable;
+  copy.append(detail);
+  if (categories.length) {
+    const categoryList = document.createElement("small");
+    categoryList.textContent = categories.join(" · ");
+    copy.append(categoryList);
   }
-  document.querySelector("#catalog-message").textContent = rows.some(
-    (x) => x.available,
+  label.append(check, copy);
+  const container = document.createElement("div");
+  container.className = "model-choice";
+  container.append(label);
+  if (row.model_id) {
+    const info = document.createElement("details");
+    info.className = "model-information";
+    const summary = document.createElement("summary");
+    summary.textContent = "Model information";
+    const content = document.createElement("p");
+    content.textContent = `${row.model_id}${row.version ? " · version " + row.version : ""}${row.languages ? " · Languages: " + row.languages.join(", ") : ""}`;
+    info.append(summary, content);
+    if (
+      row.repository &&
+      /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(row.repository)
+    ) {
+      const link = document.createElement("a");
+      link.href = "https://huggingface.co/" + row.repository;
+      link.textContent = row.repository;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      info.append(link);
+    }
+    const metrics = document.createElement("p");
+    metrics.textContent = Object.keys(row.metrics || {}).length
+      ? "Verified metrics: " + JSON.stringify(row.metrics)
+      : "No independently verified metrics registered.";
+    info.append(metrics);
+    container.append(info);
+  }
+  return container;
+}
+function render() {
+  // A language change may retain compatible multilingual choices, never create selections.
+  const retained = new Set(selected());
+  entities.replaceChildren();
+  const rows = catalog.filter((row) => row.language === language.value);
+  const multilingual = catalog.filter((row) => row.language === "mul");
+  const categories = new Map();
+  for (const row of [...rows, ...multilingual]) {
+    if (!categories.has(row.entity))
+      categories.set(row.entity, row.display_name);
+  }
+  const local = document.createElement("div");
+  local.className = "category-list";
+  for (const [key, name] of categories) {
+    const category = document.createElement("details");
+    category.dataset.category = key;
+    category.className = "model-category";
+    const heading = document.createElement("summary");
+    heading.textContent = name;
+    const count = document.createElement("span");
+    count.className = "model-count";
+    heading.append(count);
+    category.append(heading);
+    const choices = rows.filter((row) => row.entity === key);
+    for (const row of choices) category.append(modelChoice(row, retained));
+    if (!choices.length) {
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent =
+        "See Multilingual models below for registered checkpoints.";
+      category.append(hint);
+    }
+    local.append(category);
+  }
+  entities.append(local);
+  const global = document.createElement("section");
+  global.id = "multilingual-models";
+  const title = document.createElement("h3");
+  title.textContent = "Multilingual models";
+  global.append(title);
+  const unique = new Map();
+  for (const row of multilingual) {
+    if (!row.model_id) continue;
+    if (!unique.has(row.model_id))
+      unique.set(row.model_id, { row, categories: [] });
+    unique.get(row.model_id).categories.push(row.display_name);
+  }
+  for (const { row, categories } of unique.values())
+    global.append(modelChoice(row, retained, categories));
+  if (!unique.size) {
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "No multilingual checkpoints registered.";
+    global.append(hint);
+  }
+  entities.append(global);
+  document.querySelector("#catalog-message").textContent = [
+    ...rows,
+    ...multilingual,
+  ].some(
+    (row) =>
+      row.available &&
+      (!row.languages || row.languages.includes(language.value)),
   )
     ? messages.choose
     : messages.noModels;
   update();
 }
 language.addEventListener("change", render);
-entities.addEventListener("change", update);
+entities.addEventListener("change", (event) => {
+  if (event.target.matches("input[type=checkbox]"))
+    for (const check of entities.querySelectorAll("input[type=checkbox]"))
+      if (check.value === event.target.value && !check.disabled)
+        check.checked = event.target.checked;
+  update();
+});
 files.addEventListener("change", update);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -83,6 +212,8 @@ form.addEventListener("submit", async (event) => {
   button.textContent = "Submitting…";
   try {
     const body = new FormData(form);
+    body.delete("models");
+    for (const identity of selected()) body.append("models", identity);
     if (document.querySelector("#input-mode").value === "PASTED_TEXT") {
       body.delete("pasted_text");
       body.append(

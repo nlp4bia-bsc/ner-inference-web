@@ -57,7 +57,9 @@ def test_paste_mode_counters_and_acceptance_dialog(viewer_server):
             ),
         )
         page.goto(base + "/")
-        page.wait_for_selector("#entities input")
+        page.wait_for_selector("#entities input", state="attached")
+        page.locator('[data-category="DISEASE"] > summary').click()
+        page.locator('#entities input[value="DISEASE"]').check()
         page.get_by_role("tab", name="Paste text").click()
         page.locator("#pasted-text").fill("😀 abc\n漢字")
         assert "8 characters" in page.locator("#paste-counter").text_content()
@@ -176,4 +178,122 @@ def test_expiry_clears_text_table_and_individual_downloads(viewer_server):
         assert page.locator("#annotation-table-body").text_content() == ""
         assert page.locator("#annotation-details").text_content() == ""
         assert page.locator("#individual-ann").get_attribute("href") is None
+        browser.close()
+
+
+def test_flat_catalog_explicit_multi_selection_and_multilingual_choice(viewer_server):
+    from playwright.sync_api import sync_playwright
+
+    base, _ = viewer_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        active = {
+            "bsc-bio-ehr-es-distemist",
+            "bsc-bio-ehr-es-carmen-distemist",
+            "DT4H_XLM-R_stl_multilingual_disease",
+        }
+
+        def catalog(route):
+            response = route.fetch()
+            rows = response.json()
+            for row in rows:
+                row["available"] = row.get("model_id") in active
+            route.fulfill(response=response, json=rows)
+
+        page.route("**/api/models", catalog)
+        page.route(
+            "**/api/jobs",
+            lambda route: route.fulfill(
+                status=202,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "job_id": "test",
+                        "status": "QUEUED",
+                        "token": "test",
+                        "url": base + "/jobs/test",
+                    }
+                ),
+            ),
+        )
+        page.goto(base + "/")
+        page.wait_for_selector(".model-category")
+        assert page.locator(".model-category").count() == 13
+        assert page.locator('[data-category="LOCATION"]').count() == 1
+        assert page.locator('[data-category="PROFESSION"]').count() == 1
+        assert page.locator("#entities input:checked").count() == 0
+        page.locator('[data-category="DISEASE"] > summary').click()
+        assert page.locator("#entities input:checked").count() == 0
+        for identity in active:
+            page.locator(f'#entities input[value="{identity}"]').check()
+        assert "3 active" in page.locator('[data-category="DISEASE"] > summary').text_content()
+        assert (
+            page.locator('#entities input[value="DT4H_XLM-R_mtl_multilingual_multilabel"]').count()
+            == 1
+        )
+        assert not page.locator('#entities input[value="GPE_NOM"]').count()
+        assert not page.get_by_text("Other entity types", exact=True).count()
+        page.get_by_role("tab", name="Paste text").click()
+        page.locator("#pasted-text").fill("Madrid")
+        page.locator("#name").fill("Test")
+        page.locator("#email").fill("test@example.org")
+        with page.expect_request("**/api/jobs") as sent:
+            page.locator("#submit").click()
+        body = sent.value.post_data
+        assert body.count('name="models"') == 3
+        assert all(identity in body for identity in active)
+        assert 'name="entities"' not in body
+        page.wait_for_selector("dialog[open]")
+        assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
+        browser.close()
+
+
+@pytest.mark.parametrize("width", [375, 1440])
+def test_annotation_provenance_is_visible_in_inspector_and_mobile_sheet(viewer_server, width):
+    from playwright.sync_api import sync_playwright
+
+    base, token = viewer_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": width, "height": 900})
+
+        def annotate(route):
+            response = route.fetch()
+            data = response.json()
+            for row in data["items"]:
+                if row["id"] == "T2":
+                    row.update(
+                        model_ids=["detector-a", "detector-b"],
+                        original_labels=["GPE_NOM", "FAC_NOM"],
+                        sources=[
+                            {
+                                "model_id": "detector-a",
+                                "model_version": "v1",
+                                "original_label": "GPE_NOM",
+                                "score": 0.7,
+                            },
+                            {
+                                "model_id": "detector-b",
+                                "model_version": "v2",
+                                "original_label": "FAC_NOM",
+                                "score": 0.9,
+                            },
+                        ],
+                    )
+            route.fulfill(response=response, json=data)
+
+        page.route("**/annotations?*", annotate)
+        page.goto(base + "/jobs/" + token + "/viewer")
+        page.wait_for_selector('[data-table-annotation="T2"]', state="attached")
+        page.locator(".annotation-table-wrap summary").click()
+        page.locator('[data-table-annotation="T2"] button').click()
+        assert "detector-a" in page.locator("#annotation-details").text_content()
+        assert "FAC_NOM" in page.locator("#annotation-details").text_content()
+        assert "0.7" in page.locator("#annotation-details").text_content()
+        if width == 375:
+            page.locator("#entity-sheet-trigger").click()
+            assert "detector-b" in page.locator("dialog[open]").text_content()
+            assert "GPE_NOM" in page.locator("dialog[open]").text_content()
+        assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
         browser.close()

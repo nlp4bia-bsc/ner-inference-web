@@ -1069,3 +1069,49 @@ textarea {
     overflow-wrap: anywhere;
   }
 }
+
+/* Categories and checkpoints come entirely from the declarative catalog. */
+#entities {
+  display: block;
+}
+.category-list {
+  display: grid;
+  gap: 0.65rem;
+}
+.model-category {
+  border: 1px solid var(--line, #d8e2e7);
+  border-radius: 0.65rem;
+  padding: 0.8rem;
+  min-width: 0;
+}
+.model-category > summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.model-count {
+  float: right;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #536873;
+}
+.model-choice {
+  margin-top: 0.65rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.model-choice .entity {
+  margin: 0;
+}
+.model-information {
+  padding: 0.35rem 0.5rem 0.35rem 2rem;
+  font-size: 0.8rem;
+}
+.model-information summary {
+  cursor: pointer;
+}
+.model-information p {
+  margin: 0.4rem 0;
+}
+#multilingual-models {
+  margin-top: 1.3rem;
+}

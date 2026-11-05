@@ -56,7 +56,12 @@ def test_dynamic_form(viewport, viewer_server):
             ),
         )
         page.goto(viewer_server[0] + "/")
-        page.wait_for_selector('#entities input[value="SYMPTOM"]')
+        page.wait_for_selector('#entities input[value="SYMPTOM"]', state="attached")
+        page.locator('[data-category="DISEASE"] > summary').click()
+        page.locator('[data-category="SYMPTOM"] > summary').click()
+        assert page.locator("#entities input:checked").count() == 0
+        page.locator('#entities input[value="DISEASE"]').check()
+        page.locator('#entities input[value="SYMPTOM"]').check()
         assert page.locator("#entities input:checked").count() == 2
         page.locator("#files").set_input_files(
             {"name": "a.txt", "mimeType": "text/plain", "buffer": b"Cancer."}
@@ -66,7 +71,9 @@ def test_dynamic_form(viewport, viewer_server):
         assert page.locator("#entities input").is_disabled()
         assert page.locator("#submit").is_disabled()
         page.select_option("#language", "es")
-        page.locator('#entities input[value="DISEASE"]').uncheck()
+        assert page.locator("#entities input:checked").count() == 0
+        page.locator('[data-category="SYMPTOM"] > summary').click()
+        page.locator('#entities input[value="SYMPTOM"]').check()
         assert page.locator("#entities input:checked").count() == 1
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
         if os.environ.get("SCREENSHOT_OUTPUT") and viewport["width"] in (390, 1440):
