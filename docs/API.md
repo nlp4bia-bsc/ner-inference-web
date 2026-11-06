@@ -60,7 +60,7 @@ implicitly by the frontend. Neither public model paths nor inference parameters
 are accepted.
 
 ```sh
-curl -X POST http://localhost:8000/api/jobs \
+curl -X POST http://127.0.0.1:8000/api/jobs \
   --cookie /private/session-cookies --header 'X-CSRF-Token: <session-csrf-proof>' \
   -F language=es -F models=bsc-bio-ehr-es-distemist -F models=bsc-bio-ehr-es-carmen-distemist -F 'files=@corpus.zip'
 ```

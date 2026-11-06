@@ -17,6 +17,27 @@ locally; BSC TLS/domain deployment has not been performed.
 
 ## Containers
 
+For local browser use, copy `.env.example` to `.env` before starting Compose and
+open **http://127.0.0.1:8000**. The example sets `APP_ENV=development`,
+`COOKIE_SECURE=false`, `PUBLIC_BASE_URL=http://127.0.0.1:8000` and `MAIL_BACKEND=none`.
+The checked-in Compose fallback remains production/HTTPS; running without a local
+environment file while browsing plain HTTP can allow a login navigation but
+reject the subsequent XHR upload's Origin. `localhost` is also distinct from
+`127.0.0.1`; scheme, host, port and configured prefix must match the browser URL.
+
+For an existing deployment, update those settings in its private environment and
+recreate web and worker (`docker compose up -d --force-recreate`). Restart does not
+apply changed environment values. Keep the data volume. When switching between
+Secure production cookies and local development cookies, sign in again.
+For production, retain Secure cookies/HTTPS and set the real public origin;
+do not relax CSRF checks or trust arbitrary forwarding headers to fix a mismatch.
+
+Origin rejection now returns a service-address configuration message instead of
+suggesting a reload. The private `temu.auth` log records
+`csrf_rejected reason=origin_mismatch configured_origin=... check=PUBLIC_BASE_URL`;
+it does not log the submitted ZIP, patient text, cookies or CSRF proof. A rejected
+submission clears the upload progress while preserving selected files/models.
+
 `docker compose up --build -d` builds separate web and worker images. Web installs
 the HTTP dependencies; worker installs the pinned CPU inference libraries by
 default (`INSTALL_NLP=true`, `NLP_PROFILE=cpu`). No model weights are downloaded

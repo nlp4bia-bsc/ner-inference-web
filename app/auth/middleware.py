@@ -3,6 +3,7 @@
 import asyncio
 import hmac
 import json
+import logging
 import re
 import sqlite3
 import time
@@ -135,7 +136,13 @@ class AuthMiddleware:
                     and (source.scheme, source.netloc)
                     != (expected_origin.scheme, expected_origin.netloc)
                 ):
-                    raise ServiceError("csrf_failed", 403)
+                    logging.getLogger("temu.auth").warning(
+                        "csrf_rejected reason=origin_mismatch configured_origin=%s://%s "
+                        "check=PUBLIC_BASE_URL",
+                        expected_origin.scheme,
+                        expected_origin.netloc,
+                    )
+                    raise ServiceError("origin_mismatch", 403)
                 public_auth = path in AUTH_PAGES or path in PUBLIC_API
                 seed = cookie("temu_challenge") if public_auth else account["csrf_seed"]
                 supplied = headers.get(b"x-csrf-token", "")

@@ -121,6 +121,11 @@ ROWS = {
         "La comprobación de seguridad ha fallado. Recarga la página e inténtalo de nuevo.",
         "La comprovació de seguretat ha fallat. Torna a carregar la pàgina i prova-ho de nou.",
     ),
+    "origin_mismatch": (
+        "The service address does not match its configuration. Contact the administrator.",
+        "La dirección del servicio no coincide con su configuración. Contacta con el administrador.",
+        "L'adreça del servei no coincideix amb la seva configuració. Contacta amb l'administrador.",
+    ),
     "forbidden": (
         "You do not have permission for this operation.",
         "No tienes permiso para esta operación.",

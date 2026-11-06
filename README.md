@@ -172,7 +172,9 @@ In another terminal with the same working directory/environment:
 python -m app.worker
 ```
 
-Open http://localhost:8000 after copying the local-development .env example.
+Open http://127.0.0.1:8000 after copying the local-development .env example.
+Keep `PUBLIC_BASE_URL` identical to the browser origin, including scheme and port:
+`localhost` and `127.0.0.1` are different origins. A mismatch rejects submissions.
 Anonymous access redirects to login. Register with a unique email and a password
 of at least four characters, then sign in; the dashboard shows the STANDARD
 100-document tier. No verification email is required by default. Use /annotate for
@@ -293,7 +295,7 @@ used. Token counts from different models are never summed together.
 ```sh
 python -m scripts.validate_models
 # Restart API and worker together after successful preflight.
-curl http://localhost:8000/api/models?language=es
+curl http://127.0.0.1:8000/api/models?language=es
 ```
 
 Preflight runs offline, loads weights and reconstructs the saved ner_lab encoder.
@@ -309,7 +311,7 @@ cookie file and CSRF proof through the documented login workflow (do not put a
 password in shell arguments):
 
 ```sh
-curl -X POST http://localhost:8000/api/jobs \
+curl -X POST http://127.0.0.1:8000/api/jobs \
   --cookie /private/session-cookies --header 'X-CSRF-Token: <session-csrf-proof>' \
   -F language=es -F entities=DISEASE -F 'files=@corpus.zip'
 ```
@@ -322,15 +324,23 @@ See docs/API.md for repeated checkpoint IDs and all authentication contracts.
 
 ```sh
 cp .env.example .env
-docker compose build web
+docker compose build web worker
 docker compose up -d
 # After setting public origin / prefix, use these paths accordingly:
-curl http://localhost:8000/health
-curl http://localhost:8000/ready
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/ready
 docker compose logs --tail=100 web worker
 docker compose restart web worker
 docker compose stop
 ```
+
+The example is local development at `http://127.0.0.1:8000`, with
+`APP_ENV=development`, `COOKIE_SECURE=false` and no email dependency. Production
+requires `APP_ENV=production`, `COOKIE_SECURE=true` and the actual HTTPS
+`PUBLIC_BASE_URL`. Copy the example before starting Compose; recreating both
+services applies changed environment values (`docker compose up -d --force-recreate`).
+Restart alone does not update container environment. A cookie-policy change
+requires signing in again; the existing accounts/documents remain in the volume.
 
 No database password/Redis secret is required: those services are not used. A
 private HMAC/encryption root key is generated automatically in STORAGE_ROOT.
@@ -590,7 +600,7 @@ validated/written one document at a time, not expanded into a corpus-sized mappi
 The HTTP API still accepts legacy file-only multipart submissions without input_mode.
 
 ```sh
-curl -X POST http://localhost:8000/api/jobs \
+curl -X POST http://127.0.0.1:8000/api/jobs \
   --cookie /private/session-cookies --header 'X-CSRF-Token: <session-csrf-proof>' \
   -F language=es -F entities=DISEASE -F input_mode=PASTED_TEXT \
   -F 'pasted_text=Authorized example text.'

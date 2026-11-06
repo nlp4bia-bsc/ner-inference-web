@@ -63,6 +63,9 @@ form.addEventListener("submit", async (event) => {
   if (busy || !selected().length || !form.reportValidity()) return;
   busy = true;
   error.hidden = true;
+  document.querySelector("#upload-state").hidden = true;
+  document.querySelector("#upload-progress").value = 0;
+  document.querySelector("#upload-message").textContent = "";
   update();
   button.textContent = t("Submitting…");
   try {
@@ -147,6 +150,9 @@ form.addEventListener("submit", async (event) => {
       location.assign(localized(data.url)),
     );
   } catch (exc) {
+    document.querySelector("#upload-state").hidden = true;
+    document.querySelector("#upload-progress").value = 0;
+    document.querySelector("#upload-message").textContent = "";
     error.textContent =
       exc.message || t("The request could not be submitted. Please try again.");
     error.hidden = false;

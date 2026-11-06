@@ -1,4 +1,51 @@
-# Latest: on-demand models and independent failures (0.6.0)
+# Latest: local ZIP submission and origin diagnosis (0.6.1)
+
+The running service was configured for `https://localhost:8000` while the user
+opened `http://127.0.0.1:8000/annotate?lang=en`. Its real XHR Origin therefore failed
+the mandatory origin check even with a valid session/CSRF token. Local setup now
+uses the exact `http://127.0.0.1:8000` origin from `.env.example`, development cookies
+and `MAIL_BACKEND=none`. Production retains its HTTPS/Secure-cookie requirements.
+No origin allowlist, forwarding-header trust or CSRF bypass was added.
+
+Seven new acceptance cases reproduce the original mismatch, check the documented
+local settings with ZIP uploads and eight selected models at root and `/ner`,
+and exercise a genuine server CSRF rejection/retry in Chromium. Missing/invalid
+proof remains rejected before admission. Selected files/models survive rejection,
+the obsolete upload-complete status clears, and a corrected retry receives 202.
+The new cases pass **7/7 in 7.70s**; their pre-fix runs fail as expected.
+
+A real Chromium smoke against the built 0.6.1 web container, using isolated tmpfs
+data and `/ner`, registers an account without mail, signs in through the HTML
+form with a four-character password, submits a nested two-TXT ZIP with eight
+models and receives **202 QUEUED** plus the correct private URL. Its request has
+matching Origin and same-origin Fetch Metadata. This verifies submission, not
+clinical inference. The temporary container/data are removed afterward.
+
+A mismatched origin now returns a localized service-address message instead of
+suggesting a reload. Private debug records identify `reason=origin_mismatch` and
+the configured origin, with no patient text, ZIP content, cookie or CSRF proof.
+Full regression: **224 passed in 378.72s**, zero failures/skips, using:
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/submission-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/submission-release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 axe scans](security/v6.1-axe.jsonl) have zero automatic violations; color
+contrast remains incomplete in 44 scans, so these do not certify WCAG conformance.
+Ruff lint/format (100 Python files), changed-JS Prettier, generated translations
+and Bandit medium/high checks pass. Wheel/sdist 0.6.1 and the updated web image
+build successfully. The worker retains the exact native CPU libraries through
+the previously documented local VFS override; no neural dependencies changed.
+Private local environment settings are excluded from Git. Both local services
+are recreated against the existing data volume; changing cookie policy requires
+a fresh login. Production retains its explicit HTTPS/Secure configuration.
+
+---
+
+# Historical: on-demand models and independent failures (0.6.0)
 
 Full regression: **217 passed in 384.94s**, zero failures/skips. The nine new
 on-demand cases passed separately in 12.06s; the broader native/incremental set
