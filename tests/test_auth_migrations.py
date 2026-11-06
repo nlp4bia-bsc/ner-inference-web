@@ -44,7 +44,7 @@ def test_v4_upgrade_on_previous_copy_preserves_jobs_fifo_offsets_and_deadlines(s
     with upgraded.connect() as c:
         assert [
             r[0] for r in c.execute("SELECT version FROM schema_migrations ORDER BY version")
-        ] == [1, 2, 3]
+        ] == [1, 2, 3, 4]
         assert c.execute("SELECT count(*) FROM users").fetchone()[0] == 0
         assert c.execute("SELECT seq FROM jobs").fetchone()[0] == before["seq"]
 

@@ -29,7 +29,7 @@ class ProgressRepository:
             c.execute("BEGIN IMMEDIATE")
             for identity in ids:
                 c.execute(
-                    "UPDATE documents SET status=?,error_code=?,updated_at=? WHERE job_id=? AND document_id=? AND status!='ANNOTATED'",
+                    "UPDATE documents SET status=?,error_code=?,updated_at=? WHERE job_id=? AND document_id=? AND status NOT IN ('ANNOTATED','DELETED')",
                     (status, error, time.time(), job_id, identity),
                 )
             self.refresh(c, job_id)
@@ -38,7 +38,7 @@ class ProgressRepository:
         with self.db.connect() as c:
             c.execute("BEGIN IMMEDIATE")
             c.execute(
-                "UPDATE documents SET status='ANNOTATED',annotation_count=?,entities_by_label=?,statistics=?,updated_at=?,error_code=NULL WHERE job_id=? AND document_id=?",
+                "UPDATE documents SET status='ANNOTATED',annotation_count=?,entities_by_label=?,statistics=?,updated_at=?,error_code=NULL WHERE job_id=? AND document_id=? AND status!='DELETED'",
                 (count, json.dumps(labels), json.dumps(stats), time.time(), job_id, identity),
             )
             self.refresh(c, job_id)
@@ -53,7 +53,7 @@ class ProgressRepository:
     def snapshot(self, job):
         rows = self.rows(job["id"])
         counts = Counter(r["status"] for r in rows)
-        total = job["document_count"]
+        total = max(0, job["document_count"] - counts["DELETED"])
         annotated = counts["ANNOTATED"] if rows else job["processed_documents"]
         published = [json.loads(r["statistics"]) for r in rows if r["status"] == "ANNOTATED"]
         provisional = {
@@ -80,6 +80,7 @@ class ProgressRepository:
             "processing_documents": counts["PROCESSING"],
             "pending_documents": counts["PENDING"] if rows else total - annotated,
             "failed_documents": counts["FAILED"],
+            "deleted_documents": counts["DELETED"],
             "progress_percent": annotated / total * 100 if total else 0,
             "updated_at": job.get("updated_at") or job["created_at"],
         }

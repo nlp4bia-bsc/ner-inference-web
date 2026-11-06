@@ -20,12 +20,14 @@ COLUMNS = [
     "model_ids",
     "original_labels",
     "sources",
+    "normalization",
 ]
 
 
 def annotation_row(row):
     return {
         **row,
+        "normalization": json.dumps(row.get("normalization"), ensure_ascii=False, allow_nan=False),
         **{
             key: json.dumps(row.get(key, []), ensure_ascii=False, allow_nan=False)
             for key in ("model_ids", "original_labels", "sources")

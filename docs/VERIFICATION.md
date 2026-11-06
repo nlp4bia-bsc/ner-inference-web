@@ -670,3 +670,46 @@ processes (including a 1 MiB summary and a child that stalls after publication).
 The complete 71-case suite also reran browser checks, real ner_lab statistics and
 the actual CPU inference/worker integration with a synthetic checkpoint. Ruff,
 formatting, Docker image build and Compose startup were checked again.
+
+## 0.7 retained quota, private normalization and sixteen UI languages
+
+The CPU lock was resolved and installed with Torch 2.15.0+cpu, Transformers
+5.22.1, FAISS CPU 1.15.1 and current compatible web/scientific dependencies.
+Upstream ner_lab core remains pinned to commit
+8640d4797b081a5f6b66d9b45c11269542a79a26; explicit inference dependencies replace
+the older training extra's fixed Torch requirement.
+
+Server regression: 194 passed, 80 browser-only cases skipped in that run.
+The suite includes actual tiny local BERT inference/native ner_lab integration,
+bi-encoder/FlatIP creation and disk reuse, Unicode offset round trips, English
+fallback provenance, private Parquet import/ZIP escape rejection, three-language
+LRU/72-hour expiry, atomic last-slot admission, deletion during inference,
+repackaging without rerunning completed NER, retained-vs-lifetime counters,
+filtering before pagination, ownership/CSRF and spawned stale-worker cancellation.
+Catalog validation covers every source message and interpolation placeholder in
+all 16 UI languages; document-language coverage is unchanged.
+
+The existing design/overlap browser run passed 28 cases before the final SVG
+font-scaling adjustment. The new 1440p/4K typography and 16-language navigation
+checks passed for both root and /ner deployment paths. Final overlap checks also
+exercise 4K and enlarged SVG geometry; see the final release validation below.
+Ruff and formatting checks pass. Bandit reports no medium/high findings; pip-audit
+finds no known vulnerabilities in core or the GPU scientific lock (the direct
+ner_lab source URL cannot be audited as a PyPI version). Wheel build succeeds,
+contains all 13 additional catalogs, and includes no Parquet/FAISS/gazetteers data.
+
+Clinical accuracy was not evaluated. The provided private ZIP is 81,373,604 bytes;
+Drive metadata was accessible, but binary download remained blocked in this
+execution. Actual confidential dictionary schemas, clinical encoder weights,
+full-dictionary RAM/disk needs and GPU throughput were not validated here. The
+private local import/inspect commands and explicit schema flags are documented
+in NORMALIZATION.md. All integration fixtures are synthetic, not clinical claims.
+
+Final release validation: 16 overlap/browser cases passed, including all four
+synthetic overlap corpora at 4K, preserving original source text, exact offsets,
+centering, size ordering and click-only span lines. SVG fonts and geometry now
+follow the root typography scale, and viewport changes redraw even when a capped
+reading panel retains its width. The document manager passed two real-browser
+cases (root and /ner), confirming erasure, quota refresh and unchanged lifetime
+history. The 16 existing design cases also passed. Two additional cases validate
+1440p/4K fonts and all 16 languages on login and authenticated document pages.

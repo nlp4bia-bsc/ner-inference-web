@@ -6,6 +6,7 @@
 !scripts/**
 !catalog/
 !catalog/models.yaml
+!catalog/normalization.yaml
 !catalog/inventory-provenance.json
 !requirements.lock
 !requirements-cpu.lock

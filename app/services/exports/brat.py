@@ -35,4 +35,13 @@ def annotation_text(spans):
     for index, row in enumerate(spans, 1):
         surface = row["text"].replace("\r", " ").replace("\n", " ").replace("\t", " ")
         lines.append(f"T{index}\t{row['label']} {row['start_span']} {row['end_span']}\t{surface}\n")
+        normalized = row.get("normalization")
+        if normalized:
+            system = normalized.get("code_system") or "Terminology"
+            import re
+
+            system = re.sub(r"[^A-Za-z0-9_.-]", "_", system)
+            code = normalized["code"]
+            term = normalized["term"].replace("\t", " ").replace("\r", " ").replace("\n", " ")
+            lines.append(f"N{index}\tReference T{index} {system}:{code}\t{term}\n")
     return "".join(lines)

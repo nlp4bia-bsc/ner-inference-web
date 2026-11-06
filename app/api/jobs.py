@@ -11,6 +11,30 @@ from app.errors import ServiceError
 def router(service):
     api = APIRouter()
 
+    @api.delete("/api/jobs/{token}")
+    def delete_job(token: str):
+        from app.services.document_management import delete_documents
+
+        return delete_documents(service, token)
+
+    @api.get("/api/my/document-usage")
+    def document_usage():
+        return service.quota()
+
+    @api.get("/api/my/documents")
+    def document_history(
+        offset: int = 0, limit: int = 50, state: str | None = None, job_id: str | None = None
+    ):
+        from app.errors import ServiceError
+        from app.permissions.policies import user
+        from app.services.document_management import upload_history
+
+        if offset < 0 or not 1 <= limit <= 100:
+            raise ServiceError("Invalid pagination.", 422)
+        if state and state not in ("STORED", "DELETED", "EXPIRED"):
+            raise ServiceError("Invalid document state.", 422)
+        return upload_history(service.db, user(), offset, limit, state, job_id)
+
     @api.post(
         "/api/jobs",
         status_code=202,
@@ -26,6 +50,7 @@ def router(service):
                                 "submitter_name": {"type": "string"},
                                 "submitter_email": {"type": "string", "format": "email"},
                                 "language": {"type": "string"},
+                                "normalize": {"type": "boolean", "default": False},
                                 "entities": {"type": "array", "items": {"type": "string"}},
                                 "models": {"type": "array", "items": {"type": "string"}},
                                 "input_mode": {
@@ -71,6 +96,7 @@ def router(service):
                     submitter_name=data.get("submitter_name", account["full_name"]),
                     submitter_email=data.get("submitter_email", account["email"]),
                     language=data.get("language", ""),
+                    normalize=data.get("normalize", "false"),
                     entities=data.getlist("entities"),
                     models=data.getlist("models") if "models" in data else None,
                 )

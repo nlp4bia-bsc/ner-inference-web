@@ -55,3 +55,33 @@ def test_stale_result_cannot_complete_a_retry(settings):
     (storage.job(job["id"]) / "worker-summary.json").write_text('{"old": true}')
     ok, summary = execute(job, settings, db, storage, target=no_result)
     assert not ok and summary is None
+
+
+def test_content_change_interrupts_spawned_worker_and_cannot_complete_stale_result(settings):
+    from threading import Thread
+
+    storage, db = LocalStorage(settings.storage_root), Database(settings)
+    enqueue(db)
+    job = db.claim()
+    storage.job(job["id"]).mkdir()
+
+    def change_content():
+        time.sleep(0.5)
+        with db.connect() as connection:
+            connection.execute(
+                "UPDATE jobs SET content_version=content_version+1 WHERE id=?", (job["id"],)
+            )
+
+    thread = Thread(target=change_content)
+    thread.start()
+    started = time.monotonic()
+    ok, summary = execute(job, settings, db, storage, target=stuck_after_result)
+    thread.join()
+    assert not ok and summary is None and time.monotonic() - started < 10
+    db.finish(job["id"], summary, failed=True, claimed_version=job["content_version"])
+    with db.connect() as connection:
+        current = connection.execute(
+            "SELECT status,attempts FROM jobs WHERE id=?", (job["id"],)
+        ).fetchone()
+    assert current["status"] == "QUEUED" and current["attempts"] == 0
+    assert not (storage.job(job["id"]) / "worker-summary.json").exists()

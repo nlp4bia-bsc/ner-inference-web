@@ -11,6 +11,7 @@ import time
 
 from app.config import Settings
 from app.db import Database
+from app.persistence.job_locks import JobContentChanged, check_content_version, job_lock
 from app.services import pipeline
 from app.services.cleanup import cleanup
 from app.services.registry import Registry
@@ -79,6 +80,10 @@ def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, 
     timed_out = False
     try:
         while process.is_alive():
+            try:
+                check_content_version(db, job)
+            except JobContentChanged:
+                break
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 timed_out = True
@@ -137,9 +142,12 @@ def run():
                 continue
             ok, summary = execute(job, s, db, storage)
             if not ok:
-                shutil.rmtree(storage.job(job["id"]) / "building", ignore_errors=True)
-                shutil.rmtree(storage.job(job["id"]) / "output", ignore_errors=True)
-            db.finish(job["id"], summary, failed=not ok)
+                with job_lock(s, job["id"]):
+                    shutil.rmtree(storage.job(job["id"]) / "building", ignore_errors=True)
+                    shutil.rmtree(storage.job(job["id"]) / "output", ignore_errors=True)
+            db.finish(
+                job["id"], summary, failed=not ok, claimed_version=job.get("content_version", 0)
+            )
 
 
 if __name__ == "__main__":

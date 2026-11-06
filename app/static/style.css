@@ -24,10 +24,10 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 25px;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 .step {
-  font-size: 11px;
+  font-size: 0.6875rem;
   display: grid;
   place-items: center;
   width: 32px;
@@ -44,12 +44,12 @@
   top: 24px;
 }
 .annotation-guide h2 {
-  font-size: 21px;
+  font-size: 1.3125rem;
 }
 .annotation-guide ol {
   padding-inline-start: 22px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .annotation-guide li {
   padding: 9px 0;
@@ -59,7 +59,7 @@
   background: none;
 }
 .annotation-guide > a {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .annotation-form label {
   margin-top: 16px;
@@ -75,7 +75,7 @@
   background: #fff;
   border: 1px solid #cbd7e8;
   color: var(--accent);
-  font-size: 13px;
+  font-size: 0.8125rem;
   min-width: 90px;
   padding: 10px 14px;
 }
@@ -97,14 +97,14 @@
   cursor: pointer;
 }
 .upload strong {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .upload > span {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 .upload .upload-icon {
-  font-size: 32px;
+  font-size: 2rem;
   color: var(--accent);
   display: grid;
   place-items: center;
@@ -119,7 +119,7 @@
   border: 0 !important;
   background: transparent !important;
   padding: 8px 0 !important;
-  font-size: 12px !important;
+  font-size: 0.75rem !important;
   max-width: 340px !important;
 }
 .upload input::file-selector-button {
@@ -142,14 +142,14 @@
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 0.8125rem;
   overflow-wrap: anywhere;
 }
 #file-list > div > span {
   min-width: 0;
 }
 #file-list button {
-  font-size: 12px;
+  font-size: 0.75rem;
   flex-shrink: 0;
 }
 fieldset {
@@ -176,7 +176,7 @@ fieldset {
 }
 .model-category > summary {
   padding: 15px 17px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 650;
   background: #f8fafc;
   display: flex;
@@ -188,7 +188,7 @@ fieldset {
 .model-category > summary:before {
   content: "+";
   color: var(--blue);
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 400;
 }
 .model-category[open] > summary:before {
@@ -198,7 +198,7 @@ fieldset {
   margin-inline-end: auto;
 }
 .model-count {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
@@ -213,7 +213,7 @@ fieldset {
   align-items: flex-start;
   gap: 10px;
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   cursor: pointer;
 }
@@ -226,7 +226,7 @@ fieldset {
 }
 .entity small {
   display: block;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   color: var(--muted);
   margin-top: 6px;
@@ -238,16 +238,16 @@ fieldset {
 .model-information {
   padding-top: 8px;
   padding-inline-start: 28px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 .model-information summary {
   cursor: pointer;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .model-information p {
-  font-size: 11px;
+  font-size: 0.6875rem;
   margin: 9px 0;
   overflow-wrap: anywhere;
 }
@@ -268,7 +268,7 @@ fieldset {
   margin: 0;
   padding: 16px;
   background: var(--soft);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 #multilingual-models > .hint {
   padding: 16px;
@@ -278,7 +278,7 @@ fieldset {
 }
 .summary {
   white-space: pre-line;
-  font-size: 13px;
+  font-size: 0.8125rem;
   overflow-wrap: anywhere;
   max-height: 180px;
   overflow: auto;
@@ -289,7 +289,7 @@ fieldset {
   margin: 18px 0;
 }
 .request-account p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 #submit {
@@ -337,13 +337,13 @@ fieldset {
 }
 .metrics strong {
   display: block;
-  font-size: 25px;
+  font-size: 1.5625rem;
   line-height: 1.3;
   font-weight: 650;
 }
 .metrics span {
   display: block;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -355,7 +355,7 @@ fieldset {
   margin-top: 24px;
 }
 .back-link {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .workspace-header {
   display: flex;
@@ -367,16 +367,16 @@ fieldset {
   margin: auto;
 }
 .workspace-header h1 {
-  font-size: 30px;
+  font-size: 1.875rem;
   margin: 8px 0;
 }
 .workspace-header p:not(.eyebrow) {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--muted);
   margin: 8px 0;
 }
 .workspace-header .eyebrow {
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 .workspace-header .metrics {
   margin: 0;
@@ -393,14 +393,14 @@ fieldset {
   padding: 0 32px;
   margin: 0 auto 18px;
   max-width: 2240px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .corpus-distribution {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   padding: 0 32px;
   margin: 0 auto 12px;
@@ -426,18 +426,18 @@ fieldset {
   min-width: 0;
 }
 .panel summary {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 650;
   cursor: pointer;
   margin-bottom: 18px;
 }
 .panel label {
   margin-top: 14px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .documents-panel select,
 .documents-panel input {
-  font-size: 13px !important;
+  font-size: 0.8125rem !important;
 }
 .document-list {
   max-height: 510px;
@@ -448,7 +448,7 @@ fieldset {
   margin-inline-start: 7px;
 }
 .document-list summary {
-  font-size: 12px;
+  font-size: 0.75rem;
   margin: 8px 0;
   min-height: 32px;
   padding-block: 6px;
@@ -466,13 +466,13 @@ fieldset {
 }
 .document-item strong {
   display: block;
-  font-size: 12px;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
   font-weight: 600;
 }
 .document-item small {
   display: block;
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--muted);
   margin-top: 6px;
 }
@@ -490,13 +490,13 @@ fieldset {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin: 16px 0;
   flex-wrap: wrap;
 }
 .pager button {
-  font-size: 11px;
+  font-size: 0.6875rem;
   padding: 8px 10px;
   min-height: 44px;
 }
@@ -510,25 +510,25 @@ fieldset {
   background: #fff;
 }
 .reading-heading .eyebrow {
-  font-size: 10px;
+  font-size: 0.625rem;
   margin-bottom: 12px;
 }
 .reading-heading h2 {
-  font-size: 20px;
+  font-size: 1.25rem;
   overflow-wrap: anywhere;
 }
 .document-downloads {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .reader-toolbar {
   padding: 6px 24px 0;
   background: #fbfcfe;
 }
 .reader-toolbar label {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .search-row {
   display: flex;
@@ -539,16 +539,16 @@ fieldset {
 }
 .search-row button {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .model-filter-control {
   padding: 0 24px;
 }
 .model-filter-control label {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .model-filter-control select {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .legend {
   display: flex;
@@ -560,7 +560,7 @@ fieldset {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px !important;
+  font-size: 0.6875rem !important;
   font-weight: 500;
   padding: 6px 9px;
   border: 1px solid var(--entity-color, var(--line));
@@ -576,14 +576,14 @@ fieldset {
 .reader-hint {
   padding: 0 24px;
   margin-top: 16px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .annotated-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 2.35;
   padding: 24px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   min-height: 280px;
   max-height: 65vh;
   overflow: auto;
@@ -614,20 +614,20 @@ fieldset {
 }
 .region-annotations {
   padding: 0 24px 20px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .region-annotations strong {
   display: block;
 }
 .region-annotations button {
   margin: 8px 8px 0 0;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .annotations-panel h2 {
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 .annotations-panel h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .annotations-panel blockquote {
   margin: 14px 0;
@@ -636,15 +636,15 @@ fieldset {
   border-inline-start: 3px solid var(--accent);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .annotations-panel dl {
   grid-template-columns: 85px minmax(0, 1fr);
-  font-size: 12px;
+  font-size: 0.75rem;
   gap: 9px;
 }
 .annotations-panel button {
-  font-size: 12px;
+  font-size: 0.75rem;
   margin: 4px 0;
 }
 .annotation-list {
@@ -670,11 +670,11 @@ fieldset {
   max-height: 80px;
   overflow: auto;
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .mention span {
   display: block;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #526077;
   margin-top: 7px;
 }
@@ -682,11 +682,11 @@ fieldset {
   border-inline-start: 4px solid var(--entity-color);
   background: var(--entity-bg);
   padding: 9px 12px;
-  font-size: 14px !important;
+  font-size: 0.875rem !important;
   overflow-wrap: anywhere;
 }
 .annotation-sources {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .annotation-sources h4 {
   margin: 16px 0 10px;
@@ -701,7 +701,7 @@ fieldset {
   margin-top: 20px;
 }
 .annotation-table {
-  font-size: 11px;
+  font-size: 0.6875rem;
   min-width: 450px;
   width: 100%;
   border-collapse: collapse;
@@ -720,7 +720,7 @@ fieldset {
   min-height: 44px;
   background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .c0 {
   --entity-color: #4462a6;
@@ -771,12 +771,12 @@ fieldset {
   box-shadow: var(--shadow);
 }
 .global-progress summary {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
 }
 .global-progress p {
-  font-size: 12px;
+  font-size: 0.75rem;
   margin: 10px 0;
 }
 .global-progress progress {
@@ -790,7 +790,7 @@ fieldset {
   padding-top: 12px;
 }
 .countdown strong {
-  font-size: 22px;
+  font-size: 1.375rem;
   display: block;
   letter-spacing: 1px;
   color: var(--accent);
@@ -811,7 +811,7 @@ fieldset {
   border-radius: 5px;
 }
 .viewer-footer-note {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin: 24px 32px;
 }
@@ -838,7 +838,7 @@ fieldset {
   }
   .annotated-text {
     padding: 40px clamp(24px, 4vw, 100px);
-    font-size: 16px;
+    font-size: 1rem;
   }
   .document-list {
     max-height: 65vh;
@@ -893,10 +893,10 @@ fieldset {
     padding: 10px;
   }
   .workspace-header .metrics strong {
-    font-size: 23px;
+    font-size: 1.4375rem;
   }
   .workspace-header .metrics span {
-    font-size: 10px;
+    font-size: 0.625rem;
   }
   .catalog-card .category-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -919,7 +919,7 @@ fieldset {
     display: flex;
     flex-wrap: wrap;
     gap: 0 30px;
-    font-size: 12px;
+    font-size: 0.75rem;
     margin: 0;
   }
   .annotation-guide h2,
@@ -957,7 +957,7 @@ fieldset {
     padding: 24px 20px;
   }
   .form-section > h2 {
-    font-size: 19px;
+    font-size: 1.1875rem;
     gap: 10px;
     margin-bottom: 20px;
   }
@@ -968,7 +968,7 @@ fieldset {
     gap: 6px;
   }
   .input-tabs button {
-    font-size: 12px;
+    font-size: 0.75rem;
     padding: 9px;
     min-width: 78px;
   }
@@ -976,7 +976,7 @@ fieldset {
     padding: 20px 14px;
   }
   .upload strong {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .annotation-guide {
     padding: 18px;
@@ -994,13 +994,13 @@ fieldset {
     grid-template-columns: 1fr;
   }
   .model-category > summary {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .model-choice .entity {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .model-information {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .workspace {
     display: flex;
@@ -1021,7 +1021,7 @@ fieldset {
     padding: 24px 18px 14px;
   }
   .workspace-header h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .workspace-header .metrics {
     display: grid;
@@ -1035,15 +1035,15 @@ fieldset {
   .viewer-actions {
     padding: 0 18px;
     justify-content: flex-start;
-    font-size: 12px;
+    font-size: 0.75rem;
     gap: 16px;
   }
   .viewer-actions .button {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .corpus-distribution {
     padding: 0 18px;
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
   .document-list {
     max-height: 200px;
@@ -1053,12 +1053,12 @@ fieldset {
   }
   .documents-panel input,
   .documents-panel select {
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
   }
   .annotated-text {
     padding: 20px;
     max-height: 55vh;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 2.5;
   }
   .reading-heading,
@@ -1067,11 +1067,11 @@ fieldset {
     padding-inline: 20px;
   }
   .reading-heading h2 {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
   .reader-hint {
     padding-inline: 20px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .model-filter-control {
     padding-inline: 20px;
@@ -1088,21 +1088,21 @@ fieldset {
     padding: 14px;
   }
   .global-progress summary {
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.7;
   }
   .global-progress p {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .countdown strong {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
   .status-card {
     padding: 22px;
   }
   #downloads > a {
     width: 100%;
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .metrics > div {
     min-width: 0;
@@ -1110,10 +1110,10 @@ fieldset {
     padding: 12px;
   }
   .metrics strong {
-    font-size: 23px;
+    font-size: 1.4375rem;
   }
   .metrics span {
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
   .viewer-footer-note {
     margin: 22px 18px;
@@ -1128,18 +1128,18 @@ fieldset {
     border-radius: 14px 14px 0 0;
   }
   .search-row button {
-    font-size: 12px;
+    font-size: 0.75rem;
     padding: 8px;
   }
   .annotation-table {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .document-downloads {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .results dl {
     grid-template-columns: minmax(85px, 0.45fr) minmax(0, 1fr);
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
 }
 @media (min-width: 1241px) {

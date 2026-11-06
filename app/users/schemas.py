@@ -25,7 +25,9 @@ class SafeModel(BaseModel):
 Profession = Literal[
     "CLINICIAN", "RESEARCHER", "DATA_SCIENTIST", "NLP_ENGINEER", "STUDENT", "OTHER"
 ]
-Locale = Literal["en", "es", "ca"]
+Locale = Literal[
+    "en", "es", "ca", "cs", "da", "de", "el", "et", "fr", "it", "nl", "no", "pt", "ro", "ru", "sv"
+]
 
 
 class Profile(SafeModel):

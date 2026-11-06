@@ -127,7 +127,7 @@ def overlap_server(tmp_path_factory, request):
             server.wait(timeout=10)
 
 
-@pytest.mark.parametrize("width", [320, 390, 1440])
+@pytest.mark.parametrize("width", [320, 390, 1440, 3840])
 def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, width):
     from playwright.sync_api import sync_playwright
 
@@ -242,7 +242,8 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert all(
             row["error"] < 1
             and row["font"] == 12
-            and abs(row["scale"] - 1) < 0.001
+            and abs(row["scale"] - (1.5 if width >= 3840 else 1.125 if width >= 1440 else 1))
+            < 0.001
             and row["fits"]
             and not row["compressed"]
             for row in geometry["centers"]
@@ -285,7 +286,10 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                 )
             ), resized
             assert all(
-                row["error"] < 1 and row["fits"] and abs(row["scale"] - 1) < 0.001
+                row["error"] < 1
+                and row["fits"]
+                and abs(row["scale"] - (1.5 if width >= 3840 else 1.125 if width >= 1440 else 1))
+                < 0.001
                 for row in resized["centers"]
             ), resized
             assert page.evaluate("document.activeElement.dataset.annotation") == focused

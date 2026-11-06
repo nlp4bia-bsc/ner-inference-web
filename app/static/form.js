@@ -9,6 +9,11 @@ const files = document.querySelector("#files");
 const button = document.querySelector("#submit");
 const error = document.querySelector("#error");
 let busy = false;
+let remaining = null;
+window.addEventListener("document-quota", (event) => {
+  remaining = event.detail.remaining;
+  update();
+});
 const catalog = mountCatalog({ onChange: update });
 function selected() {
   return catalog.selected();
@@ -43,6 +48,7 @@ function update() {
   );
   button.disabled =
     busy ||
+    remaining === 0 ||
     !selected().length ||
     (pasted ? !value.trim() : !files.files.length);
   if (pasted) {

@@ -76,6 +76,12 @@ class JobService:
                 ),
                 "selected_models": model_snapshot(selected),
             }
+            if form.normalize:
+                from app.services.normalization_catalog import NormalizationCatalog
+
+                payload["normalization_resources"] = NormalizationCatalog(self.settings).snapshot(
+                    form.language, payload["entities"]
+                )
             staging.rename(self.storage.job(job_id))
             self.db.accept(
                 job_id,
@@ -101,9 +107,18 @@ class JobService:
 
     def available(self, token: str) -> dict:
         job = require_owner(self.db.get(token))
-        if job["status"] == "EXPIRED" or (job["expires_at"] and job["expires_at"] <= time.time()):
+        if job["status"] == "DELETED":
+            raise ServiceError("Results have been deleted or are scheduled for deletion.", 410)
+        if job["status"] == "EXPIRED" or (
+            job["expires_at"] and job["expires_at"] <= time.time()
+        ):
             raise ServiceError("Results have expired and downloads are no longer available.", 410)
         return job
+
+    def quota(self):
+        from app.services.document_management import quota
+
+        return quota(self.db, user())
 
     def completed(self, token: str) -> dict:
         job = self.available(token)
@@ -151,7 +166,7 @@ class JobService:
         account = user()
         with self.db.connect() as c:
             rows = c.execute(
-                """SELECT id,CASE WHEN expires_at<=? THEN 'EXPIRED' ELSE status END AS status,
+                """SELECT id,CASE WHEN status='DELETED' THEN 'DELETED' WHEN expires_at<=? THEN 'EXPIRED' ELSE status END AS status,
                 document_count,processed_documents,created_at,completed_at,expires_at,
                 json_extract(payload,'$.language') AS language,
                 json_extract(payload,'$.documents[0]') AS name,

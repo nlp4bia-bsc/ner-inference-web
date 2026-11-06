@@ -308,3 +308,47 @@ GPU/full-neural images and real SMTP/BSC edge delivery have not been validated.
 The upstream torch2.10.0 pin retains two published advisories; resolve the neural
 profile risk before declaring that deployment hardened. HTTP dependency/security
 results are recorded separately in SECURITY_AUDIT_V4.md.
+
+## Updating to 0.7 in Conda
+
+Stop the existing web and worker processes first, then run in the checkout root:
+
+```bash
+conda activate ner-inference-web
+git pull --ff-only
+python3 -m pip install --upgrade -r requirements-cpu.lock
+python3 -m pip install --no-deps -e .
+python3 -m scripts.check_config --expect-origin http://127.0.0.1:8000
+```
+
+Use `requirements-nlp.lock` instead for the GPU Torch distribution. FAISS indices
+remain portable CPU FlatIP; encoder execution follows DEVICE. The inference
+profile installs current compatible runtime dependencies explicitly with ner_lab
+core, avoiding the upstream training extra's fixed older Torch version. No
+precompilation, model preflight or database reset is necessary. Schema migrations
+run idempotently on startup; they retain existing accounts and jobs. Avoid
+`cp .env.example .env` over a configured deployment: merge the new settings.
+Keep PUBLIC_BASE_URL, cookie settings and inference profile consistent in both
+terminals; shell exports in one terminal do not configure another terminal.
+
+Confidential gazetteers belong in `./gazetteers/`, inside the repository root and
+ignored by Git. See [NORMALIZATION.md](NORMALIZATION.md) for import commands.
+Then restart web (`python3 -m uvicorn app.asgi:app --host 127.0.0.1 --port 8000
+--no-access-log --no-proxy-headers`) and worker (`python3 -m app.worker`) in the
+same Conda environment and with the same settings/storage.
+
+## Retained-document quota and deletion
+
+The quota is occupied / limit across **all jobs**: standard 100, extended 1000,
+unlimited without a document cap. Deletion and expiry free slots. Admission
+checks the freshest access tier and retained count inside the SQLite write
+transaction, preventing simultaneous requests from claiming the same slot.
+
+My documents lists private upload metadata even after document deletion/expiry.
+Users may erase a document while queued, processing, failed or completed. This
+removes its original, annotations and derived downloads, interrupts stale worker
+content, and regenerates retained downloads without rerunning completed NER.
+The original retention deadline does not extend. The lifetime upload ledger
+retains metadata (filename, size, language, upload/removal time), never deleted
+clinical text. Include this metadata retention in institutional privacy notices.
+Files already downloaded to a user's own machine cannot be erased remotely.

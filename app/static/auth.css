@@ -32,7 +32,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.6;
   min-width: 0;
   display: flex;
@@ -64,7 +64,7 @@ button,
   border-radius: 7px;
   background: var(--accent);
   color: #fff;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 650;
   line-height: 1.5;
   cursor: pointer;
@@ -118,20 +118,20 @@ p {
   overflow-wrap: anywhere;
 }
 h1 {
-  font-size: clamp(30px, 3vw, 42px);
+  font-size: clamp(1.875rem, 3vw, 2.625rem);
   line-height: 1.2;
   letter-spacing: -1.3px;
   margin: 12px 0 16px;
   font-weight: 700;
 }
 h2 {
-  font-size: 22px;
+  font-size: 1.375rem;
   line-height: 1.3;
   letter-spacing: -0.4px;
   margin: 0 0 12px;
 }
 h3 {
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.4;
   margin: 0 0 14px;
 }
@@ -145,10 +145,10 @@ p {
 }
 .hint,
 .quiet {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .eyebrow {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 750;
   letter-spacing: 1.8px;
   text-transform: uppercase;
@@ -156,7 +156,7 @@ p {
   margin: 0 0 16px;
 }
 .intro {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .page-content {
   flex: 1;
@@ -198,16 +198,16 @@ p {
   border-bottom: 1px solid var(--line);
 }
 .section-heading h2 {
-  font-size: 19px;
+  font-size: 1.1875rem;
   margin: 0;
 }
 .section-heading p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 5px 0 0;
 }
 .institution-name {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
   max-width: 32%;
   overflow-wrap: anywhere;
 }
@@ -234,13 +234,13 @@ p {
 }
 .brand strong {
   display: block;
-  font-size: 24px;
+  font-size: 1.5rem;
   letter-spacing: -1px;
   line-height: 1.15;
 }
 .brand small {
   display: block;
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.3px;
   color: var(--muted);
   margin-top: 5px;
@@ -252,13 +252,13 @@ p {
   color: #fff;
   width: 42px;
   height: 46px;
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1;
   position: relative;
   border-radius: 2px 10px 2px 2px;
 }
 .brand-mark span {
-  font-size: 13px;
+  font-size: 0.8125rem;
   position: absolute;
   top: 5px;
   right: 5px;
@@ -270,7 +270,7 @@ p {
   flex: 1;
 }
 .primary-navigation a {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 12px 11px;
   white-space: nowrap;
@@ -303,7 +303,7 @@ p {
   border: 0;
   background: transparent;
   padding: 8px 20px 8px 4px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   min-height: 44px;
   margin: 0;
 }
@@ -311,7 +311,7 @@ p {
   margin: 0;
 }
 .header-controls .text-button {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .account-menu {
   position: relative;
@@ -337,11 +337,11 @@ p {
   border: 1px solid #cfdaed;
   border-radius: 50%;
   color: var(--accent);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 .account-name {
-  font-size: 12px;
+  font-size: 0.75rem;
   max-width: 105px;
   white-space: nowrap;
   overflow: hidden;
@@ -363,7 +363,7 @@ p {
   display: flex;
   gap: 10px;
   padding: 12px;
-  font-size: 14px;
+  font-size: 0.875rem;
   border-radius: 5px;
 }
 .account-menu nav a:hover {
@@ -389,13 +389,13 @@ p {
 .footer-brand strong {
   display: block;
   color: var(--accent);
-  font-size: 20px;
+  font-size: 1.25rem;
   letter-spacing: -0.5px;
 }
 .footer-brand span,
 .footer-brand small {
   display: block;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin-top: 3px;
 }
@@ -415,7 +415,7 @@ p {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px 18px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .footer-links a {
   min-height: 32px;
@@ -426,14 +426,14 @@ p {
   flex-basis: 100%;
   text-align: end;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .footer-credit {
   margin: 24px auto 0;
   border-top: 1px solid #edf0f5;
   padding-top: 14px;
   text-align: center;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   max-width: 1440px;
 }
@@ -464,18 +464,18 @@ p {
 }
 .auth-presentation h2 {
   color: #fff;
-  font-size: clamp(38px, 4vw, 58px);
+  font-size: clamp(2.375rem, 4vw, 3.625rem);
   line-height: 1.12;
   letter-spacing: -2px;
   max-width: 480px;
   margin: 16px 0 24px;
 }
 .auth-presentation > p:not(.eyebrow) {
-  font-size: 15px;
+  font-size: 0.9375rem;
   max-width: 470px;
 }
 .auth-presentation .presentation-subtitle {
-  font-size: 18px !important;
+  font-size: 1.125rem !important;
   color: #fff;
   margin-bottom: 18px;
 }
@@ -501,10 +501,10 @@ p {
 }
 .presentation-features strong {
   color: #fff;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .presentation-features p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 5px 0 0;
   max-width: 370px;
   line-height: 1.6;
@@ -514,7 +514,7 @@ p {
   margin-top: 24px;
   padding-top: 20px;
   letter-spacing: 1px;
-  font-size: 9px;
+  font-size: 0.5625rem;
   color: #c1d1ed;
 }
 .institution-line span {
@@ -533,16 +533,16 @@ p {
   margin: 16px 0;
 }
 .auth-card h1 {
-  font-size: 32px;
+  font-size: 2rem;
   letter-spacing: -1px;
   margin: 0 0 12px;
 }
 .auth-card > .muted {
-  font-size: 14px;
+  font-size: 0.875rem;
   margin-bottom: 26px;
 }
 .auth-card .eyebrow {
-  font-size: 10px;
+  font-size: 0.625rem;
   margin-bottom: 12px;
 }
 .field {
@@ -551,7 +551,7 @@ p {
 }
 label {
   display: block;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 650;
   margin-bottom: 7px;
 }
@@ -568,7 +568,7 @@ textarea {
   color: var(--ink);
   min-height: 44px;
   line-height: 1.5;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 input[readonly] {
   background: var(--bg);
@@ -597,7 +597,7 @@ textarea {
   bottom: 2px;
   min-height: 40px;
   padding: 5px 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   background: transparent;
   color: var(--accent);
   max-width: 90px;
@@ -612,7 +612,7 @@ textarea {
 }
 .forgot-link {
   display: block;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 10px 0 20px;
   text-align: end;
 }
@@ -620,7 +620,7 @@ textarea {
   border-top: 1px solid var(--line);
   padding-top: 20px;
   margin-top: 24px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   display: flex;
   flex-wrap: wrap;
   gap: 10px 20px;
@@ -642,7 +642,7 @@ textarea {
   align-items: flex-start;
   gap: 9px;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 0.75rem;
   margin: 16px 0 24px;
 }
 .check input {
@@ -651,7 +651,7 @@ textarea {
 .quota-note {
   display: flex;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   background: var(--bg);
   padding: 14px;
@@ -662,13 +662,13 @@ textarea {
   margin-bottom: 2px;
 }
 .otp-disclosure .hint {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .notice,
 .error {
   padding: 14px 16px;
   border-radius: 7px;
-  font-size: 14px;
+  font-size: 0.875rem;
   background: var(--soft);
   border: 1px solid #d4e0f2;
   color: #254478;
@@ -699,7 +699,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--muted);
 }
@@ -708,7 +708,7 @@ textarea {
 }
 .metric-card > strong {
   display: block;
-  font-size: 37px;
+  font-size: 2.3125rem;
   line-height: 1.15;
   letter-spacing: -1px;
   margin: 15px 0 10px;
@@ -717,7 +717,7 @@ textarea {
 .metric-card > small {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.5;
 }
 .tier-badge {
@@ -727,7 +727,7 @@ textarea {
   background: #edf2fb;
   border-radius: 4px;
   padding: 2px 7px;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -743,7 +743,7 @@ textarea {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 28px 0 38px;
 }
 .workspace-shortcuts a {
@@ -756,12 +756,12 @@ textarea {
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-align: start;
 }
 .responsive-table th {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 650;
   background: #f8fafc;
   padding: 14px 20px;
@@ -780,13 +780,13 @@ textarea {
   display: block;
 }
 .responsive-table td small {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
   margin: 6px 0;
   line-height: 1.5;
 }
 .responsive-table time {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 .jobs-table th:first-child {
@@ -809,7 +809,7 @@ textarea {
 .job-actions {
   display: grid;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .status-pill {
   display: inline-flex;
@@ -819,7 +819,7 @@ textarea {
   color: #36557d;
   border-radius: 5px;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 650;
   line-height: 1.5;
 }
@@ -861,7 +861,7 @@ textarea {
   color: #6f8aac;
 }
 .empty-state h3 {
-  font-size: 21px;
+  font-size: 1.3125rem;
   color: var(--ink);
 }
 .empty-state p {
@@ -872,7 +872,7 @@ textarea {
   display: flex;
   justify-content: space-between;
   padding: 16px 24px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .account-layout {
   max-width: 1040px;
@@ -891,7 +891,7 @@ textarea {
 .profile-summary p {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .profile-summary h2 {
   margin: 0 0 4px;
@@ -900,7 +900,7 @@ textarea {
   width: 64px;
   height: 64px;
   flex: 0 0 64px;
-  font-size: 24px;
+  font-size: 1.5rem;
 }
 .profile-summary > .tier-badge {
   margin-inline-start: auto;
@@ -913,13 +913,13 @@ textarea {
 }
 .profile-access h2,
 .security-actions h2 {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .security-actions > a {
   display: block;
   padding: 12px 0;
   border-bottom: 1px solid #edf0f5;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .action-row {
   display: flex;
@@ -938,7 +938,7 @@ textarea {
   margin: 16px 0;
 }
 .session-list p {
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 8px 0 0;
 }
 .admin-search {
@@ -947,7 +947,7 @@ textarea {
   width: min(480px, 100%);
 }
 .admin-search input {
-  font-size: 13px !important;
+  font-size: 0.8125rem !important;
 }
 .admin-table th:last-child {
   width: 38%;
@@ -958,17 +958,17 @@ textarea {
   gap: 8px;
 }
 .admin-change label {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .admin-change select {
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 8px;
   min-width: 0;
 }
 .admin-change > button {
   grid-column: 1/-1;
   justify-self: start;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .audit-section {
   margin-top: 28px;
@@ -976,7 +976,7 @@ textarea {
 .audit-details {
   display: block;
   white-space: pre-wrap;
-  font-size: 12px;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
   margin-top: 8px;
 }
@@ -997,19 +997,19 @@ textarea {
   background: #14223d77;
 }
 .notification-dialog h2 {
-  font-size: 25px;
+  font-size: 1.5625rem;
   margin-bottom: 16px;
 }
 .notification-dialog p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .notification-dialog button {
   margin: 8px 8px 0 0;
 }
 .private-link {
   display: block;
-  font-size: 12px;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
   margin-top: 20px;
 }
@@ -1018,7 +1018,7 @@ textarea {
   padding: 14px;
   border-radius: 6px;
   white-space: pre-wrap;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .skip-link {
   position: fixed;
@@ -1077,7 +1077,7 @@ dl {
   display: grid;
   grid-template-columns: minmax(90px, 0.5fr) minmax(0, 1fr);
   gap: 12px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 dt {
   color: var(--muted);
@@ -1153,7 +1153,7 @@ code {
     padding: 32px;
   }
   .auth-presentation h2 {
-    font-size: 44px;
+    font-size: 2.75rem;
   }
   .content-width {
     width: calc(100% - 48px);
@@ -1211,7 +1211,7 @@ code {
     padding: 28px;
   }
   .auth-presentation h2 {
-    font-size: 38px;
+    font-size: 2.375rem;
   }
   .auth-card {
     padding: 28px;
@@ -1229,16 +1229,16 @@ code {
     padding: 18px;
   }
   .metric-card > div {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .metric-card > strong {
-    font-size: 32px;
+    font-size: 2rem;
   }
   .heading-row {
     align-items: flex-start;
   }
   .responsive-table {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .footer-inner {
     grid-template-columns: 1fr 1fr;
@@ -1257,7 +1257,7 @@ code {
 }
 @media (max-width: 760px) {
   body {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .app-header {
     min-height: 80px;
@@ -1266,10 +1266,10 @@ code {
     flex-wrap: wrap;
   }
   .brand strong {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
   .brand small {
-    font-size: 10px;
+    font-size: 0.625rem;
   }
   .brand-mark {
     width: 36px;
@@ -1285,7 +1285,7 @@ code {
     display: none;
   }
   .header-controls > .language-control select {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .account-menu .avatar {
     width: 30px;
@@ -1336,11 +1336,11 @@ code {
   }
   .auth-presentation .presentation-subtitle {
     color: var(--accent);
-    font-size: 16px !important;
+    font-size: 1rem !important;
     margin: 0 0 8px;
   }
   .auth-presentation > p {
-    font-size: 13px !important;
+    font-size: 0.8125rem !important;
     margin: 0;
   }
   .auth-card {
@@ -1350,10 +1350,10 @@ code {
     padding: 25px 22px;
   }
   .auth-card h1 {
-    font-size: 29px;
+    font-size: 1.8125rem;
   }
   .auth-card > .muted {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .content-width {
     width: calc(100% - 36px);
@@ -1363,7 +1363,7 @@ code {
     margin-bottom: 24px;
   }
   .page-heading h1 {
-    font-size: 30px;
+    font-size: 1.875rem;
   }
   .heading-row {
     display: block;
@@ -1372,7 +1372,7 @@ code {
     margin-top: 20px;
   }
   .intro {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .workspace-metrics {
     grid-template-columns: 1fr 1fr;
@@ -1383,13 +1383,13 @@ code {
     padding: 16px;
   }
   .metric-card > strong {
-    font-size: 32px;
+    font-size: 2rem;
   }
   .metric-card > div {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .metric-card > small {
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
   .metric-card .icon {
     width: 17px;
@@ -1400,7 +1400,7 @@ code {
     margin: 14px 0 24px;
   }
   .workspace-shortcuts a {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .section-heading {
     padding: 20px;
@@ -1433,12 +1433,12 @@ code {
     gap: 12px;
     padding: 7px 0;
     border: 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   .responsive-table td:before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 11px;
+    font-size: 0.6875rem;
     flex: 0 0 85px;
     padding-top: 2px;
   }
@@ -1449,7 +1449,7 @@ code {
     display: none;
   }
   .jobs-table td:first-child > strong {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .jobs-table td:nth-child(5) {
     flex-wrap: wrap;
@@ -1465,16 +1465,16 @@ code {
     gap: 10px 16px;
   }
   .responsive-table time {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .empty-state {
     padding: 40px 20px;
   }
   .empty-state h3 {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .empty-state p {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .account-card {
     padding: 22px;
@@ -1488,10 +1488,10 @@ code {
     flex: 1;
   }
   .profile-summary h2 {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
   .profile-summary p {
-    font-size: 12px;
+    font-size: 0.75rem;
     overflow-wrap: anywhere;
   }
   .profile-summary > .tier-badge {
@@ -1501,7 +1501,7 @@ code {
     width: 48px;
     height: 48px;
     flex-basis: 48px;
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   .admin-table td:last-child {
     display: block;
@@ -1539,7 +1539,7 @@ code {
   }
   .footer-credit {
     text-align: start;
-    font-size: 10px;
+    font-size: 0.625rem;
   }
   .notification-dialog {
     padding: 22px;
@@ -1549,7 +1549,7 @@ code {
     margin: 8px 0 0;
   }
   .notification-dialog h2 {
-    font-size: 23px;
+    font-size: 1.4375rem;
   }
   .form-grid {
     grid-template-columns: 1fr;
@@ -1642,13 +1642,63 @@ p a {
     display: none;
   }
   .admin-table td:first-child strong {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
   .admin-table td:first-child small {
-    font-size: 12px;
+    font-size: 0.75rem;
     margin-top: 6px;
   }
   .admin-search .secondary {
     flex-shrink: 0;
   }
+}
+
+/* Typography follows viewport size while scientific offsets remain unchanged. */
+html {
+  font-size: 16px;
+}
+@media (min-width: 1440px) {
+  html {
+    font-size: 18px;
+  }
+}
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+}
+@media (min-width: 3840px) {
+  html {
+    font-size: 24px;
+  }
+}
+.privacy-warning {
+  border: 1px solid #be123c;
+  border-left: 5px solid #be123c;
+  background: #fff1f2;
+  color: #881337;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  margin: 0 0 24px;
+}
+.privacy-warning strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.quota-display {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.quota-display strong {
+  font-size: 2rem;
+}
+.documents-page > .card {
+  margin-bottom: 24px;
+  padding: 24px;
+}
+.table-scroll {
+  max-width: 100%;
+  overflow: auto;
 }

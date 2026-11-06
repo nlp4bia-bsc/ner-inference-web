@@ -1,6 +1,7 @@
 """Shared UI vocabulary. English source | Spanish | Catalan; no document translation."""
 
 from app.auth.i18n import ROWS as AUTH_ROWS
+from app.locales import CODES, translated
 
 _COPY = """
 Clinical and Biomedical Text Annotation|Anotación de textos clínicos y biomédicos|Anotació de textos clínics i biomèdics
@@ -375,11 +376,58 @@ Swedish|Sueco|Suec
 Multilingual checkpoints are validated per document language. Check availability before submitting.|Los modelos multilingües se validan por idioma del documento. Comprueba la disponibilidad antes de enviar.|Els models multilingües es validen per llengua del document. Comprova la disponibilitat abans d'enviar.
 """
 
-ROWS = {row.split("|")[0]: tuple(row.split("|")) for row in _COPY.strip().splitlines()}
-MESSAGES = {**AUTH_ROWS, **{v[0]: v for v in AUTH_ROWS.values()}, **ROWS}
+_COPY += """
+All uploads|Todas las subidas|Totes les pujades
+Concept normalization|Normalización de conceptos|Normalització de conceptes
+De-identification responsibility|Responsabilidad de desidentificación|Responsabilitat de desidentificació
+Delete|Eliminar|Elimina
+Delete document|Eliminar documento|Elimina el document
+Delete retained documents at any time. Upload history remains after content deletion.|Elimina documentos conservados en cualquier momento. El histórico de subidas permanece tras borrarlos.|Elimina documents conservats en qualsevol moment. L'historial de pujades es conserva després d'esborrar-los.
+Deleted documents|Documentos eliminados|Documents eliminats
+Deleting…|Eliminando…|S'està eliminant…
+Document content deleted. Upload history retained.|Contenido del documento eliminado. Histórico de subidas conservado.|Contingut del document eliminat. Historial de pujades conservat.
+Document usage|Uso de documentos|Ús de documents
+English fallback: original mention, without automatic translation.|Alternativa en inglés: mención original, sin traducción automática.|Alternativa en anglès: menció original, sense traducció automàtica.
+Expired documents|Documentos caducados|Documents caducats
+History keeps upload metadata, never deleted document content.|El histórico conserva los metadatos de subida, nunca el contenido eliminado.|L'historial conserva les metadades de pujada, mai el contingut eliminat.
+Manage documents|Gestionar documentos|Gestiona els documents
+My documents|Mis documentos|Els meus documents
+New accounts can retain 100 documents across all jobs. Delete documents to free slots. Higher limits may be granted by the NLP4BIA team.|Las cuentas nuevas pueden conservar 100 documentos entre todos sus trabajos. Elimina documentos para liberar plazas. El equipo NLP4BIA puede ampliar el límite.|Els comptes nous poden conservar 100 documents entre tots els treballs. Elimina documents per alliberar places. L'equip NLP4BIA pot ampliar el límit.
+No document quota limit|Sin límite de cuota de documentos|Sense límit de quota de documents
+Normalize medications, procedures, diseases and symptoms using the terminology installed by the administrator. Missing resources leave NER results available.|Normaliza medicamentos, procedimientos, enfermedades y síntomas con la terminología instalada por el administrador. Si faltan recursos, los resultados NER siguen disponibles.|Normalitza medicaments, procediments, malalties i símptomes amb la terminologia instal·lada per l'administrador. Si falten recursos, els resultats NER continuen disponibles.
+Refresh|Actualizar|Actualitza
+Retained documents|Documentos conservados|Documents conservats
+Show|Mostrar|Mostra
+Similarity|Similitud|Similitud
+This removes the original document, its annotations and downloads. Upload history remains.|Se eliminarán el documento original, sus anotaciones y descargas. El histórico de subidas permanece.|S'eliminaran el document original, les anotacions i les descàrregues. L'historial de pujades es conserva.
+Total documents uploaded: {count}|Total de documentos subidos: {count}|Total de documents pujats: {count}
+You are responsible for de-identifying documents before upload. The platform and its maintainers accept no responsibility for documents uploaded with identifying information.|Eres responsable de desidentificar los documentos antes de subirlos. La plataforma y sus responsables no se hacen responsables de los documentos subidos con información identificativa.|Ets responsable de desidentificar els documents abans de pujar-los. La plataforma i els seus responsables no es fan responsables dels documents pujats amb informació identificativa.
+occupied / limit|ocupados / límite|ocupats / límit
+{count} document slots available|{count} plazas de documentos disponibles|{count} places de documents disponibles
+STORED|Conservado|Conservat
+DELETED|Eliminado|Eliminat
+NORMALIZATION|Normalización de conceptos|Normalització de conceptes
+"""
+
+_COPY += "Your retained-document limit has been reached. Delete documents to free space.|Has alcanzado el límite de documentos conservados. Elimina documentos para liberar espacio.|Has arribat al límit de documents conservats. Elimina documents per alliberar espai.\n"
+
+ROWS = {
+    row.split("|")[0]: tuple(row.split("|")) for row in _COPY.strip().splitlines() if row.strip()
+}
+
+_BASE_MESSAGES = {**AUTH_ROWS, **{v[0]: v for v in AUTH_ROWS.values()}, **ROWS}
+MESSAGES = {
+    key: tuple(
+        row[("en", "es", "ca").index(code)]
+        if code in ("en", "es", "ca")
+        else translated(row[0], code)
+        for code in CODES
+    )
+    for key, row in _BASE_MESSAGES.items()
+}
 
 
 def translate(key, language="en", **values):
-    column = {"en": 0, "es": 1, "ca": 2}.get(language, 0)
-    value = MESSAGES.get(key, (key, key, key))[column]
+    column = CODES.index(language) if language in CODES else 0
+    value = MESSAGES[key][column] if key in MESSAGES else key
     return value.format(**values) if values else value

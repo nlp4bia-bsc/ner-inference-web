@@ -6,18 +6,25 @@ from app.storage import LocalStorage
 
 
 def cleanup(db: Database, storage: LocalStorage):
+    from app.services.normalization import NormalizationCache
+
+    NormalizationCache(db.s).sweep()
     now = time.time()
     with db.connect() as c:
         c.execute("BEGIN IMMEDIATE")
         rows = c.execute(
-            "SELECT id FROM jobs WHERE status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED','EXPIRED') AND expires_at<=?",
+            "SELECT id FROM jobs WHERE status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED','EXPIRED','DELETED') AND expires_at<=?",
             (now,),
         ).fetchall()
         for row in rows:
+            c.execute(
+                "UPDATE upload_ledger SET state='EXPIRED',removed_at=COALESCE(removed_at,?) WHERE job_id=? AND state='STORED'",
+                (now, row["id"]),
+            )
             # Delete before commit; failures are retried next sweep, never falsely marked clean.
             storage.delete(row["id"])
             c.execute(
-                """UPDATE jobs SET status='EXPIRED',payload='{}',summary=NULL,
+                """UPDATE jobs SET status=CASE WHEN status='DELETED' THEN 'DELETED' ELSE 'EXPIRED' END,payload='{}',summary=NULL,
                          error_summary=NULL,storage_bytes=0,reserved_bytes=0,expired_at=COALESCE(expired_at,?) WHERE id=?""",
                 (now, row["id"]),
             )

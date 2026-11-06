@@ -167,7 +167,11 @@ def router(auth, templates, jobs):
     @api.get("/api/auth/session")
     def session():
         account = user()
-        return {"user": public_user(account, auth.s), "csrf_token": auth.csrf(account["csrf_seed"])}
+        return {
+            "user": public_user(account, auth.s),
+            "csrf_token": auth.csrf(account["csrf_seed"]),
+            "document_quota": jobs.quota(),
+        }
 
     schemas = {
         "login": Login,

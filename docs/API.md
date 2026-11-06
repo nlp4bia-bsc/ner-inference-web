@@ -160,3 +160,27 @@ remain for compatibility and represent the deterministic highest-score source.
 Different offsets or categories remain separate selectable overlapping spans.
 TSV appends the same provenance as JSON-encoded cells. Old saved viewer indexes and
 TSVs without these optional fields remain readable.
+
+## Retained documents and normalization (0.7)
+
+`GET /api/my/document-usage` returns `occupied`, `limit` (null for unlimited),
+`remaining` and lifetime `total_uploaded`. The quota counts conserved documents
+across all jobs. `GET /api/my/documents?offset=0&limit=50&state=STORED&job_id=...`
+returns owner-only upload metadata; optional state/job filters apply before
+pagination. DELETED and EXPIRED history survives content/job purges.
+
+`DELETE /api/jobs/{id}/documents/{document_id}` erases one document at any stage;
+`DELETE /api/jobs/{id}` erases all documents. Both require the live owner's CSRF
+header and return `{deleted, quota}`. Already deleted calls are idempotent until
+the job tombstone is purged. Deletion invalidates old exports and prevents a stale
+worker from republishing content; retained publications are repackaged. Deleted
+content is no longer available from viewer/text/annotation/download routes.
+
+Multipart job admission accepts `normalize=true` (default false). Resources and
+encoder priorities are snapshotted at admission. Missing resources/failed
+normalizers preserve NER and produce explicit partial-result diagnostics.
+An annotation's optional `normalization` includes top concept code/term, cosine
+similarity, ranked candidates, requested/resolved language, English fallback,
+encoder/revision and dictionary hash. TSV serializes this object as JSON; BRAT
+adds N Reference records while keeping T records and original offsets unchanged.
+See [NORMALIZATION.md](NORMALIZATION.md) for private resource installation.

@@ -53,6 +53,7 @@ def migrate(database):
     _migration_one(database)
     _migration_two(database)
     _migration_three(database)
+    _migration_four(database)
 
 
 def _migration_three(database):
@@ -95,3 +96,53 @@ def _migration_three(database):
         for statement in statements:
             c.execute(statement)
         c.execute("INSERT INTO schema_migrations VALUES (3,?)", (time.time(),))
+
+
+def _migration_four(database):
+    import json
+    import uuid
+
+    with database.connect() as c:
+        c.execute("BEGIN IMMEDIATE")
+        if c.execute("SELECT 1 FROM schema_migrations WHERE version=4").fetchone():
+            return
+        c.execute("ALTER TABLE jobs ADD COLUMN content_version INTEGER NOT NULL DEFAULT 0")
+        c.execute("ALTER TABLE jobs ADD COLUMN processing_version INTEGER NOT NULL DEFAULT 0")
+        c.execute("""CREATE TABLE upload_ledger(id INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_user_id TEXT NOT NULL,job_id TEXT NOT NULL,document_id TEXT NOT NULL,
+          filename TEXT NOT NULL,language TEXT,size_bytes INTEGER,uploaded_at REAL NOT NULL,
+          state TEXT NOT NULL DEFAULT 'STORED',removed_at REAL,UNIQUE(job_id,document_id))""")
+        c.execute(
+            "CREATE INDEX upload_owner_state ON upload_ledger(owner_user_id,state,uploaded_at)"
+        )
+        for job in c.execute("SELECT * FROM jobs WHERE owner_user_id IS NOT NULL").fetchall():
+            payload = json.loads(job["payload"])
+            rows = c.execute(
+                "SELECT * FROM documents WHERE job_id=? ORDER BY filename", (job["id"],)
+            ).fetchall()
+            expired = (
+                job["status"] == "EXPIRED"
+                or job["expires_at"] is not None
+                and job["expires_at"] <= time.time()
+            )
+            for index in range(max(len(rows), job["document_count"])):
+                row = dict(rows[index]) if index < len(rows) else {}
+                identity = (
+                    row.get("document_id")
+                    or uuid.uuid5(uuid.NAMESPACE_URL, job["id"] + ":" + str(index)).hex
+                )
+                c.execute(
+                    "INSERT OR IGNORE INTO upload_ledger(owner_user_id,job_id,document_id,filename,language,size_bytes,uploaded_at,state,removed_at) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (
+                        job["owner_user_id"],
+                        job["id"],
+                        identity,
+                        row.get("filename", "Historical document"),
+                        payload.get("language"),
+                        row.get("size_bytes"),
+                        job["created_at"],
+                        "EXPIRED" if expired else "STORED",
+                        job["expired_at"] if expired else None,
+                    ),
+                )
+        c.execute("INSERT INTO schema_migrations VALUES (4,?)", (time.time(),))

@@ -7,6 +7,12 @@ from fastapi.responses import HTMLResponse
 def router(service, templates):
     api = APIRouter()
 
+    @api.get("/documents", response_class=HTMLResponse, include_in_schema=False)
+    def my_documents(request: Request):
+        return templates.TemplateResponse(
+            request=request, name="documents.html", context={"prefix": service.settings.app_prefix}
+        )
+
     @api.get("/annotate", response_class=HTMLResponse, include_in_schema=False)
     def index(request: Request):
         from app.errors import ServiceError

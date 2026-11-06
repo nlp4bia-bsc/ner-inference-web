@@ -10,6 +10,19 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.7 adds **occupied / limit** quotas across all retained jobs, immediate
+owner-controlled document erasure, and a permanent private upload-metadata history.
+The interface supports the 15 MultiClinSum-2 languages plus Estonian, with larger
+fonts at 1440p and 4K. A red upload notice states the user's de-identification
+responsibility. Optional concept normalization uses native ner_lab bi-encoders,
+FlatIP and length 256, with a three-language/72-hour private index cache.
+
+**Confidential gazetteers belong in `gazetteers/` inside the repository root.**
+The directory is ignored by Git and excluded from images/packages. See
+[private import and normalization](docs/NORMALIZATION.md) and
+[Conda upgrade instructions](docs/DEPLOYMENT.md#updating-to-07-in-conda).
+
+
 Accounts use a **four-character minimum password**. Registration checks that the
 normalized email is unique and lets the user sign in immediately, without sending
 or verifying an email. SMTP is optional for registration. Account help/error reports

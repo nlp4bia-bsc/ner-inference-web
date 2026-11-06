@@ -9,3 +9,8 @@ work/
 models/*
 !models/.gitkeep
 catalog/validated-models.json
+/gazetteers/
+*.parquet
+*.faiss
+embeddings.npy
+dt4h_gazs.zip

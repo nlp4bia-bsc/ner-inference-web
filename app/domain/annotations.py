@@ -10,7 +10,30 @@ class AnnotationSource(BaseModel):
     score: float | None = Field(default=None, ge=0, le=1)
 
 
+class NormalizationCandidate(BaseModel):
+    code: str
+    term: str
+    score: float = Field(allow_inf_nan=False)
+
+
+class ConceptNormalization(BaseModel):
+    code: str
+    term: str
+    score: float = Field(allow_inf_nan=False)
+    candidates: list[NormalizationCandidate]
+    language: str
+    requested_language: str
+    fallback_to_english: bool
+    model: str
+    model_revision: str | None = None
+    gazetteer_sha256: str
+    code_system: str | None = None
+    index: str
+    max_length: int
+
+
 class Annotation(BaseModel):
+    normalization: ConceptNormalization | None = None
     id: str
     document_id: str
     label: str
@@ -37,6 +60,7 @@ def canonical_annotations(document_id: str, text: str, spans: list[dict]) -> lis
         annotations.append(
             Annotation(
                 id=f"T{index}",
+                normalization=row.get("normalization"),
                 document_id=document_id,
                 label=row["label"],
                 start=row["start_span"],

@@ -100,13 +100,15 @@ def test_sessions_and_deletion_request_never_expose_or_accept_another_identity(s
 
 def test_browser_vocabulary_is_complete_and_matches_server_source():
     for key, values in MESSAGES.items():
-        assert len(values) == 3 and all(values)
+        assert len(values) == len(__import__("app.locales", fromlist=["CODES"]).CODES) and all(
+            values
+        )
         expected = set(re.findall(r"\{\w+\}", values[0]))
         assert all(set(re.findall(r"\{\w+\}", value)) == expected for value in values)
     source = (
         Path("app/static/i18n.js")
         .read_text()
         .split("export const messages = ", 1)[1]
-        .removesuffix(";\n")
+        .split(";\nexport const locales", 1)[0]
     )
     assert json.loads(source) == {key: list(values) for key, values in MESSAGES.items()}

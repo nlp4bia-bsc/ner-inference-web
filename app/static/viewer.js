@@ -423,6 +423,7 @@ function select(id, scroll = false) {
     surface,
     list,
     sourceDetails(a),
+    normalizationDetails(a),
     copy,
     offsets,
   );
@@ -924,8 +925,44 @@ const readerObserver = new ResizeObserver(() => {
   resizeFrame = requestAnimationFrame(paintTowers);
 });
 readerObserver.observe(document.querySelector(".reading-panel"));
+// Font breakpoints can change while a capped reading panel keeps its width.
+window.addEventListener("resize", () => {
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(paintTowers);
+});
 window.addEventListener("pagehide", () => {
   readerObserver.disconnect();
   cancelAnimationFrame(resizeFrame);
 });
 onLocaleChange(paintTowers);
+
+function normalizationDetails(a) {
+  const section = make("section");
+  if (!a.normalization) return section;
+  const n = a.normalization;
+  section.append(make("h4", t("Concept normalization")));
+  section.append(
+    make("p", `${n.code_system || "Terminology"}: ${n.code} · ${n.term}`),
+  );
+  section.append(
+    make("p", `${t("Similarity")}: ${n.score.toFixed(4)} · ${n.language}`),
+  );
+  if (n.fallback_to_english)
+    section.append(
+      make(
+        "p",
+        t("English fallback: original mention, without automatic translation."),
+        "notice",
+      ),
+    );
+  const candidates = make("ol");
+  for (const candidate of n.candidates)
+    candidates.append(
+      make(
+        "li",
+        `${candidate.code} · ${candidate.term} (${candidate.score.toFixed(4)})`,
+      ),
+    );
+  section.append(candidates, make("small", n.model));
+  return section;
+}

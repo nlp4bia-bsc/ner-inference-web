@@ -18,6 +18,12 @@ def router(service):
     api = APIRouter(prefix="/api/jobs/{token}/documents")
     repository = DocumentRepository(service)
 
+    @api.delete("/{document_id}")
+    def delete_document(token: str, document_id: str):
+        from app.services.document_management import delete_documents
+
+        return delete_documents(service, token, document_id)
+
     @api.get("", response_model=DocumentPage)
     def documents(
         token: str,

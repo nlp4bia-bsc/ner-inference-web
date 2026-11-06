@@ -154,7 +154,7 @@ class Database:
 
                 require_live(c, {"id": owner_user_id, "session_hash": owner_session_hash}, self.s)
                 owner = c.execute(
-                    "SELECT account_status,email_verified_at FROM users WHERE id=?",
+                    "SELECT account_status,email_verified_at,access_tier FROM users WHERE id=?",
                     (owner_user_id,),
                 ).fetchone()
                 if (
@@ -163,9 +163,22 @@ class Database:
                     or (self.s.require_email_verification and not owner["email_verified_at"])
                 ):
                     raise ServiceError("authentication_required", 401)
-                maximum = document_limit(access_tier, self.s.max_documents_per_job)
+                maximum = document_limit(owner["access_tier"], self.s.max_documents_per_job)
                 if maximum is not None and count > maximum:
                     raise ServiceError(f"A request may contain at most {maximum} documents.", 422)
+                from app.services.document_management import retained_count
+
+                retained_limit = {"STANDARD": 100, "EXTENDED": 1000, "UNLIMITED": None}[
+                    owner["access_tier"]
+                ]
+                if (
+                    retained_limit is not None
+                    and retained_count(c, owner_user_id, now) + count > retained_limit
+                ):
+                    raise ServiceError(
+                        "Your retained-document limit has been reached. Delete documents to free space.",
+                        422,
+                    )
             for key in keys:
                 row = c.execute("SELECT accepted_at FROM limits WHERE key=?", (key,)).fetchone()
                 if row and now - row[0] < self.s.rate_limit_seconds:
@@ -206,6 +219,19 @@ class Database:
                         now,
                     ),
                 )
+                if owner_user_id is not None:
+                    c.execute(
+                        "INSERT INTO upload_ledger(owner_user_id,job_id,document_id,filename,language,size_bytes,uploaded_at) VALUES(?,?,?,?,?,?,?)",
+                        (
+                            owner_user_id,
+                            job_id,
+                            r["document_id"],
+                            r["original_relative_path"],
+                            payload["language"],
+                            r["size_bytes"],
+                            now,
+                        ),
+                    )
             if lease:
                 c.execute("DELETE FROM uploads WHERE id=?", (lease,))
             for key in keys:
@@ -232,10 +258,13 @@ class Database:
             c.execute("BEGIN IMMEDIATE")
             c.execute("UPDATE documents SET status='PENDING' WHERE status='PROCESSING'")
             for row in c.execute(
-                "SELECT id,attempts FROM jobs WHERE status='PROCESSING'"
+                "SELECT id,attempts,content_version,processing_version FROM jobs WHERE status='PROCESSING'"
             ).fetchall():
                 now = time.time()
-                status = "QUEUED" if row["attempts"] < self.s.max_attempts else "FAILED"
+                changed = row["content_version"] != row["processing_version"]
+                status = "QUEUED" if changed or row["attempts"] < self.s.max_attempts else "FAILED"
+                if changed:
+                    c.execute("UPDATE jobs SET attempts=max(0,attempts-1) WHERE id=?", (row["id"],))
                 c.execute(
                     "UPDATE jobs SET status=?, error_summary=?, completed_at=?, expires_at=? WHERE id=?",
                     (
@@ -251,7 +280,7 @@ class Database:
                 )
                 if status == "FAILED":
                     c.execute(
-                        "UPDATE documents SET status='FAILED',error_code='INTERRUPTED' WHERE job_id=? AND status!='ANNOTATED'",
+                        "UPDATE documents SET status='FAILED',error_code='INTERRUPTED' WHERE job_id=? AND status NOT IN ('ANNOTATED','DELETED')",
                         (row["id"],),
                     )
                     c.execute("UPDATE jobs SET reserved_bytes=0 WHERE id=?", (row["id"],))
@@ -267,7 +296,7 @@ class Database:
                 return None
             now = time.time()
             c.execute(
-                "UPDATE jobs SET status='PROCESSING',started_at=?,attempts=attempts+1 WHERE id=?",
+                "UPDATE jobs SET status='PROCESSING',started_at=?,attempts=attempts+1,processing_version=content_version WHERE id=?",
                 (now, row["id"]),
             )
             self.event(c, row["id"], "PROCESSING", now)
@@ -279,7 +308,9 @@ class Database:
             c.execute("UPDATE jobs SET storage_bytes=? WHERE id=?", (stored, job_id))
         return stored
 
-    def finish(self, job_id: str, summary: dict | None = None, failed: bool = False):
+    def finish(
+        self, job_id: str, summary: dict | None = None, failed: bool = False, claimed_version=None
+    ):
         now = time.time()
         status = (
             "FAILED"
@@ -293,8 +324,25 @@ class Database:
         )
         stored = directory_bytes(self.s.storage_root / "jobs" / job_id)
         with self.connect() as c:
+            c.execute("BEGIN IMMEDIATE")
+            current = c.execute(
+                "SELECT status,content_version FROM jobs WHERE id=?", (job_id,)
+            ).fetchone()
+            if not current or current["status"] in ("DELETED", "EXPIRED"):
+                return
+            if claimed_version is not None and current["content_version"] != claimed_version:
+                c.execute(
+                    "UPDATE jobs SET status='QUEUED',stage='QUEUED',summary=NULL,error_summary=NULL,attempts=max(0,attempts-1),updated_at=? WHERE id=?",
+                    (now, job_id),
+                )
+                c.execute(
+                    "UPDATE documents SET status='PENDING' WHERE job_id=? AND status='PROCESSING'",
+                    (job_id,),
+                )
+                self.event(c, job_id, "QUEUED", now)
+                return
             c.execute(
-                """UPDATE jobs SET status=?,completed_at=?,expires_at=?,summary=?,
+                """UPDATE jobs SET status=?,completed_at=?,expires_at=COALESCE(expires_at,?),summary=?,
                       error_summary=?,processed_documents=CASE WHEN EXISTS(SELECT 1 FROM documents WHERE job_id=jobs.id) THEN (SELECT count(*) FROM documents WHERE job_id=jobs.id AND status='ANNOTATED') WHEN ? THEN 0 ELSE document_count END WHERE id=?""",
                 (
                     status,

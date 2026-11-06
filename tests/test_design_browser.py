@@ -369,3 +369,35 @@ def test_all_screens_reflow_locales_navigation_and_controls(design_server, viewp
         capture(page, "session-expired", width, prefix)
         assert not errors
         browser.close()
+
+
+def test_large_display_fonts_and_all_interface_languages(design_server):
+    from playwright.sync_api import sync_playwright
+
+    from app.locales import LOCALES
+
+    base, _, _, _ = design_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.goto(base + "/login")
+        assert page.evaluate("getComputedStyle(document.documentElement).fontSize") == "18px"
+        page.set_viewport_size({"width": 3840, "height": 2160})
+        assert page.evaluate("getComputedStyle(document.documentElement).fontSize") == "24px"
+        for code in LOCALES:
+            page.goto(base + "/login?lang=" + code)
+            assert page.locator("html").get_attribute("lang") == code
+            assert page.locator("#auth-locale").input_value() == code
+            assert page.locator("h1").inner_text().strip()
+            reflow(page)
+        page.goto(base + "/login?lang=en")
+        page.locator("#email").fill(DEFAULT_EMAIL)
+        page.locator("#password").fill(PASSWORD)
+        page.get_by_role("button", name="Sign in", exact=True).click()
+        page.wait_for_url(base + "/?lang=en")
+        for code in LOCALES:
+            page.goto(base + "/documents?lang=" + code)
+            page.wait_for_selector("#document-history tr")
+            assert page.locator("html").get_attribute("lang") == code
+            reflow(page)
+        browser.close()

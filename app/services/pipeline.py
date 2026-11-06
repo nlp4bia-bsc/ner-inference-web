@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.config import Settings
 from app.db import Database
+from app.persistence.job_locks import check_content_version, job_lock
 from app.persistence.progress import ProgressRepository
 from app.services.hub_inference import HubSession
 from app.services.incremental_export import package_publications
@@ -40,7 +41,7 @@ def process_job(
         ]
     if snapshot != payload["selected_models"]:
         raise ValueError("Model registry changed; resubmit with current model versions")
-    rows = progress.rows(job["id"])
+    rows = [row for row in progress.rows(job["id"]) if row["status"] != "DELETED"]
     if not rows:  # Queued jobs admitted by a pre-v3 API retain their tokens/deadlines.
         from app.visualization.repository import document_id
 
@@ -57,8 +58,20 @@ def process_job(
                         time.time(),
                     ),
                 )
-        rows = progress.rows(job["id"])
+        rows = [row for row in progress.rows(job["id"]) if row["status"] != "DELETED"]
+    payload["documents"] = [row["filename"] for row in rows]
     model_errors = []
+    normalizer = None
+    if payload.get("normalize"):
+        from app.services.normalization import NormalizationSession
+        from app.services.normalization_catalog import NormalizationCatalog
+
+        terminology = NormalizationCatalog(s)
+        if terminology.snapshot(payload["language"], payload["entities"]) != payload.get(
+            "normalization_resources"
+        ):
+            raise ValueError("Terminology configuration changed; resubmit with current resources")
+        normalizer = NormalizationSession(s, root, terminology)
 
     def model_failed(model, exc, stage):
         error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
@@ -154,7 +167,14 @@ def process_job(
     pending = []
     for row in rows:
         try:
-            record = read_publication(root, row, snapshot)
+            with job_lock(s, job["id"]):
+                check_content_version(db, job)
+                record = read_publication(root, row, snapshot)
+                original = (
+                    (root / "input" / row["filename"]).read_bytes().decode("utf-8")
+                    if record
+                    else None
+                )
         except (OSError, ValueError, KeyError):
             record = None
         if record:
@@ -177,18 +197,20 @@ def process_job(
             if accumulator:
                 accumulator.add(
                     row["filename"],
-                    (root / "input" / row["filename"]).read_bytes().decode("utf-8"),
+                    original,
                     record["spans"],
                 )
-        elif row["status"] != "FAILED":
-            shutil.rmtree(
-                root / "published" / (row["document_id"] + ".building"), ignore_errors=True
-            )
-            shutil.rmtree(root / "published" / row["document_id"], ignore_errors=True)
+        elif row["status"] != "FAILED" and not payload.get("repackage_only"):
+            with job_lock(s, job["id"]):
+                check_content_version(db, job)
+                shutil.rmtree(
+                    root / "published" / (row["document_id"] + ".building"), ignore_errors=True
+                )
+                shutil.rmtree(root / "published" / row["document_id"], ignore_errors=True)
             if row["status"] != "PENDING":
                 with db.connect() as c:
                     c.execute(
-                        "UPDATE documents SET status='PENDING' WHERE job_id=? AND document_id=?",
+                        "UPDATE documents SET status='PENDING' WHERE job_id=? AND document_id=? AND status!='DELETED'",
                         (job["id"], row["document_id"]),
                     )
                     progress.refresh(c, job["id"])
@@ -200,7 +222,9 @@ def process_job(
             batch = pending[offset : offset + s.inference_document_batch_size]
             identities = [r["document_id"] for r in batch]
             progress.mark(job["id"], identities, "PROCESSING")
-            raw = {r["filename"]: (root / "input" / r["filename"]).read_bytes() for r in batch}
+            with job_lock(s, job["id"]):
+                check_content_version(db, job)
+                raw = {r["filename"]: (root / "input" / r["filename"]).read_bytes() for r in batch}
             texts = {name: data.decode("utf-8") for name, data in raw.items()}
             try:
                 predictions = []
@@ -242,6 +266,14 @@ def process_job(
                 if not predictions:
                     raise ValueError("No model completed this batch")
                 merged = merge_predictions(texts, predictions)
+                if normalizer:
+                    progress.stage(job["id"], "NORMALIZATION")
+                    normalizer.normalize(
+                        merged,
+                        payload["language"],
+                        lambda model, exc, stage: metadata.append(model_failed(model, exc, stage)),
+                    )
+                    progress.stage(job["id"], "INFERENCE")
             except Exception as exc:
                 logging.getLogger("temu.pipeline").error(
                     "microbatch_failed job_id=%s error_type=%s", job["id"], type(exc).__name__
@@ -264,19 +296,21 @@ def process_job(
                     record["tokenizer_sha256"] = reference_digest
             stats_by_name = {r["filename"]: r for r in per_doc}
             for row in batch:
-                count, labels = publish(
-                    root,
-                    row,
-                    raw[row["filename"]],
-                    grouped[row["filename"]],
-                    stats_by_name[row["filename"]],
-                    snapshot,
-                    metadata,
-                    budget=budget,
-                )
-                progress.publish(
-                    job["id"], row["document_id"], count, labels, stats_by_name[row["filename"]]
-                )
+                with job_lock(s, job["id"]):
+                    check_content_version(db, job)
+                    count, labels = publish(
+                        root,
+                        row,
+                        raw[row["filename"]],
+                        grouped[row["filename"]],
+                        stats_by_name[row["filename"]],
+                        snapshot,
+                        metadata,
+                        budget=budget,
+                    )
+                    progress.publish(
+                        job["id"], row["document_id"], count, labels, stats_by_name[row["filename"]]
+                    )
             provenance.extend(metadata)
             shutil.rmtree(root / "building", ignore_errors=True)
             used = directory_bytes(root)
@@ -287,7 +321,7 @@ def process_job(
                 ).fetchone()[0]
             if used > cap:
                 raise RuntimeError("Job exceeded its storage reservation")
-        rows = progress.rows(job["id"])
+        rows = [row for row in progress.rows(job["id"]) if row["status"] != "DELETED"]
         successful = [r for r in rows if r["status"] == "ANNOTATED"]
         if not successful:
             raise ValueError("No documents completed successfully")
@@ -325,14 +359,25 @@ def process_job(
             partial=len(successful) != len(rows) or bool(model_errors),
             model_errors=model_errors,
             failed_documents=[r["filename"] for r in rows if r["status"] == "FAILED"],
+            normalization={
+                "requested": bool(payload.get("normalize")),
+                "resources": payload.get("normalization_resources", []),
+                "indexes": normalizer.metadata if normalizer else [],
+                "score": "Cosine similarity, not a calibrated probability",
+                "english_fallback": "Original mention queried against English terminology; no automatic translation",
+            },
             ner_lab_commit="8640d4797b081a5f6b66d9b45c11269542a79a26",
             offsets="Unicode code points [start,end)",
             filename_convention="original relative path including .txt",
             evaluation="Not computed: no gold standard",
         )
-        timing = package_publications(root, rows, payload, stats, manifest, budget=budget)
+        with job_lock(s, job["id"]):
+            check_content_version(db, job)
+            timing = package_publications(root, rows, payload, stats, manifest, budget=budget)
         stats["operational"].update(timing)
         return stats["operational"]
     finally:
+        if normalizer:
+            normalizer.close()
         if hasattr(engine, "close"):
             engine.close()

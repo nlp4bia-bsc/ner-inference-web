@@ -62,9 +62,9 @@ ROWS = {
         "He llegit els avisos d'ús acadèmic i privacitat següents.",
     ),
     "legal_notice": (
-        "Research use only. Upload only data you are authorized to process. Account data remains until managed by the institution; job files expire 72 hours after completion. The institution must supply its applicable legal notices before production.",
-        "Solo uso académico. Sube únicamente datos que estés autorizado a procesar. Los datos de cuenta permanecen hasta su gestión institucional; los archivos de trabajos caducan 72 horas después de finalizar. La institución debe aportar sus avisos legales antes de producción.",
-        "Només ús acadèmic. Puja únicament dades que estiguis autoritzat a processar. Les dades del compte romanen fins a la gestió institucional; els fitxers dels treballs caduquen 72 hores després de finalitzar. La institució ha d'aportar els avisos legals abans de producció.",
+        "Research use only. Upload only data you are authorized to process. Account data remains until managed by the institution; job files expire 72 hours after completion. The institution must supply its applicable legal notices before production. History keeps upload metadata, never deleted document content.",
+        "Solo uso académico. Sube únicamente datos que estés autorizado a procesar. Los datos de cuenta permanecen hasta su gestión institucional; los archivos de trabajos caducan 72 horas después de finalizar. La institución debe aportar sus avisos legales antes de producción. El histórico conserva los metadatos de subida, nunca el contenido eliminado.",
+        "Només ús acadèmic. Puja únicament dades que estiguis autoritzat a processar. Les dades del compte romanen fins a la gestió institucional; els fitxers dels treballs caduquen 72 hores després de finalitzar. La institució ha d'aportar els avisos legals abans de producció. L'historial conserva les metadades de pujada, mai el contingut eliminat.",
     ),
     "forgot": ("Forgot password", "Recuperar contraseña", "Recupera la contrasenya"),
     "reset": ("Reset password", "Restablecer contraseña", "Restableix la contrasenya"),
@@ -249,8 +249,18 @@ ROWS = {
 
 
 def locale(value):
-    return value if value in ("en", "es", "ca") else "en"
+    from app.locales import LOCALES
+
+    return value if value in LOCALES else "en"
 
 
 def translate(key, language="en"):
-    return ROWS.get(key, (key, key, key))[("en", "es", "ca").index(locale(language))]
+    from app.locales import translated
+
+    language = locale(language)
+    row = ROWS.get(key, (key, key, key))
+    return (
+        row[("en", "es", "ca").index(language)]
+        if language in ("en", "es", "ca")
+        else translated(row[0], language)
+    )

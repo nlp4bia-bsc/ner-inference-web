@@ -87,3 +87,16 @@ Public assets: /static/assets/bsc-blue.svg, /static/auth.css, /static/auth.js, /
 | POST | /rotate-session | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /touch | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /verify-email | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
+
+## 0.7 owner document management
+
+The new `/documents` UI and `GET /api/my/document-usage`,
+`GET /api/my/documents` are authenticated, owner-scoped routes. Historical
+filename/size/language metadata is never an administrative cross-user endpoint.
+`DELETE /api/jobs/{id}` and
+`DELETE /api/jobs/{id}/documents/{document_id}` require the live owner and CSRF.
+Foreign IDs are 404. Deletion is serialized with publication, increments the
+content generation, invalidates derived exports and prevents stale worker
+completion. Quota admission counts retained documents in the same write
+transaction as insertion. Expiry/deletion free quota without removing the
+private lifetime upload ledger. No new public exception was added.

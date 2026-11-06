@@ -1,5 +1,5 @@
-import { messages } from "./i18n.js";
-export const locales = ["en", "es", "ca"];
+import { messages, locales } from "./i18n.js";
+export { locales };
 export function currentLocale() {
   return locales.includes(document.documentElement.lang)
     ? document.documentElement.lang

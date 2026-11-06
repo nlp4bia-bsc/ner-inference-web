@@ -10,6 +10,7 @@ class Submission(BaseModel):
     submitter_email: EmailAddress
     language: str = Field(pattern="^[a-z]{2}$")
     entities: list[str] = Field(default_factory=list, max_length=100)
+    normalize: bool = False
     models: list[str] | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("submitter_name")

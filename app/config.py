@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     max_concurrent_uploads: int = Field(4, ge=1)
     inference_document_batch_size: int = Field(32, ge=1, le=1000)
     max_loaded_models: int = Field(2, ge=1, le=32)
+    normalization_enabled: bool = True
+    normalization_gazetteer_dir: Path = Path("gazetteers")
+    normalization_model_config_path: Path = Path("catalog/normalization.yaml")
+    normalization_cache_dir: Path | None = None
+    normalization_cache_languages: int = Field(3, ge=1, le=3)
+    normalization_cache_ttl_hours: float = Field(72, gt=0, le=72)
+    normalization_batch_size: int = Field(64, ge=1, le=512)
+    normalization_top_k: int = Field(5, ge=1, le=25)
     storage_reserve_factor: float = Field(4, ge=1)
     storage_reserve_extra_mb: float = Field(32, ge=1)
     max_attempts: int = Field(2, ge=1)
@@ -64,6 +72,10 @@ class Settings(BaseSettings):
         return self.model_cache_dir or self.storage_root / "model-cache" / "hub"
 
     @property
+    def normalization_cache(self):
+        return self.normalization_cache_dir or self.storage_root / "normalization-cache"
+
+    @property
     def cookie_path(self):
         # __Host cookies forbid Domain injection and require Path=/ even under /ner.
         return "/" if self.cookie_secure else self.app_prefix or "/"
@@ -83,6 +95,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def sequential(self):
+        cache = self.normalization_cache.resolve()
+        for protected in (
+            self.normalization_gazetteer_dir.resolve(),
+            (self.storage_root / "jobs").resolve(),
+            self.hub_cache.resolve(),
+        ):
+            if cache.is_relative_to(protected) or protected.is_relative_to(cache):
+                raise ValueError(
+                    "Normalization cache must be separate from gazetteers, jobs and Hub snapshots"
+                )
         if self.app_prefix and (
             not self.app_prefix.startswith("/")
             or self.app_prefix.endswith("/")

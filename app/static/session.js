@@ -1,3 +1,5 @@
+import { locales } from "./auth.js";
+import { paintQuota } from "./quota.js";
 // No browser persistence: server authorization remains authoritative for every read.
 const base = document.querySelector('meta[name="app-prefix"]').content;
 const originalUser = document.querySelector(
@@ -18,7 +20,7 @@ function clearAndLeave() {
   lost = true;
   getSelection()?.removeAllRanges();
   document.body.replaceChildren();
-  const language = ["en", "es", "ca"].includes(document.documentElement.lang)
+  const language = locales.includes(document.documentElement.lang)
     ? document.documentElement.lang
     : "en";
   location.replace(base + "/login?reason=expired&lang=" + language);
@@ -37,6 +39,7 @@ async function check() {
       if (originalUser && identity.user.id !== originalUser)
         return clearAndLeave();
       csrf = identity.csrf_token;
+      if (identity.document_quota) paintQuota(identity.document_quota);
       if (!announced) {
         announced = true;
         channel?.postMessage("check");

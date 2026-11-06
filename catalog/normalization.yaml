@@ -1,0 +1,42 @@
+# Model identifiers only. Confidential terminology and all vectors stay outside Git.
+# Primary source: https://huggingface.co/collections/DT4H/clinical-concept-disambiguation
+models:
+  es:
+    - repository: ICB-UMA/HERBERT-P
+      pooling: mean
+  en:
+    - repository: DT4H/CardioBERTa.en_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.en_P_only_snomed
+      pooling: cls
+    - repository: DT4H/CardioBERTa.en_P_translations_only
+      pooling: cls
+  cs:
+    - repository: DT4H/CardioBERTa.cs_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.cs_P_translations_only
+      pooling: cls
+  it:
+    - repository: DT4H/CardioBERTa.it_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.it_P_translations_only
+      pooling: cls
+  nl:
+    - repository: DT4H/CardioBERTa.nl_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.nl_P_only_snomed
+      pooling: cls
+    - repository: DT4H/CardioBERTa.nl_P_translations_only
+      pooling: cls
+  ro:
+    - repository: DT4H/CardioBERTa.ro_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.ro_P_translations_only
+      pooling: cls
+  sv:
+    - repository: DT4H/CardioBERTa.sv_P_enriched
+      pooling: cls
+    - repository: DT4H/CardioBERTa.sv_P_only_snomed
+      pooling: cls
+    - repository: DT4H/CardioBERTa.sv_P_translations_only
+      pooling: cls

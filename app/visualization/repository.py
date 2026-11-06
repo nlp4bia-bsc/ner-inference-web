@@ -78,7 +78,7 @@ class DocumentRepository:
                     int(span["end_span"]),
                 )
                 span["score"] = float(span["score"]) if span.get("score") else None
-                for key in ("model_ids", "original_labels", "sources"):
+                for key in ("model_ids", "original_labels", "sources", "normalization"):
                     if span.get(key):
                         span[key] = json.loads(span[key])
             with (root / "output" / "document_statistics.tsv").open(
@@ -101,6 +101,7 @@ class DocumentRepository:
         from app.persistence.progress import ProgressRepository
 
         rows = ProgressRepository(self.jobs.db).rows(job["id"])
+        rows = [row for row in rows if row["status"] != "DELETED"]
         if rows:
             order = {name: i for i, name in enumerate(json.loads(job["payload"])["documents"])}
             return [

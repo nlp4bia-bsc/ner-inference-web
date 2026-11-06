@@ -47,7 +47,9 @@ export function drawTowers(
   selected,
   revealed = null,
 ) {
-  const width = Math.max(180, host.clientWidth - 24),
+  const scale =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
+  const width = Math.max(180, (host.clientWidth - 24) / scale),
     font = "15px ui-monospace, SFMono-Regular, Consolas, monospace",
     captionFont = "12px ui-monospace, SFMono-Regular, Consolas, monospace";
   const canvas = document.createElement("canvas"),
@@ -228,8 +230,8 @@ export function drawTowers(
   // labels away from their entity or shrinking their text to fit the viewport.
   const totalWidth = maxX - minX;
   content.setAttribute("transform", `translate(${-minX} 0)`);
-  svg.setAttribute("width", totalWidth);
-  svg.setAttribute("height", y);
+  svg.setAttribute("width", totalWidth * scale);
+  svg.setAttribute("height", y * scale);
   svg.setAttribute("viewBox", `0 0 ${totalWidth} ${y}`);
   host.replaceChildren(svg);
 }

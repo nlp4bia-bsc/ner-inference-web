@@ -38,6 +38,8 @@ x-runtime-environment: &environment
   SESSION_IDLE_SECONDS: ${SESSION_IDLE_SECONDS:-1800}
   AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
   REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+  NORMALIZATION_GAZETTEER_DIR: /gazetteers
+  NORMALIZATION_CACHE_DIR: /data/normalization-cache
   SUPPORT_EMAIL: ${SUPPORT_EMAIL:-fernando.gallego@bsc.es}
 
 services:
@@ -61,6 +63,7 @@ services:
       - ner-data:/data
       - ./catalog:/service/catalog:ro
       - ./models:/models:ro
+      - ./gazetteers:/gazetteers:ro
     restart: unless-stopped
     init: true
     security_opt: ["no-new-privileges:true"]
