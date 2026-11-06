@@ -1,7 +1,6 @@
 """Real adapter only; tests inject a controlled predictor, never exposed via configuration."""
 
 import math
-import os
 from pathlib import Path
 from time import monotonic
 
@@ -70,8 +69,6 @@ def merge_predictions(
 
 class NerLabAdapter:
     def predict(self, model: dict, documents: dict[str, str], output: Path, device: str):
-        os.environ["HF_HUB_OFFLINE"] = "1"
-        os.environ["TRANSFORMERS_OFFLINE"] = "1"
         from lab.ner import predict_entities
 
         started = monotonic()
@@ -114,8 +111,6 @@ class NerLabSession:
         self.timings = []
 
     def predict(self, model, documents, output, device):
-        os.environ["HF_HUB_OFFLINE"] = "1"
-        os.environ["TRANSFORMERS_OFFLINE"] = "1"
         from lab.ner.encoding.encoder import encoder_from_description
         from lab.ner.inference.io import read_documents
         from lab.ner.inference.loading import load_model

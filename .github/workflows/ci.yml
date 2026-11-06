@@ -26,9 +26,9 @@ jobs:
               print('CHROMIUM_EXECUTABLE='+p.chromium.executable_path)
           PY
       - run: npm install --prefix work/design-a11y --no-audit --no-fund axe-core@4.14.0
-      - run: AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python -m pytest -q tests/test_browser.py tests/test_viewer_browser.py tests/test_ui_v3.py tests/test_auth_browser.py tests/test_design_browser.py tests/test_overlap_readability.py tests/test_simple_registration.py
+      - run: AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python -m pytest -q tests/test_browser.py tests/test_viewer_browser.py tests/test_ui_v3.py tests/test_auth_browser.py tests/test_design_browser.py tests/test_overlap_readability.py tests/test_simple_registration.py tests/test_on_demand_models.py
       - run: python -m build
-      - run: docker compose build web && docker compose up -d
+      - run: docker compose build web worker && docker compose up -d
       - name: Container smoke
         run: |
           for attempt in $(seq 1 30); do

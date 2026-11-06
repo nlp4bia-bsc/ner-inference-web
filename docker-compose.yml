@@ -26,8 +26,12 @@ x-runtime-environment: &environment
   JOB_TIMEOUT_SECONDS: ${JOB_TIMEOUT_SECONDS:-7200}
   CLEANUP_INTERVAL_SECONDS: ${CLEANUP_INTERVAL_SECONDS:-60}
   TOMBSTONE_HOURS: ${TOMBSTONE_HOURS:-24}
-  HF_HUB_OFFLINE: 1
-  TRANSFORMERS_OFFLINE: 1
+  MODEL_LOADING_MODE: ${MODEL_LOADING_MODE:-on_demand}
+  MODEL_CACHE_DIR: /data/model-cache/hub
+  HF_HOME: /data/model-cache
+  HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+  TRANSFORMERS_OFFLINE: ${TRANSFORMERS_OFFLINE:-0}
+  HF_HUB_DISABLE_TELEMETRY: 1
   APP_ENV: ${APP_ENV:-production}
   COOKIE_SECURE: ${COOKIE_SECURE:-true}
   SESSION_MAX_SECONDS: ${SESSION_MAX_SECONDS:-43200}
@@ -40,9 +44,7 @@ services:
   web:
     build:
       context: .
-      args:
-        INSTALL_NLP: ${INSTALL_NLP:-false}
-        NLP_PROFILE: ${NLP_PROFILE:-gpu}
+      target: web
     image: temu-ner-web:local
     command: ["uvicorn", "app.asgi:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--no-proxy-headers"]
     environment:
@@ -70,9 +72,17 @@ services:
       timeout: 5s
       retries: 3
   worker:
-    image: temu-ner-web:local
+    build:
+      context: .
+      target: worker
+      args:
+        INSTALL_NLP: ${INSTALL_NLP:-true}
+        NLP_PROFILE: ${NLP_PROFILE:-cpu}
+    image: temu-ner-worker:local
     command: ["python", "-m", "app.worker"]
-    environment: *environment
+    environment:
+      <<: *environment
+      HF_TOKEN: ${HF_TOKEN:-}
     volumes: *volumes
     restart: unless-stopped
     init: true

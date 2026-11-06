@@ -46,6 +46,7 @@ def test_real_preflight_worker_and_ner_lab(settings, tmp_path):
         "MODEL_CONFIG_PATH": str(catalog),
         "MODEL_VALIDATION_PATH": str(receipt),
         "DEVICE": "cpu",
+        "MODEL_LOADING_MODE": "validated_local",
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
         "OMP_NUM_THREADS": "1",

@@ -268,7 +268,7 @@ def test_mapping_snapshot_changes_fail_and_legacy_snapshots_still_work(settings)
         )
     job = app.state.db.claim()
     payload = json.loads(job["payload"])
-    assert payload["catalog_version"] == 2
+    assert payload["catalog_version"] == 3
     # Simulate a pre-correction pending job; model selection/digests keep their old contract.
     payload.pop("catalog_version")
     payload["selected_models"] = model_snapshot(registry.select("es", ["DISEASE"]), legacy=True)

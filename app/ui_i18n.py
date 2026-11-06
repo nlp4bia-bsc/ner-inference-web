@@ -337,6 +337,12 @@ No published, validated checkpoint; pediatric experiment only.|No hay un modelo 
 Subcategorization model registered. Verify input contract/pre-tokenization and whether upstream spans are required; no standalone execution until reviewed.|Modelo de subcategorización registrado. Hay que verificar el contrato de entrada, la pretokenización y si requiere spans previos; no se ejecuta de forma independiente hasta su revisión.|Model de subcategorització registrat. Cal verificar el contracte d'entrada, la pretokenització i si requereix spans previs; no s'executa de manera independent fins a la revisió.
 Workbook marks this checkpoint as not released.|El inventario indica que este modelo no se ha publicado.|L'inventari indica que aquest model no s'ha publicat.
 Available|Disponible|Disponible
+Cached · ready to load|En caché · listo para cargar|En memòria cau · a punt per carregar
+Download on first use|Descarga en el primer uso|Descàrrega en el primer ús
+Preparing models · downloading uncached checkpoints|Preparando modelos · descargando los que faltan en caché|Preparant models · descarregant els que falten a la memòria cau
+Completed with errors · valid partial results available|Finalizado con incidencias · resultados parciales válidos disponibles|Finalitzat amb incidències · resultats parcials vàlids disponibles
+No configured models are available for this language.|No hay modelos configurados disponibles para este idioma.|No hi ha models configurats disponibles per a aquesta llengua.
+No model repository or local directory configured.|No hay un repositorio ni un directorio local configurado para el modelo.|No hi ha cap repositori ni directori local configurat per al model.
 Unavailable|No disponible|No disponible
 Lane|Carril|Carril
 Offsets|Offsets|Offsets

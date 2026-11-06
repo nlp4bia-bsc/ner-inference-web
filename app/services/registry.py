@@ -1,4 +1,4 @@
-"""Declarative categories/checkpoints with local-only, offline-validated execution."""
+"""Configured model choices; availability is independent of cache or loaded weights."""
 
 import hashlib
 import json
@@ -32,7 +32,16 @@ CATALOG_FIELDS = (
 
 def model_snapshot(models, *, legacy=False):
     fields = SNAPSHOT_FIELDS if legacy else SNAPSHOT_FIELDS + CATALOG_FIELDS
-    return [{k: m.get(k) for k in fields} for m in models]
+    return [
+        {
+            k: m.get(k)
+            for k in (
+                *fields,
+                *(("repository", "revision") if m.get("repository") and not legacy else ()),
+            )
+        }
+        for m in models
+    ]
 
 
 def model_contract(model):
@@ -147,7 +156,31 @@ class Registry:
                     e["unavailable_reason"] = (
                         e.get("unavailable_reason") or "No validated local checkpoint."
                     )
-                    if (
+                    if settings.model_loading_mode == "on_demand":
+                        from app.services.model_cache import REPOSITORY, cached_snapshot
+
+                        repository = e.get("repository")
+                        local = e.get("model_dir")
+                        e["available"] = bool(
+                            (repository and REPOSITORY.fullmatch(repository))
+                            or (local and Path(local).is_dir())
+                        )
+                        cached = cached_snapshot(
+                            settings, repository, str(e.get("revision") or "main")
+                        )
+                        e["load_state"] = (
+                            "local"
+                            if local and Path(local).is_dir()
+                            else "cached"
+                            if cached
+                            else "on_demand"
+                        )
+                        e["unavailable_reason"] = (
+                            None
+                            if e["available"]
+                            else "No model repository or local directory configured."
+                        )
+                    elif (
                         e["task"] != "ner"
                         or e["requires"]
                         or e.get("schema_review") == "pending"
@@ -219,6 +252,14 @@ class Registry:
         rows = []
         for code, label, category, identity in self.bindings:
             e = self.models[identity]
+            if self.s.model_loading_mode == "on_demand" and e.get("repository"):
+                from app.services.model_cache import cached_snapshot
+
+                e["load_state"] = (
+                    "cached"
+                    if cached_snapshot(self.s, e["repository"], str(e.get("revision") or "main"))
+                    else "on_demand"
+                )
             if language is not None and (
                 code != language and not (code == "mul" and language in e["languages"])
             ):
@@ -233,6 +274,7 @@ class Registry:
                     "model_name": e.get("name", identity),
                     "version": e.get("version"),
                     "available": e["available"],
+                    "load_state": e.get("load_state", "local" if e["available"] else "unavailable"),
                     "unavailable_reason": None if e["available"] else e["unavailable_reason"],
                     "languages": e["languages"],
                     "task": e["task"],

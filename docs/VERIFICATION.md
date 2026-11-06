@@ -1,4 +1,62 @@
-# Latest: V5.4 registration without email verification (0.5.4)
+# Latest: on-demand models and independent failures (0.6.0)
+
+Full regression: **217 passed in 384.94s**, zero failures/skips. The nine new
+on-demand cases passed separately in 12.06s; the broader native/incremental set
+passed 21 cases in 26.02s before the complete run.
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/on-demand-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/on-demand/release \
+work/locked-env/bin/python -m pytest -q
+```
+
+Coverage includes all 48 configured repository entries selectable without local
+weights, activation or receipts; independent model exceptions/malformed spans;
+no fabricated success when all models fail; safe debug logs; and actual Chromium
+submission of an uncached configured model at root and `/ner`.
+
+The real Hugging Face client downloads a saved tiny random BERT token classifier
+from an isolated local HTTP Hub fixture. Native CPU inference preserves Unicode
+spans, original BIO labels and canonical mappings; a second job reuses the cache
+without HTTP requests. A genuine fixture HTTP 404 is isolated while another model
+successfully publishes partial results. Immutable job revision pins and offline
+warm reuse are covered. These are synthetic mechanics tests, not clinical-model
+accuracy or compatibility validation.
+
+[72 axe-core scans](security/v6-axe.jsonl) have zero automatic violations; contrast
+remains incomplete in 44 scans, so these results do not certify WCAG conformance.
+Ruff lint/format (99 Python files), JS/CSS Prettier, generated translations and
+Bandit medium/high checks pass. Wheel/sdist 0.6.0 build successfully; the packaged
+model, pipeline, configuration and UI source files match the repository.
+
+Both web and default CPU worker images build without downloading model weights.
+This selected environment uses Docker VFS on a small disk; creating a standalone
+native worker container exhausted space because VFS duplicated its libraries.
+For local runtime smoke only, the web-based worker container mounts the exact
+built CPU image's site-packages read-only. Torch 2.10.0+cpu, Transformers 5.22.1 and
+the pinned ner_lab import successfully there. This machine-specific override is
+ignored, not part of the portable Compose deployment. The committed Compose uses
+separate web/worker images and a shared persistent model cache as documented.
+
+Running root web/worker report healthy/ready. An isolated `/ner` container checks
+registration without SMTP, four-character login, duplicate email rejection, all
+48 configured repositories available in the cold catalog, annotation access,
+role boundaries and logout. The isolated container uses ephemeral data and is
+removed afterward; existing application data is preserved. No BSC production
+deployment is claimed.
+
+This session's outbound proxy rejects CONNECT to huggingface.co with HTTP 403.
+The real public clinical repositories could not be downloaded here. Deployment
+must allow Hugging Face and its download/CDN/Xet hosts; no policy bypass or claim
+of live clinical-model success is made. See [ON_DEMAND_MODELS.md](ON_DEMAND_MODELS.md)
+for cache lifecycle, error handling, supported formats and runtime requirements.
+Earlier authentication, original offsets, viewer, ownership and retention
+contracts remain covered by the complete regression suite.
+
+---
+
+# Historical: V5.4 registration without email verification (0.5.4)
 
 Full regression: **208 passed in368.86s**, zero failures/skips. Focused auth checks
 also passed **36/36 in21.62s**. Eight new acceptance cases cover production HTTPS

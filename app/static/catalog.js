@@ -7,9 +7,7 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
     languages = [];
   const messages = {
     get noModels() {
-      return t(
-        "No validated models are available for this language. Inference is currently unavailable.",
-      );
+      return t("No configured models are available for this language.");
     },
     get choose() {
       return t("Expand a category and choose one or more checkpoints.");
@@ -63,7 +61,15 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
         : t(row.unavailable_reason || "") || messages.unavailable;
     const availability = document.createElement("small");
     availability.className = "model-availability";
-    availability.textContent = t(available ? "Available" : "Unavailable");
+    availability.textContent = t(
+      available
+        ? row.load_state === "cached" || row.load_state === "local"
+          ? "Cached · ready to load"
+          : row.load_state === "on_demand"
+            ? "Download on first use"
+            : "Available"
+        : "Unavailable",
+    );
     copy.append(availability, detail);
     if (categories.length) {
       const categoryList = document.createElement("small");

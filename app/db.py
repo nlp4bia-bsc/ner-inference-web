@@ -286,7 +286,8 @@ class Database:
             if failed
             else (
                 "COMPLETED_WITH_ERRORS"
-                if summary and summary.get("failed_documents", 0)
+                if summary
+                and (summary.get("failed_documents", 0) or summary.get("failed_models", 0))
                 else "COMPLETED"
             )
         )

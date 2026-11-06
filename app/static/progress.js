@@ -51,23 +51,23 @@ export function startProgress(
     const data = latest;
     summary.textContent = `${t(data.status)} · ${new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 1 }).format(data.progress_percent)}% · ${t(panel.open ? "Hide progress" : "Show progress")}`;
     description.textContent =
-      data.stage === "PREPARING_DOWNLOADS"
-        ? t("Preparing downloads")
-        : data.status === "QUEUED"
-          ? t("Waiting in queue · Position: {count}", {
-              count: data.queue_position ?? "—",
-            })
-          : data.status === "COMPLETED"
-            ? t("All documents annotated successfully")
-            : data.status === "COMPLETED_WITH_ERRORS"
-              ? t(
-                  "Completed with document errors · valid partial results available",
-                )
-              : data.status === "FAILED"
-                ? t(
-                    "Processing failed · published documents, if any, are partial results",
-                  )
-                : t("Processing your documents");
+      data.stage === "PREPARING_MODELS"
+        ? t("Preparing models · downloading uncached checkpoints")
+        : data.stage === "PREPARING_DOWNLOADS"
+          ? t("Preparing downloads")
+          : data.status === "QUEUED"
+            ? t("Waiting in queue · Position: {count}", {
+                count: data.queue_position ?? "—",
+              })
+            : data.status === "COMPLETED"
+              ? t("All documents annotated successfully")
+              : data.status === "COMPLETED_WITH_ERRORS"
+                ? t("Completed with errors · valid partial results available")
+                : data.status === "FAILED"
+                  ? t(
+                      "Processing failed · published documents, if any, are partial results",
+                    )
+                  : t("Processing your documents");
     bar.value = data.progress_percent;
     counts.textContent =
       t(

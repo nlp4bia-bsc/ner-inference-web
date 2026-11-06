@@ -17,10 +17,11 @@ locally; BSC TLS/domain deployment has not been performed.
 
 ## Containers
 
-`docker compose up --build -d` builds a no-model web image and starts web + idle
-worker. Dependencies are pinned in requirements.lock. Real inference requires
-`NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web`; requirements-nlp.lock pins the GPU NER extra; requirements-cpu.lock selects Torch
-2.10.0+cpu without CUDA runtime packages. Set NLP_PROFILE=cpu or gpu explicitly.
+`docker compose up --build -d` builds separate web and worker images. Web installs
+the HTTP dependencies; worker installs the pinned CPU inference libraries by
+default (`INSTALL_NLP=true`, `NLP_PROFILE=cpu`). No model weights are downloaded
+during image build or application startup. `requirements-cpu.lock` selects Torch
+2.10.0+cpu without CUDA runtime packages; the GPU profile is opt-in.
 Allow sufficient build disk/network capacity. Production model initialization and
 GPU drivers must be validated on BSC; the Compose file does not request GPUs.
 To use GPU hardware add the site's supported NVIDIA runtime/device grant and size
@@ -33,10 +34,16 @@ The supervisor uses a subprocess per job, so memory is released after each job.
 init/restart policies and Linux parent-death signaling avoid orphan inference.
 Do not scale workers; a second supervisor exits while the lifetime lock is held.
 
-Example model preflight after editing catalog to paths under `/models`:
+`MODEL_LOADING_MODE=on_demand` and online Hub access are the defaults. The first
+job downloads its selected repositories to `/data/model-cache/hub`, shared via
+the private `ner-data` volume. Warm jobs reuse the cache. `HF_TOKEN`, if needed
+for gated/private repositories, is supplied only to the worker. Keep it in a
+private environment/secret, not the catalog or Git. See [ON_DEMAND_MODELS.md](ON_DEMAND_MODELS.md).
+
+Optional legacy preflight, only with `MODEL_LOADING_MODE=validated_local`:
 
 ```sh
-NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web
+NLP_PROFILE=cpu INSTALL_NLP=true docker compose build worker
 docker compose run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/catalog:/service/catalog:rw" worker python -m scripts.validate_models
 docker compose up -d --force-recreate
@@ -45,8 +52,8 @@ docker compose up -d --force-recreate
 In a managed HTTPS proxy environment, build with the provided CA trust bundle:
 
 ```sh
-docker build --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt \
-  --build-arg INSTALL_NLP=false -t temu-ner-web:local .
+docker build --target web --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt -t temu-ner-web:local .
+docker build --target worker --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt -t temu-ner-worker:local .
 ```
 
 The optional BuildKit secret is consumed by pip only during the networked build
@@ -83,8 +90,8 @@ location / {
 
 Do not log capability paths or query strings in reverse proxies/APM. `/health`
 checks web liveness; `/ready` checks the worker heartbeat with minimal status; model catalog/metrics
-require authentication. Check provisioned models through an authenticated catalog
-request or trusted offline preflight.
+require authentication. Check configured/cache states through an authenticated
+catalog request. Offline preflight is optional in validated-local mode.
 
 ## Environment
 
@@ -95,6 +102,8 @@ them, so shell/.env values reach both containers. Important adjustments:
 |---|---|
 | DEVICE, WORKER_CONCURRENCY | auto, 1 (other concurrency rejected) |
 | MODEL_CONFIG_PATH / MODEL_VALIDATION_PATH | catalog YAML and private preflight receipt |
+| MODEL_LOADING_MODE / MODEL_CACHE_DIR | on_demand / persistent Hub cache path |
+| HF_HUB_OFFLINE / HF_TOKEN | false / optional private worker credential for gated models |
 | STORAGE_ROOT / PUBLIC_BASE_URL | private local data / public origin |
 | MAX_DOCUMENTS_PER_JOB | optional technical cap; per-account tiers are100/1000/null |
 | MAX_UPLOAD_MB / MAX_UNCOMPRESSED_MB / MAX_DOCUMENT_MB | 50 / 250 / 5 MiB |

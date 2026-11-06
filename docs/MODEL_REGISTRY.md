@@ -1,4 +1,18 @@
-# Declarative model catalog and offline execution
+# Declarative model catalog and on-demand execution
+
+Since 0.6.0, `MODEL_LOADING_MODE=on_demand` is the default. Every configured
+repository can be selected without `enabled:true`, a local model path
+or a validation receipt. The 48 current repository entries are eligible for a
+runtime attempt. Selection never downloads or loads weights. The first job
+downloads a standard Hugging Face snapshot; subsequent jobs reuse its persistent
+cache. The catalog refreshes cache state without restarting the API.
+
+Unsupported/checkpoint/dependency failures affect only that model's batch; valid
+outputs from other models are retained, logged and explicitly packaged as partial
+results. The instructions below about mandatory preflight, pending-review gates
+and disabled formats describe only the optional `validated_local` policy.
+See [ON_DEMAND_MODELS.md](ON_DEMAND_MODELS.md) for current loading, label handling,
+immutable revision pins, runtime compatibility, errors and network requirements.
 
 `catalog/models.yaml` is the only runtime registry. It contains primary categories,
 checkpoint definitions, language applicability and an independent multilingual
@@ -72,8 +86,9 @@ models:
 This is a configuration example, not an installed clinical model. A shared
 checkpoint can be referenced by several canonical categories; all mapped
 categories must be declared. IDs/canonical labels use safe identifiers; repository
-IDs such as `BSC-NLP4BIA/location-tagger` are descriptive metadata, never paths or
-remote download instructions. A root `multilingual.entities` block uses the same
+IDs such as `BSC-NLP4BIA/location-tagger` identify trusted administrator-configured
+Hub sources in on-demand mode; users cannot submit arbitrary repository paths.
+In validated-local mode they are descriptive metadata. A root `multilingual.entities` block uses the same
 category-reference structure. Supported languages are validated server-side.
 
 Each category expands into individual unchecked model checkboxes. Opening it does
@@ -116,12 +131,13 @@ selection produces a dependency-first order. The microbatch pipeline preserves
 that order and passes upstream annotations to a classifier-specific `classify`
 method. It never calls an annotation-dependent stage as independent NER.
 
-The pinned ner_lab encoder is single-target IOB2. Preflight rejects arbitrary
+The legacy native encoder contract is single-target IOB2. Its preflight rejects arbitrary
 multi-label schemas, unsupported custom MTL architectures and dependent tasks
 without an audited native adapter. The public
 [DT4H MTL card](https://huggingface.co/BSC-NLP4BIA/DT4H_XLM-R_mtl_multilingual_multilabel)
 explicitly describes a custom multi-head checkpoint. These entries are retained
-and disabled; no Transformers pipeline replaces ner_lab to make them run.
+and disabled under the legacy validated-local policy. On-demand mode attempts
+configured sources and records a per-model error for unsupported formats.
 
 [LocationSubTagger](https://huggingface.co/BSC-NLP4BIA/location-sub-tagger)
 is registered next to LocationTagger under Locations. Its card describes token
@@ -129,13 +145,14 @@ classification and word pre-tokenization, with five role labels. The linked usag
 notebook returned 404; a local checkpoint/input contract could not be inspected.
 The workbook alone does not establish whether prior detected annotations are
 required. Therefore `dependency_review: pending` and a candidate detector are
-recorded, without asserting an unverified mandatory dependency. It cannot run
-until this review and native-adapter validation are complete. If prior spans are
+recorded, without asserting an unverified mandatory dependency. Validated-local
+mode blocks it until review and native-adapter validation are complete; default
+on-demand mode attempts the configured source. If prior spans are
 required, set `requires: [location-tagger]` and provide the audited stage adapter;
 otherwise record the reviewed independent input contract. This uncertainty does
 not remove the model from the category.
 
-## Provision and validate
+## Optional legacy provision and validation
 
 All imported checkpoints start disabled, with no invented local paths. Review
 actual `encoding.json`, label IDs, tokenizer/pre-tokenization, input dependencies

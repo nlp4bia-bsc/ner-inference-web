@@ -32,19 +32,24 @@ profiles retain two advisories in upstream-pinned torch2.10.0; their resolution
 requires an upstream-compatible update. Do not treat the neural production profile
 as fully hardened. Details and limitations are recorded in the security audit.
 
-All NLP uses [ner_lab](https://github.com/nlp4bia-bsc/ner_lab), pinned to
-`8640d4797b081a5f6b66d9b45c11269542a79a26`. No checkpoints are supplied or silently
-downloaded. The example catalog deliberately disables inference until a trusted
-administrator provisions and validates local models. Synthetic fixtures exist
-only in tests; they do not represent biomedical model performance.
+Inference uses [ner_lab](https://github.com/nlp4bia-bsc/ner_lab), pinned to
+`8640d4797b081a5f6b66d9b45c11269542a79a26`, for windows, original-coordinate
+decoding and statistics, with Transformers for standard Hub token classifiers.
+Configured repositories are selectable immediately. **Models download
+on their first job and persist in the shared Hugging Face cache**; being enabled,
+preloaded or prevalidated is not a prerequisite. Image builds install runtime
+libraries, never checkpoint weights. Failed models are logged and omitted while
+valid models continue; mixed outcomes produce explicit partial results.
+See [on-demand loading and cache operations](docs/ON_DEMAND_MODELS.md).
+Synthetic fixtures are not evidence of biomedical model accuracy.
 
 
 ## Research interface
 
 The public welcome is the protected platform's Sign in screen. After actual email
-verification/login, Research Workspace shows only your retained job metrics/history,
+login, Research Workspace shows only your retained job metrics/history,
 with New annotation, My jobs, Models and Profile navigation. The model catalog is
-also private. Administration requires verified ADMIN plus MFA and never grants
+also private. Administration requires ADMIN plus MFA and never grants
 clinical-document access to other owners.
 
 ![NLP4BIA sign in with the original BSC institutional logo](docs/previews/v5/login-desktop.png)
@@ -102,7 +107,7 @@ flowchart LR
     J --> Q[SQLite WAL: FIFO / document states / rate limits]
     J --> S[Private local storage]
     Q --> W[One supervised worker / microbatches]
-    W --> N[ner_lab / local checkpoints]
+    W --> N[ner_lab / on-demand cached checkpoints]
     N --> V[Validated original-coordinate annotations]
     V --> X[BRAT / TSV / statistics]
     V --> I[Atomic document publications]
@@ -135,8 +140,9 @@ See [refactoring decisions](docs/REFACTORING_DECISIONS.md) for the complete inve
 - Linux and Python 3.12 recommended (minimum 3.11; supervision uses Linux prctl/flock).
 - A local private filesystem for SQLite WAL, input, results and temporary artifacts.
 - Docker Engine with BuildKit and Docker Compose v2 for container deployment.
-- For inference: the pinned NLP dependencies, complete trusted checkpoints and
-  local tokenizers/backbone cache. GPU is optional; CPU is supported.
+- For inference: the pinned NLP dependencies and outbound Hugging Face access
+  for the first download, or complete cached/local checkpoints. GPU is optional;
+  CPU is supported.
 - Hardware depends on checkpoint sizes, batch size and corpus size. Compose's
   1 GiB web / 8 GiB worker limits are configurable examples, not measured minimums.
   No production capacity or GPU benchmark is claimed. Reserve disk for model
@@ -167,12 +173,14 @@ python -m app.worker
 ```
 
 Open http://localhost:8000 after copying the local-development .env example.
-Anonymous access redirects to login. Register, read the private captured email
-under storage/test-mail, confirm its link and sign in; the dashboard shows the
-STANDARD100-document tier. Use /annotate for a new job. Account/email/session
-flows work without NLP packages; inference still requires validated checkpoints.
+Anonymous access redirects to login. Register with a unique email and a password
+of at least four characters, then sign in; the dashboard shows the STANDARD
+100-document tier. No verification email is required by default. Use /annotate for
+a new job. Account/session flows work without NLP packages; inference downloads
+the selected configured checkpoints on first use and caches them persistently.
 /health and /ready expose only minimal status. Production requires HTTPS/Secure
-cookies and real SMTP; local capture mail is rejected in production.
+cookies. SMTP is optional unless email verification or password recovery is
+enabled; local capture mail is rejected in production.
 For actual CPU inference install the revision-pinned CPU dependency set:
 
 ```sh
@@ -237,15 +245,19 @@ more checkpoints per category, with a separate Multilingual models section.
 Opening a category selects nothing. Same-category/same-offset predictions display
 once and retain every source model, original label and individual score.
 
-All imported entries remain disabled until actual offline checkpoint/schema
-validation. Unpublished pediatric Events/Situations and Temporality are visible;
-custom multi-head/dependent tasks stay blocked without a compatible native adapter.
-The location subtype classifier remains listed with its dependency review pending.
+In the default on-demand mode all 48 configured repository entries can be
+selected without activation or an offline receipt. Entries without a
+repository/local source remain visible but unavailable. Native/custom/dependent
+formats that cannot load fail individually at runtime and are logged; their
+failure never fabricates annotations or removes other models' valid predictions.
 The spreadsheet's metrics are reported evidence, not independently reproduced F1.
 See [catalog operations and evidence](docs/MODEL_REGISTRY.md) and
 [inventory provenance](catalog/inventory-provenance.json).
 
-## Configure and validate a model
+## Optional legacy mode: configure and validate a local model
+
+This section applies only to `MODEL_LOADING_MODE=validated_local`. It is not
+required for the default `MODEL_LOADING_MODE=on_demand` workflow.
 
 Place a trusted checkpoint in a versioned directory, e.g. host
 `models/es-disease-v1/` mounted at `/models/es-disease-v1` in Docker. It must contain
@@ -327,19 +339,17 @@ Protect both database and key backups; account secrets/outbox data are encrypted
 `ner-data` volume private. Runtime UID is 10001; model and catalog mounts are
 read-only, data is writable. Do not use `down -v` unless discarding retained jobs.
 
-For a real NLP image after model/catalog preparation:
+For the default on-demand CPU worker (no model preparation step):
 
 ```sh
-NLP_PROFILE=cpu INSTALL_NLP=true docker compose build web
-docker compose run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD/catalog:/service/catalog:rw" worker python -m scripts.validate_models
+docker compose build web worker
 docker compose up -d --force-recreate
 ```
 
-Preflight must see the same `/models` paths and caches as the running worker.
-The full CPU/GPU training image dependency sets were resolved, but their large NLP-enabled
-Docker build was not executed. The no-NLP Docker image and web/worker Compose pair
-have been built and run. See [deployment](docs/DEPLOYMENT.md) for optional build
+Web and worker have separate images. The worker installs the pinned CPU libraries
+by default; GPU is an explicit deployment option. The model cache lives under
+`/data/model-cache` in the persistent `ner-data` volume and survives job expiry
+and service restarts. The CPU worker image has been built. See [deployment](docs/DEPLOYMENT.md) for optional build
 CA secrets when using a managed HTTPS proxy and deployment-specific permissions.
 
 ## CPU and GPU
@@ -472,8 +482,10 @@ published artifacts against model/tokenizer digests and original input hashes,
 register complete orphan publications idempotently and reprocess only missing or
 invalid documents. Do not replace checkpoints in place while jobs are pending.
 
-Model updates: use new immutable versioned paths, drain, preflight, restart, smoke
-test with authorized nonsensitive text. ner_lab upgrades: change the pinned
+Model updates: drain queued jobs, update the configured revision (or use a new
+immutable local path), restart services and smoke test with authorized nonsensitive
+text. Offline preflight is optional in the legacy validated-local mode.
+ner_lab upgrades: change the pinned
 revision and lock, review lower-level stats APIs, run the entire suite and real
 checkpoint compatibility checks. Rebuild images and check /ready afterward.
 Monitor worker heartbeat, queue states, failure types, disk space and cleanup.
@@ -513,7 +525,7 @@ See [verification](docs/VERIFICATION.md) for actual results and untested limits.
 |---|---|
 | Worker inactive / queue blocked | /ready, worker logs, matching data/config paths; do not remove a live worker lock or add parallel workers. Restart supervisor for controlled interrupted-job replay (maximum two attempts). |
 | PostgreSQL/Redis unavailable | Neither is used here. Remove stale external service assumptions; inspect SQLite/data volume instead. |
-| No model enabled / invalid checkpoint | Inspect /api/models, local permissions, encoding language/target, tokenizer.json and validation receipt. Run offline preflight in the actual runtime. |
+| Model download/load fails | Inspect the worker's model_failed records and the private job model-errors.json; check repository/revision, outbound Hub/CDN access, disk space, credentials and checkpoint format. The default mode requires no activation or preflight receipt. |
 | Tokenization error | Provision the saved fast tokenizer/backbone cache; confirm encoding.json compatibility. Do not replace the model's windows with arbitrary truncation. |
 | Memory/CUDA failure | Lower batch size, use DEVICE=cpu to diagnose, verify Torch/driver/device grant, review resource limits. No success/partial download is published for failed jobs. |
 | Invalid ZIP | UTF-8 TXT only, no empty documents, links, duplicate/unsafe paths or nested ZIPs; respect byte/entry/compression/document bounds. |

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     storage_root: Path = Path("storage")
     model_config_path: Path = Path("catalog/models.yaml")
     model_validation_path: Path = Path("catalog/validated-models.json")
+    model_loading_mode: str = "on_demand"
+    model_cache_dir: Path | None = None
+    hf_hub_offline: bool = False
     public_base_url: str = "https://localhost:8000"
     app_prefix: str = ""
     device: str = "auto"
@@ -57,6 +60,10 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True
 
     @property
+    def hub_cache(self):
+        return self.model_cache_dir or self.storage_root / "model-cache" / "hub"
+
+    @property
     def cookie_path(self):
         # __Host cookies forbid Domain injection and require Path=/ even under /ner.
         return "/" if self.cookie_secure else self.app_prefix or "/"
@@ -88,6 +95,8 @@ class Settings(BaseSettings):
         from app.domain.identity import normalize_email
 
         self.support_email = normalize_email(self.support_email)
+        if self.model_loading_mode not in ("on_demand", "validated_local"):
+            raise ValueError("MODEL_LOADING_MODE must be on_demand or validated_local")
 
         if self.app_env not in ("production", "development", "test"):
             raise ValueError("APP_ENV must be production, development or test")

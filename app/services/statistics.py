@@ -1,13 +1,10 @@
 import json
-import os
 from collections import Counter
 from importlib.metadata import version
 from pathlib import Path
 
 
 def statistics(documents: dict[str, str], spans: list[dict], language: str, tokenizer_path: str):
-    os.environ["HF_HUB_OFFLINE"] = "1"
-    os.environ["TRANSFORMERS_OFFLINE"] = "1"
     from lab.core import (
         build_corpus,
         compute_annotation_stats,
@@ -74,8 +71,6 @@ class StreamingStatistics:
     """Native measurements and one reference tokenizer, accumulated without a corpus mapping."""
 
     def __init__(self, language, tokenizer_path):
-        os.environ["HF_HUB_OFFLINE"] = "1"
-        os.environ["TRANSFORMERS_OFFLINE"] = "1"
         from lab.core.stats.annotations import AnnotationMeasurements
         from lab.core.stats.primitives import load_tokenizer
         from lab.core.stats.text import TextMeasurements

@@ -70,7 +70,7 @@ class JobService:
                 "document_references": references,
                 "statistics_reference": reference,
                 "statistics_reference_sha256": reference_digest,
-                "catalog_version": 2,
+                "catalog_version": 3,
                 "entities": sorted(
                     {label for m in selected for label in m["label_mapping"].values()}
                 ),

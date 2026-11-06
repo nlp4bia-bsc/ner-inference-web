@@ -4,13 +4,17 @@ import json
 import logging
 import shutil
 import time
+import traceback
 from collections import Counter
+from pathlib import Path
 
 from app.config import Settings
 from app.db import Database
 from app.persistence.progress import ProgressRepository
+from app.services.hub_inference import HubSession
 from app.services.incremental_export import package_publications
 from app.services.inference import NerLabSession, merge_predictions
+from app.services.model_cache import ModelCache
 from app.services.publication import publish, read_publication
 from app.services.registry import Registry, model_snapshot, statistics_reference
 from app.services.statistics import StreamingStatistics, statistics
@@ -28,6 +32,11 @@ def process_job(
     registry = registry_factory(s)
     models = registry.select(payload["language"], payload["entities"], payload.get("models"))
     snapshot = model_snapshot(models, legacy=payload.get("catalog_version", 1) < 2)
+    if payload.get("catalog_version", 1) < 3:
+        snapshot = [
+            {k: v for k, v in row.items() if k not in ("repository", "revision")}
+            for row in snapshot
+        ]
     if snapshot != payload["selected_models"]:
         raise ValueError("Model registry changed; resubmit with current model versions")
     rows = progress.rows(job["id"])
@@ -48,8 +57,39 @@ def process_job(
                     ),
                 )
         rows = progress.rows(job["id"])
-    progress.stage(job["id"], "INFERENCE")
-    engine = adapter or NerLabSession(s.max_loaded_models)
+    model_errors = []
+
+    def model_failed(model, exc, stage):
+        error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
+        cause = exc
+        for _ in range(6):
+            response = getattr(cause, "response", None)
+            if isinstance(getattr(response, "status_code", None), int):
+                error["http_status"] = response.status_code
+                break
+            cause = getattr(cause, "__cause__", None) or getattr(cause, "__context__", None)
+            if cause is None:
+                break
+        frames = [
+            {"file": Path(frame.filename).name, "function": frame.name, "line": frame.lineno}
+            for frame in traceback.extract_tb(exc.__traceback__)[-20:]
+        ]
+        logging.getLogger("temu.pipeline").error(
+            "model_failed job_id=%s model_id=%s stage=%s error_type=%s http_status=%s frames=%s",
+            job["id"],
+            model["model_id"],
+            stage,
+            type(exc).__name__,
+            error.get("http_status"),
+            frames,
+        )
+        if error not in model_errors:
+            model_errors.append(error)
+            temp = root / "model-errors.tmp"
+            temp.write_text(json.dumps(model_errors, indent=2))
+            temp.replace(root / "model-errors.json")
+        return {**error, "status": "FAILED"}
+
     reference, reference_digest = statistics_reference(
         registry.languages[payload["language"]], models
     )
@@ -58,9 +98,48 @@ def process_job(
         or reference_digest != payload.get("statistics_reference_sha256")
     ):
         raise ValueError("Statistics tokenizer changed since admission")
-    accumulator = (
-        StreamingStatistics(payload["language"], reference) if stats_fn is statistics else None
+    if s.model_loading_mode == "on_demand" and adapter is None:
+        progress.stage(job["id"], "PREPARING_MODELS")
+        cache = ModelCache(s, root)
+        prepared = []
+        for model in models:
+            try:
+                prepared.append(cache.prepare(model))
+            except Exception as exc:
+                model_failed(model, exc, "PREPARING_MODELS")
+        models = prepared
+        if not models:
+            progress.mark(
+                job["id"], [row["document_id"] for row in rows], "FAILED", "NoModelsPrepared"
+            )
+            raise ValueError("No configured model could be prepared")
+    progress.stage(job["id"], "INFERENCE")
+    engine = adapter or (
+        HubSession(s.max_loaded_models)
+        if s.model_loading_mode == "on_demand"
+        else NerLabSession(s.max_loaded_models)
     )
+    accumulator = None
+    if stats_fn is statistics:
+        candidates = (
+            [(models[0], reference)]
+            if reference
+            else [(model, model.get("model_dir")) for model in models]
+        )
+        for model, candidate in candidates:
+            try:
+                accumulator = StreamingStatistics(payload["language"], candidate)
+                reference = candidate
+                reference_digest = (
+                    reference_digest
+                    or model.get("resolved_revision")
+                    or model.get("checkpoint_sha256")
+                )
+                break
+            except Exception as exc:
+                model_failed(model, exc, "TOKENIZER")
+        if accumulator is None:
+            raise ValueError("No selected tokenizer could be loaded")
     started = time.monotonic()
     provenance = []
     seen_provenance = set()
@@ -74,6 +153,10 @@ def process_job(
             record = None
         if record:
             for meta in record.get("models", []):
+                if meta.get("status") == "FAILED":
+                    error = {k: v for k, v in meta.items() if k != "status"}
+                    if error not in model_errors:
+                        model_errors.append(error)
                 key = json.dumps(meta, sort_keys=True)
                 if key not in seen_provenance:
                     provenance.append(meta)
@@ -115,7 +198,11 @@ def process_job(
             texts = {name: data.decode("utf-8") for name, data in raw.items()}
             try:
                 predictions = []
-                metadata = []
+                metadata = [
+                    {**error, "status": "FAILED"}
+                    for error in model_errors
+                    if error["stage"] == "PREPARING_MODELS"
+                ]
                 ordered = (
                     models
                     if any(m.get("requires") for m in models)
@@ -123,19 +210,31 @@ def process_job(
                     else list(reversed(models))
                 )
                 for i, model in enumerate(ordered):
-                    if model.get("task", "ner") != "ner" or model.get("requires"):
-                        # Never feed an annotation-dependent classifier raw text alone.
-                        if not hasattr(engine, "classify"):
-                            raise ValueError("No audited adapter for the selected dependent task")
-                        upstream = {m["model_id"]: spans for m, spans in predictions}
-                        inputs = {key: upstream[key] for key in model["requires"]}
-                        spans, meta = engine.classify(model, texts, inputs, s.device)
-                    else:
-                        spans, meta = engine.predict(
-                            model, texts, root / "building" / f"model-{i}", s.device
-                        )
-                    predictions.append((model, spans))
-                    metadata.append(meta)
+                    try:
+                        if model.get("task", "ner") != "ner" or model.get("requires"):
+                            # Never feed an annotation-dependent classifier raw text alone.
+                            if not hasattr(engine, "classify"):
+                                raise ValueError("No adapter for the selected dependent task")
+                            upstream = {m["model_id"]: spans for m, spans in predictions}
+                            inputs = {key: upstream[key] for key in model["requires"]}
+                            spans, meta = engine.classify(model, texts, inputs, s.device)
+                        else:
+                            spans, meta = engine.predict(
+                                model, texts, root / "building" / f"model-{i}", s.device
+                            )
+                        resolved = {
+                            **model,
+                            "label_mapping": meta.get("label_mapping", model["label_mapping"]),
+                        }
+                        merge_predictions(
+                            texts, [(resolved, spans)]
+                        )  # Reject only this model's malformed output.
+                        predictions.append((resolved, spans))
+                        metadata.append(meta)
+                    except Exception as exc:
+                        metadata.append(model_failed(model, exc, "INFERENCE"))
+                if not predictions:
+                    raise ValueError("No model completed this batch")
                 merged = merge_predictions(texts, predictions)
             except Exception as exc:
                 logging.getLogger("temu.pipeline").error(
@@ -154,8 +253,6 @@ def process_job(
             else:
                 _, per_doc = stats_fn(texts, merged, payload["language"], reference)
             if accumulator:
-                from pathlib import Path
-
                 for record in per_doc:
                     record["tokenizer_reference"] = Path(reference).name
                     record["tokenizer_sha256"] = reference_digest
@@ -206,6 +303,8 @@ def process_job(
             seconds=time.monotonic() - started,
             successful_documents=len(successful),
             failed_documents=len(rows) - len(successful),
+            failed_models=len({error["model_id"] for error in model_errors}),
+            model_errors=model_errors,
             models=provenance,
         )
         progress.stage(job["id"], "PREPARING_DOWNLOADS")
@@ -217,7 +316,8 @@ def process_job(
             job_id=job["id"],
             created_at=job["created_at"],
             models=provenance,
-            partial=len(successful) != len(rows),
+            partial=len(successful) != len(rows) or bool(model_errors),
+            model_errors=model_errors,
             failed_documents=[r["filename"] for r in rows if r["status"] == "FAILED"],
             ner_lab_commit="8640d4797b081a5f6b66d9b45c11269542a79a26",
             offsets="Unicode code points [start,end)",
