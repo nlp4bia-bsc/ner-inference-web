@@ -33,7 +33,7 @@ language is separate; changing UI locale never changes permissions or source tex
 ## Credentials and sessions
 
 Argon2id uses 19MiB, two iterations and parallelism1, with library-generated salts
-and progressive rehash. Passwords accept 15–1024 Unicode characters for new
+and progressive rehash. Passwords accept 4–1024 Unicode characters for new
 credentials, including spaces; there is no truncation or normalization. Login
 supports existing passwords within the transport bound. Confirmation is checked
 but never stored. Schemas hide inputs in validation exceptions; APIs never return
@@ -98,8 +98,33 @@ are also one-use; enrollment records the actual accepted time-step counter.
 
 ## Email configuration
 
-Production requires APP_ENV=production, HTTPS PUBLIC_BASE_URL, COOKIE_SECURE=true,
-MAIL_BACKEND=smtp and STARTTLS with valid server certificates:
+As of0.5.4, the default is `REQUIRE_EMAIL_VERIFICATION=false`. New registrations
+require a syntactically valid, unique normalized email, but do not send email or
+create verification tokens. Duplicate emails return409, including concurrent
+registration attempts protected by the database unique constraint. New and
+previously unverified ACTIVE accounts can sign in and submit within their tier.
+`email_verified_at` remains unset unless an actual verification occurred; the UI
+shows "Registered email" rather than claiming ownership was verified.
+
+No SMTP is needed for registration or trusted local administrator bootstrap.
+Administrator role and MFA requirements, ownership, CSRF and revocation remain
+mandatory. Existing hashing/session behavior is unchanged. New passwords have a
+four-character minimum in registration/change/reset, including Unicode code-point
+validation in the browser; existing-password login is not restricted by the new
+password minimum. Confirmation must still match exactly.
+
+`SUPPORT_EMAIL=fernando.gallego@bsc.es` supplies the account/error-report contact
+link. It opens the user's mail client. It does not send automatic server error
+emails without an SMTP transport. If no mail transport is configured, the login
+page offers administrator password help rather than a nonfunctional recovery link.
+Email-based password reset remains available when a mail backend is configured.
+
+The previous verification workflow remains available only with the explicit
+`REQUIRE_EMAIL_VERIFICATION=true` opt-in. Its instructions follow below.
+
+For the optional verification/recovery email service in production, use
+APP_ENV=production, HTTPS PUBLIC_BASE_URL, COOKIE_SECURE=true, MAIL_BACKEND=smtp
+and STARTTLS with valid server certificates:
 
 ```dotenv
 APP_ENV=production
@@ -107,6 +132,8 @@ PUBLIC_BASE_URL=https://temu.bsc.es/ner
 APP_PREFIX=/ner
 COOKIE_SECURE=true
 MAIL_BACKEND=smtp
+REQUIRE_EMAIL_VERIFICATION=true
+SUPPORT_EMAIL=fernando.gallego@bsc.es
 SMTP_HOST=your-authorized-smtp-host
 SMTP_PORT=587
 SMTP_USERNAME=your-service-identity

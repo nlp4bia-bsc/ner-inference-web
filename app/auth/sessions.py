@@ -21,7 +21,7 @@ def require_live(c, account, settings, admin=False):
     ):
         raise ServiceError("authentication_required", 401)
     if admin and (
-        not row["email_verified_at"]
+        (settings.require_email_verification and not row["email_verified_at"])
         or row["system_role"] != "ADMIN"
         or not row["mfa_enabled"]
         or not row["mfa_verified"]

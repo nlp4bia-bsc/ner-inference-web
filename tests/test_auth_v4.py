@@ -315,7 +315,7 @@ def test_forgot_reset_change_password_tokens_and_generic_responses(auth_app):
         raw = parse_qs(urlsplit(auth_app.state.mailer.outbox[-1]["body"].splitlines()[-1]).query)[
             "token"
         ][0]
-        replacement = PASSWORD + " replacement"
+        replacement = "abcd"
         values = {"token": raw, "password": replacement, "password_confirmation": replacement}
         assert public_post(client, "/api/auth/reset-password", values).status_code == 200
         assert client.get("/api/models").status_code == 401

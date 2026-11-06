@@ -29,7 +29,7 @@ def require_admin():
     account = user()
     if account["system_role"] != "ADMIN":
         raise ServiceError("forbidden", 403)
-    if not account.get("email_verified_at"):
+    if account.get("email_verification_required") and not account.get("email_verified_at"):
         raise ServiceError("verification_required", 403)
     if not account.get("mfa_enabled") or not account.get("mfa_verified"):
         raise ServiceError("mfa_required", 403)

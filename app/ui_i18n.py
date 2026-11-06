@@ -44,6 +44,10 @@ BRAT and TSV exports for your annotation workflows.|Exportaciones BRAT y TSV par
 Research access|Acceso para investigación|Accés de recerca
 Sign in to your workspace|Accede a tu espacio de trabajo|Accedeix al teu espai de treball
 Use your verified research account to continue.|Utiliza tu cuenta de investigación verificada para continuar.|Utilitza el compte de recerca verificat per continuar.
+Use your research account to continue.|Utiliza tu cuenta de investigación para continuar.|Utilitza el compte de recerca per continuar.
+Registered email|Correo registrado|Correu registrat
+Password help: contact the administrator|Ayuda con la contraseña: contacta con el administrador|Ajuda amb la contrasenya: contacta amb l’administrador
+Account help and error reports|Ayuda con la cuenta e incidencias|Ajuda amb el compte i incidències
 New to the platform?|¿Primera vez en la plataforma?|És la primera visita a la plataforma?
 Already have an account?|¿Ya tienes una cuenta?|Ja tens un compte?
 Join the research workspace|Únete al espacio de investigación|Uneix-te a l'espai de recerca

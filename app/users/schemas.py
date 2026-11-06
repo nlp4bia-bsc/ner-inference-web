@@ -4,6 +4,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.domain.identity import EmailAddress
 
+PASSWORD_MIN_LENGTH = 4
+PASSWORD_MAX_LENGTH = 1024
+
 
 class SafeModel(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
@@ -53,8 +56,10 @@ class Profile(SafeModel):
 
 class Register(Profile):
     email: EmailAddress
-    password: str = Field(min_length=15, max_length=1024)
-    password_confirmation: str = Field(min_length=15, max_length=1024)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    password_confirmation: str = Field(
+        min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH
+    )
     legal_accepted: bool
 
     @field_validator("email", mode="after")
@@ -79,8 +84,10 @@ class Login(SafeModel):
 class PasswordChange(SafeModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
     current_password: str = Field(max_length=1024)
-    password: str = Field(min_length=15, max_length=1024)
-    password_confirmation: str = Field(min_length=15, max_length=1024)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    password_confirmation: str = Field(
+        min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH
+    )
 
     @model_validator(mode="after")
     def confirmation(self):

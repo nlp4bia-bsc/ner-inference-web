@@ -230,6 +230,20 @@ for (const form of document.querySelectorAll("form[data-confirm]"))
       .join("\n");
     dialog.append(detail);
   });
+for (const input of document.querySelectorAll("input[data-password-min]")) {
+  const validatePassword = () => {
+    const length = Array.from(input.value).length;
+    input.setCustomValidity(
+      length &&
+        (length < Number(input.dataset.passwordMin) ||
+          length > Number(input.dataset.passwordMax))
+        ? t("password_hint")
+        : "",
+    );
+  };
+  input.addEventListener("input", validatePassword);
+  onLocaleChange(validatePassword);
+}
 for (const form of document.querySelectorAll(".account-form"))
   form.addEventListener("submit", () => {
     const button = form.querySelector("button[type=submit]");

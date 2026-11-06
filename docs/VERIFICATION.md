@@ -1,4 +1,45 @@
-# Latest: V5.3 selective marks and complete color coverage (0.5.3)
+# Latest: V5.4 registration without email verification (0.5.4)
+
+Full regression: **208 passed in368.86s**, zero failures/skips. Focused auth checks
+also passed **36/36 in21.62s**. Eight new acceptance cases cover production HTTPS
+registration with no mail backend, root/prefix routes, four-character passwords,
+duplicate normalized emails, concurrent registration, authenticated job admission,
+password change/revocation and administrator bootstrap/MFA without email proof.
+Four real Chromium cases exercise the default no-mail form at390/1440px and both
+root and `/ner`, including three-character/two-emoji rejection and immediate login.
+The legacy verification cases explicitly opt in to that optional policy; they
+continue to cover token consumption, recovery, SMTP gating and unverified denials.
+The existing reset regression now resets to an actual four-character password.
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/simple-registration-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/simple-registration/release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 existing design/viewer axe scans](security/v5.4-axe.jsonl) report zero automatic
+violations; color contrast remains incomplete in44 scans. These do not certify
+WCAG conformance. Ruff lint/format (96 Python files), JS/CSS Prettier, generated
+translations and Bandit medium/high checks pass. Wheel/sdist0.5.4 and no-NLP Docker
+build successfully; final auth modules/UI assets match the wheel and running image.
+
+Root and `/ner` container smoke checks pass. The isolated `/ner` container uses
+`MAIL_BACKEND=none` and registers/logs in with a four-character password, rejects
+the duplicate email, opens annotation, preserves STANDARD/ADMIN boundaries and
+logs out successfully. Root stays private and serves the new registration policy.
+Local web/worker run0.5.4; no BSC production deployment is claimed.
+
+The active policy is `REQUIRE_EMAIL_VERIFICATION=false`, with no verification mail
+or token issued at registration. `email_verified_at` is not fabricated. Contact
+links target fernando.gallego@bsc.es in the user's mail client; automatic server
+mail still requires a mail transport. See [AUTHENTICATION_V4.md](AUTHENTICATION_V4.md)
+for policy/operations. Ownership, CSRF, tiers, Argon2id, MFA, session revocation,
+scientific offsets/exports, retention and earlier clinical/Torch limits remain.
+
+---
+
+# Historical: V5.3 selective marks and complete color coverage (0.5.3)
 
 Final full regression: **200 passed in349.39s**, zero failures/skips. The12 focused
 browser cases additionally passed in40.49s before the full run. They verify marks

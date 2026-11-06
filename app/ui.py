@@ -15,6 +15,9 @@ def context(request):
         "ui_account": account,
         "ui_csrf": request.app.state.auth.csrf(account["csrf_seed"]) if account else "",
         "ui_version": request.app.version,
+        "email_verification_required": request.app.state.settings.require_email_verification,
+        "support_email": request.app.state.settings.support_email,
+        "mail_available": request.app.state.mailer.configured,
         "ui_date": lambda value: (
             datetime.fromtimestamp(value, timezone.utc).isoformat() if value else "—"
         ),

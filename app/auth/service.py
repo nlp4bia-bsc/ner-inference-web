@@ -81,8 +81,15 @@ class AuthService:
             raise ServiceError("rate_limited", 429, self.s.auth_rate_window_seconds)
 
     def register(self, form, ip):
-        self.mailer.require_configured()
+        if self.s.require_email_verification:
+            self.mailer.require_configured()
         self.throttle("register", form.email, ip)
+        with self.db.connect() as c:
+            exists = c.execute("SELECT 1 FROM users WHERE email=?", (form.email,)).fetchone()
+        if exists:
+            if self.s.require_email_verification:
+                return
+            raise ServiceError("email_registered", 409)
         encoded = hash_password(form.password)
         now, identity = time.time(), uuid.uuid4().hex
         try:
@@ -105,8 +112,14 @@ class AuthService:
                 )
                 audit(c, identity, identity, "REGISTER")
         except sqlite3.IntegrityError:
+            with self.db.connect() as c:
+                if not c.execute("SELECT 1 FROM users WHERE email=?", (form.email,)).fetchone():
+                    raise
+            if not self.s.require_email_verification:
+                raise ServiceError("email_registered", 409) from None
             return
-        self.issue("verify", identity)
+        if self.s.require_email_verification:
+            self.issue("verify", identity)
 
     def issue(self, kind, identity):
         table = "email_verifications" if kind == "verify" else "password_resets"
@@ -276,7 +289,7 @@ class AuthService:
                     "UPDATE sessions SET last_seen_at=? WHERE token_hash=? AND revoked_at IS NULL",
                     (now, row["session_hash"]),
                 )
-            return dict(row)
+            return {**dict(row), "email_verification_required": self.s.require_email_verification}
 
     def csrf(self, seed):
         return hmac.new(self.db.rate_key, ("csrf:" + seed).encode(), hashlib.sha256).hexdigest()

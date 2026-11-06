@@ -97,6 +97,20 @@ shows only its range marks; activating it again hides them. Labels remain in pla
 Original model-label aliases share category colors and new labels get stable
 extension colors instead of appearing uniformly gray.
 
+## Registration policy since0.5.4
+
+Create account accepts a matching password of4–1024 Unicode characters and checks
+email uniqueness. Success opens Sign in with a confirmation; there is no email
+verification step. A duplicate address shows an explicit error and leaves the
+existing account unchanged. SMTP is not required. The profile says Registered
+email without falsely marking the email as verified. The account starts at the
+existing STANDARD tier. Administrator actions still require ADMIN plus MFA.
+
+Account/help links open a message to fernando.gallego@bsc.es in the user's mail
+client. Automatic server email requires a configured mail transport. Without one,
+password help points to the administrator. Older verification descriptions in
+this document apply only to the explicit legacy opt-in policy.
+
 ## Profile, sessions and administration
 
 Profile displays identity, verification, institution/profession, saved language,

@@ -70,7 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="NLP4BIA · Multilingual NER Platform",
-        version="0.5.3",
+        version="0.5.4",
         lifespan=lifespan,
         redirect_slashes=False,
         docs_url=None,

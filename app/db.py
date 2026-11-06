@@ -160,7 +160,7 @@ class Database:
                 if (
                     not owner
                     or owner["account_status"] != "ACTIVE"
-                    or not owner["email_verified_at"]
+                    or (self.s.require_email_verification and not owner["email_verified_at"])
                 ):
                     raise ServiceError("authentication_required", 401)
                 maximum = document_limit(access_tier, self.s.max_documents_per_job)

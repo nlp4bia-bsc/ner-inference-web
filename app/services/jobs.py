@@ -29,7 +29,7 @@ class JobService:
 
     def submit_streams(self, form, streams, ip, source_type="TXT_UPLOAD", lease=None):
         account = user()
-        if not account["email_verified_at"]:
+        if self.settings.require_email_verification and not account["email_verified_at"]:
             raise ServiceError("verification_required", 403)
         form = form.model_copy(
             update={"submitter_name": account["full_name"], "submitter_email": account["email"]}

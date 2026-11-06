@@ -8,7 +8,7 @@ from app.auth.email import Mailer
 from app.auth.service import AuthService, audit
 from app.config import Settings
 from app.db import Database
-from app.users.schemas import Register
+from app.users.schemas import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, Register
 
 
 def create_admin(settings, form):
@@ -19,7 +19,8 @@ def create_admin(settings, form):
 
     from app.auth.passwords import hash_password
 
-    service.mailer.require_configured()
+    if settings.require_email_verification:
+        service.mailer.require_configured()
     encoded = hash_password(form.password)
     identity, now = uuid.uuid4().hex, time.time()
     with db.connect() as c:
@@ -45,7 +46,8 @@ def create_admin(settings, form):
             ),
         )
         audit(c, identity, identity, "ADMIN_BOOTSTRAP")
-    service.issue("verify", identity)
+    if settings.require_email_verification:
+        service.issue("verify", identity)
     return identity
 
 
@@ -58,7 +60,9 @@ def main():
     full_name = input("Full name: ")
     email = input("Email: ")
     institution = input("Institution: ")
-    password = getpass.getpass("Password (15–1024 characters): ")
+    password = getpass.getpass(
+        f"Password ({PASSWORD_MIN_LENGTH}–{PASSWORD_MAX_LENGTH} characters): "
+    )
     confirmation = getpass.getpass("Confirm password: ")
     try:
         form = Register(
@@ -71,7 +75,7 @@ def main():
             legal_accepted=True,
         )
         create_admin(settings, form)
-        print("Administrator created. Verify email, sign in and enroll MFA before administration.")
+        print("Administrator created. Sign in and enroll MFA before administration.")
     except Exception:
         raise SystemExit(
             "Administrator creation failed. Check configuration, profile and password confirmation; no credentials were printed."

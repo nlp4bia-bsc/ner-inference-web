@@ -33,6 +33,7 @@ def auth_server(tmp_path, request):
         "APP_ENV": "test",
         "COOKIE_SECURE": "false",
         "MAIL_BACKEND": "file",
+        "REQUIRE_EMAIL_VERIFICATION": "true",
         "STORAGE_ROOT": str(root),
         "PUBLIC_BASE_URL": base,
         "APP_PREFIX": prefix,
@@ -321,6 +322,7 @@ def test_admin_mfa_recovery_display_and_account_management(auth_server):
         app_env="test",
         cookie_secure=False,
         mail_backend="memory",
+        require_email_verification=True,
         app_prefix="/ner" if base.endswith("/ner") else "",
         public_base_url=base,
     )

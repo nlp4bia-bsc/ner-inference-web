@@ -16,6 +16,7 @@ def settings(tmp_path):
         app_env="test",
         cookie_secure=False,
         mail_backend="memory",
+        require_email_verification=True,
     )
 
 

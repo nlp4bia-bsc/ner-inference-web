@@ -27,11 +27,18 @@ class Mailer:
         self.outbox = []
         self.crypt = cipher(db, "email-outbox-v1")
 
+    @property
+    def configured(self):
+        return not (
+            self.s.mail_backend == "none"
+            or (
+                self.s.mail_backend == "smtp"
+                and (not self.s.smtp_host or not self.s.smtp_from or not self.s.smtp_starttls)
+            )
+        )
+
     def require_configured(self):
-        if self.s.mail_backend == "none" or (
-            self.s.mail_backend == "smtp"
-            and (not self.s.smtp_host or not self.s.smtp_from or not self.s.smtp_starttls)
-        ):
+        if not self.configured:
             raise ServiceError("mail_unavailable", 503)
 
     def queue(self, recipient, subject, body, expires_at):

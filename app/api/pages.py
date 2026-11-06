@@ -13,7 +13,7 @@ def router(service, templates):
         from app.permissions.policies import document_limit, user
 
         account = user()
-        if not account["email_verified_at"]:
+        if service.settings.require_email_verification and not account["email_verified_at"]:
             raise ServiceError("verification_required", 403)
         return templates.TemplateResponse(
             request=request,

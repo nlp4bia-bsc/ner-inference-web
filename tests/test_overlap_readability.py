@@ -77,6 +77,7 @@ def overlap_server(tmp_path_factory, request):
         app_env="test",
         cookie_secure=False,
         mail_backend="memory",
+        require_email_verification=True,
         min_free_disk_mb=0,
     )
     _, job, _, _ = seed_viewer(settings, text=text, ranges=ranges)
@@ -88,6 +89,7 @@ def overlap_server(tmp_path_factory, request):
         "APP_ENV": "test",
         "COOKIE_SECURE": "false",
         "MAIL_BACKEND": "file",
+        "REQUIRE_EMAIL_VERIFICATION": "true",
         "AUTH_RATE_EMAIL_ATTEMPTS": "100",
         "AUTH_RATE_IP_ATTEMPTS": "300",
     }

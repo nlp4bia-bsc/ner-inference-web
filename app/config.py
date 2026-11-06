@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     auth_rate_ip_attempts: int = Field(60, ge=1)
     audit_retention_days: int = Field(365, ge=1)
     mail_backend: str = "none"
+    require_email_verification: bool = False
+    support_email: str = "fernando.gallego@bsc.es"
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_username: str = ""
@@ -82,6 +84,10 @@ class Settings(BaseSettings):
         ):
             raise ValueError("APP_PREFIX must be empty or an absolute path without trailing slash")
         from urllib.parse import urlsplit
+
+        from app.domain.identity import normalize_email
+
+        self.support_email = normalize_email(self.support_email)
 
         if self.app_env not in ("production", "development", "test"):
             raise ValueError("APP_ENV must be production, development or test")

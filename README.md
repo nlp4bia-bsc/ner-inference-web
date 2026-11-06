@@ -10,11 +10,18 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
-V4 adds email verification, Argon2id, server sessions/CSRF, personal dashboards,
+Accounts use a **four-character minimum password**. Registration checks that the
+normalized email is unique and lets the user sign in immediately, without sending
+or verifying an email. SMTP is optional for registration. Account help/error reports
+link to **fernando.gallego@bsc.es** through the user's mail client.
+
+V4 introduced optional email verification, Argon2id, server sessions/CSRF, personal dashboards,
 account-derived 100 / 1000 / UNLIMITED tiers and audited administration with TOTP.
 V5 adds the shared institutional interface, research workspace, responsive catalog/
 annotation viewer and complete EN/ES/CA controls. Scientific offsets and consolidation
 remain unchanged. Existing authentication/ownership checks remain mandatory.
+Since0.5.4, `REQUIRE_EMAIL_VERIFICATION=false` is the default; older verification
+instructions apply only when that legacy policy is explicitly enabled.
 See [authentication and operations](docs/AUTHENTICATION_V4.md),
 [security audit](docs/SECURITY_AUDIT_V4.md),
 [independent review](docs/SECURITY_REVIEW_V4.md) and

@@ -8,8 +8,8 @@ from pydantic import AfterValidator
 
 def normalize_email(value):
     try:
-        # Reserved .test addresses are valid for synthetic deployments; actual
-        # possession must still be proved by the one-use verification workflow.
+        # Reserved .test addresses are valid for synthetic deployments. Syntax
+        # validation does not claim mailbox ownership; verification is optional.
         return validate_email(
             value, check_deliverability=False, test_environment=True
         ).normalized.lower()

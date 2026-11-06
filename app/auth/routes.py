@@ -16,7 +16,15 @@ from app.domain.identity import EmailAddress
 from app.errors import ServiceError
 from app.permissions.policies import user
 from app.ui_i18n import translate as ui_translate
-from app.users.schemas import Login, PasswordChange, Profile, Register, SafeModel
+from app.users.schemas import (
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    Login,
+    PasswordChange,
+    Profile,
+    Register,
+    SafeModel,
+)
 
 
 class EmailInput(SafeModel):
@@ -30,8 +38,10 @@ class TokenInput(SafeModel):
 
 
 class ResetInput(TokenInput):
-    password: str = Field(min_length=15, max_length=1024)
-    password_confirmation: str = Field(min_length=15, max_length=1024)
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    password_confirmation: str = Field(
+        min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH
+    )
 
 
 class MfaStart(SafeModel):
@@ -97,6 +107,8 @@ def router(auth, templates, jobs):
                 "message": ui_translate(message, language) if message else None,
                 "message_key": message,
                 "token": request.query_params.get("token", ""),
+                "password_min_length": PASSWORD_MIN_LENGTH,
+                "password_max_length": PASSWORD_MAX_LENGTH,
                 **extra,
             },
             status_code=status,
@@ -194,7 +206,10 @@ def router(auth, templates, jobs):
             extra = {}
             if operation == "register":
                 await run_in_threadpool(auth.register, form, ip)
-                message = "email_sent"
+                if auth.s.require_email_verification:
+                    message = "email_sent"
+                else:
+                    message, target = "account_created", "/login"
             elif operation == "login":
                 response_token = await run_in_threadpool(auth.login, form, ip)
                 # Revoke an existing pre-login session to prevent session fixation.

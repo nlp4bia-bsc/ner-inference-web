@@ -52,9 +52,9 @@ ROWS = {
     ),
     "current_password": ("Current password", "Contraseña actual", "Contrasenya actual"),
     "password_hint": (
-        "Use 15–1024 characters. Spaces and password managers are supported.",
-        "Usa entre 15 y 1024 caracteres. Se admiten espacios y gestores de contraseñas.",
-        "Utilitza entre 15 i 1024 caràcters. S'admeten espais i gestors de contrasenyes.",
+        "Use 4–1024 characters. Spaces and password managers are supported.",
+        "Usa entre 4 y 1024 caracteres. Se admiten espacios y gestores de contraseñas.",
+        "Utilitza entre 4 i 1024 caràcters. S'admeten espais i gestors de contrasenyes.",
     ),
     "legal_accepted": (
         "I acknowledge the research use and privacy notices below.",
@@ -135,6 +135,16 @@ ROWS = {
         "Email delivery is unavailable. Contact the service administrator.",
         "El envío de correo no está disponible. Contacta con administración.",
         "L'enviament de correu no està disponible. Contacta amb administració.",
+    ),
+    "account_created": (
+        "Account created. You can sign in now; no email verification is required.",
+        "Cuenta creada. Ya puedes iniciar sesión; no se requiere verificación por correo.",
+        "Compte creat. Ja pots iniciar la sessió; no cal verificació per correu.",
+    ),
+    "email_registered": (
+        "This email is already registered. Sign in or contact the administrator.",
+        "Este correo ya está registrado. Inicia sesión o contacta con el administrador.",
+        "Aquest correu ja està registrat. Inicia la sessió o contacta amb l'administrador.",
     ),
     "email_sent": (
         "If this address is eligible, a message with the next steps has been sent.",

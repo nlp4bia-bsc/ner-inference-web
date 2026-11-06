@@ -1,5 +1,12 @@
 # Deployment on a single Linux host
 
+Registration defaults to `REQUIRE_EMAIL_VERIFICATION=false` since0.5.4 and works
+with `MAIL_BACKEND=none`; passwords have a four-character minimum. Accounts still
+need a unique normalized email. `SUPPORT_EMAIL=fernando.gallego@bsc.es` is the
+account/error contact, exposed as a mail-client link. SMTP is optional for
+password recovery or automatic mail integrations, not an admission requirement.
+Set `REQUIRE_EMAIL_VERIFICATION=true` only to explicitly enable the older policy.
+
 The web service and worker need shared private local storage (SQLite WAL/flock
 must not use NFS), Python 3.12, and trusted checkpoints. Configure PUBLIC_BASE_URL
 for the actual public HTTPS origin and APP_PREFIX=/ner for the intended route.
