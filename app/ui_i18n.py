@@ -272,7 +272,14 @@ No administrative changes recorded.|No hay cambios administrativos registrados.|
 All times are shown in your local timezone.|Las horas se muestran en tu zona horaria local.|Les hores es mostren a la zona horària local.
 Request recorded|Solicitud registrada|Sol·licitud registrada
 Your jobs are visible only to your account.|Tus trabajos solo son visibles para tu cuenta.|Els teus treballs només són visibles per al teu compte.
+Reading mode|Modo de lectura|Mode de lectura
+Inline highlights|Resaltados inline|Ressaltats inline
+Entity towers|Torres de entidades|Torres d’entitats
+Offsets use [start, end): end is exclusive.|Los offsets usan [inicio, fin): el final es exclusivo.|Els offsets usen [inici, final): el final és exclusiu.
 Research account|Cuenta de investigación|Compte de recerca
+Annotations: {count}|Anotaciones: {count}|Anotacions: {count}
+Overlapping annotations: {count}. Select a highlight to inspect them.|Anotaciones solapadas: {count}. Selecciona un resaltado para inspeccionarlas.|Anotacions superposades: {count}. Selecciona un ressaltat per inspeccionar-les.
+A double underline marks text with multiple annotations. Select a highlight to inspect their exact offsets.|Un subrayado doble indica texto con varias anotaciones. Selecciona un resaltado para inspeccionar sus offsets exactos.|Un subratllat doble indica text amb diverses anotacions. Selecciona un ressaltat per inspeccionar-ne els offsets exactes.
 Search|Buscar|Cerca
 Email / institution|Email / institución|Correu / institució
 Preferred language|Idioma preferido|Llengua preferida

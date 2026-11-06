@@ -1,0 +1,117 @@
+{
+  "scope": "Static CSS pairs; not a browser or WCAG conformance claim",
+  "pairs": [
+    {
+      "palette": "disease",
+      "border": "#b52d43",
+      "background": "#ffe8ed",
+      "text": "#192b48",
+      "border_on_background": 5.267,
+      "text_on_background": 12.17
+    },
+    {
+      "palette": "symptom",
+      "border": "#9b451c",
+      "background": "#ffedde",
+      "text": "#192b48",
+      "border_on_background": 5.647,
+      "text_on_background": 12.442
+    },
+    {
+      "palette": "medication",
+      "border": "#2554a4",
+      "background": "#e8efff",
+      "text": "#192b48",
+      "border_on_background": 6.321,
+      "text_on_background": 12.308
+    },
+    {
+      "palette": "procedure",
+      "border": "#16704e",
+      "background": "#def5e9",
+      "text": "#192b48",
+      "border_on_background": 5.299,
+      "text_on_background": 12.39
+    },
+    {
+      "palette": "anonymization",
+      "border": "#5b556e",
+      "background": "#f0edf6",
+      "text": "#192b48",
+      "border_on_background": 6.112,
+      "text_on_background": 12.259
+    },
+    {
+      "palette": "event",
+      "border": "#8c456f",
+      "background": "#fae8f3",
+      "text": "#192b48",
+      "border_on_background": 5.601,
+      "text_on_background": 12.092
+    },
+    {
+      "palette": "human",
+      "border": "#805326",
+      "background": "#faefde",
+      "text": "#192b48",
+      "border_on_background": 5.801,
+      "text_on_background": 12.473
+    },
+    {
+      "palette": "location",
+      "border": "#066b79",
+      "background": "#dff4f8",
+      "text": "#192b48",
+      "border_on_background": 5.443,
+      "text_on_background": 12.451
+    },
+    {
+      "palette": "negation",
+      "border": "#75429e",
+      "background": "#f1e7fb",
+      "text": "#192b48",
+      "border_on_background": 5.798,
+      "text_on_background": 11.864
+    },
+    {
+      "palette": "profession",
+      "border": "#5b6424",
+      "background": "#f1f4dc",
+      "text": "#192b48",
+      "border_on_background": 5.683,
+      "text_on_background": 12.641
+    },
+    {
+      "palette": "situation",
+      "border": "#7c4750",
+      "background": "#f8ecef",
+      "text": "#192b48",
+      "border_on_background": 6.345,
+      "text_on_background": 12.318
+    },
+    {
+      "palette": "species",
+      "border": "#32634e",
+      "background": "#e6f2e8",
+      "text": "#192b48",
+      "border_on_background": 6.016,
+      "text_on_background": 12.314
+    },
+    {
+      "palette": "temporality",
+      "border": "#735c14",
+      "background": "#fff4ce",
+      "text": "#192b48",
+      "border_on_background": 5.836,
+      "text_on_background": 12.89
+    },
+    {
+      "palette": "other",
+      "border": "#53647a",
+      "background": "#edf1f6",
+      "text": "#192b48",
+      "border_on_background": 5.333,
+      "text_on_background": 12.505
+    }
+  ]
+}

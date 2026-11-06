@@ -36,6 +36,50 @@ export function segments(text, start, annotations) {
   }
   return result;
 }
+/** Keep graphemes intact for display; original annotation offsets remain untouched. */
+export function readableSegments(
+  text,
+  start,
+  annotations,
+  originalParts = null,
+) {
+  const original = () => originalParts ?? segments(text, start, annotations);
+  if (typeof Intl.Segmenter !== "function") return original();
+  const boundaries = [start];
+  for (const part of new Intl.Segmenter(undefined, {
+    granularity: "grapheme",
+  }).segment(text))
+    boundaries.push(boundaries.at(-1) + Array.from(part.segment).length);
+  const stop = boundaries.at(-1),
+    exact = new Set(boundaries);
+  if (
+    annotations.every((a) => {
+      const left = Math.max(start, a.start),
+        right = Math.min(stop, a.end);
+      return !(left < right) || (exact.has(left) && exact.has(right));
+    })
+  )
+    return original();
+  function boundary(value, up) {
+    let lo = 0,
+      hi = boundaries.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (boundaries[mid] === value) return value;
+      if (boundaries[mid] < value) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    return boundaries[up ? lo : hi];
+  }
+  const visual = annotations.flatMap((a) => {
+    const left = Math.max(start, a.start),
+      right = Math.min(stop, a.end);
+    return left < right
+      ? [{ ...a, start: boundary(left, false), end: boundary(right, true) }]
+      : [];
+  });
+  return segments(text, start, visual);
+}
 export function lanes(annotations) {
   const ends = [],
     result = new Map();
@@ -49,8 +93,41 @@ export function lanes(annotations) {
   }
   return result;
 }
+export const ENTITY_COLORS = Object.freeze({
+  DISEASE: "disease",
+  SYMPTOM: "symptom",
+  MEDICATION: "medication",
+  PROCEDURE: "procedure",
+  ANONYMIZATION: "anonymization",
+  EVENT: "event",
+  HUMAN: "human",
+  LOCATION: "location",
+  NEGATION_UNCERTAINTY: "negation",
+  PROFESSION: "profession",
+  SITUATION: "situation",
+  SPECIES: "species",
+  TEMPORALITY: "temporality",
+});
+const ALIASES = {
+  ENFERMEDAD: "DISEASE",
+  ENFERMEDADES: "DISEASE",
+  MALALTIA: "DISEASE",
+  DISEASES: "DISEASE",
+  SINTOMA: "SYMPTOM",
+  SÍNTOMA: "SYMPTOM",
+  SÍMPTOMA: "SYMPTOM",
+  MEDICAMENTO: "MEDICATION",
+  FARMACO: "MEDICATION",
+  DRUG: "MEDICATION",
+  PROCEDIMIENTO: "PROCEDURE",
+  PROCEDIMENT: "PROCEDURE",
+  LOCALIZACION: "LOCATION",
+  LOCALIZACIÓN: "LOCATION",
+  UBICACION: "LOCATION",
+  PERSON: "HUMAN",
+  PERSONA: "HUMAN",
+};
 export function color(label) {
-  let hash = 0;
-  for (const point of label) hash = (hash * 31 + point.codePointAt(0)) >>> 0;
-  return "c" + (hash % 8);
+  const key = String(label).normalize("NFC").toUpperCase();
+  return "entity-" + (ENTITY_COLORS[ALIASES[key] || key] || "other");
 }

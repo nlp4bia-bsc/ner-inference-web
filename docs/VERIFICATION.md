@@ -1,4 +1,48 @@
-# Latest: V5 institutional interface (0.5.0)
+# Latest: V5.1 annotation reader (0.5.1)
+
+Final complete regression: **200 passed in 320.85s**, zero failures/skips. Includes
+real Chromium account/owner/admin/MFA flows, root/prefix routing, incremental
+publication, exports, original-coordinate validation, retention and native random
+tiny-BERT CPU inference. This is not clinical-model accuracy validation.
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/overlap-axe-release.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/overlap-review/release \
+work/locked-env/bin/python -m pytest -q
+```
+
+Twelve new browser cases cover inside-word, synthetic clinical multiword/nested,
+18 dense crossing/equal-boundary and Unicode/CRLF annotations at320/390/1440px.
+They check exact source selection/reconstruction, every code point's actual layout,
+all annotation IDs by keyboard, retained tower focus, one tag per entity, no
+tag/tag or tag/source collisions, exact bracket endpoints and catalog-wide colors.
+The earlier scratch word range was corrected to `[0,14)` for adenocarcinoma.
+
+[72 axe-core4.14.0 scans](security/v5.1-axe.jsonl) report zero automatic
+WCAG-tagged violations. Color contrast remains incomplete in44 scans; manual
+and assistive-technology review is still needed. All13 canonical palettes plus
+the neutral fallback have static text/border contrast above4.5:1, recorded in
+[entity-palette measurements](security/v5.1-entity-palette.json).
+
+Ruff lint/format (95 Python files), static JS/CSS Prettier, generated EN/ES/CA
+dictionary equality, original BSC SVG hash, Jinja compilation and git whitespace
+checks pass. Bandit app/scripts has zero unsuppressed medium/high findings.
+Wheel/sdist0.5.1 and no-NLP Docker build successfully; final wheel and running
+container assets match repository bytes. Root and `/ner` container smoke checks
+preserve private401/303 gates and minimal health; `/ner` completes real registration,
+captured email verification, login/dashboard and logout/revocation. Local web/worker
+run0.5.1. No BSC production deployment or clinical checkpoint validation is claimed.
+
+See [OVERLAP_REVIEW.md](OVERLAP_REVIEW.md) for findings, before/after captures,
+color mapping and remaining limits, and [OVERLAP_RENDERING.md](OVERLAP_RENDERING.md)
+for implementation contracts. No scientific consolidation/export rule, schema
+migration, authentication policy or72h retention change was introduced.
+Earlier SMTP, TLS/BSC, legal, Torch and clinical/GPU limitations remain unchanged.
+
+---
+
+# Historical: V5 institutional interface (0.5.0)
 
 Baseline 967e87d, with 40 phase-one security/migration/browser cases passed before
 redesign (46.03s). Final complete regression: **188 passed in 305.86s**, no

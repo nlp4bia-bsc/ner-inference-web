@@ -408,14 +408,20 @@ mobile. Documents are paged at 50, text at 5,000 code points and mention-list DO
 at 50. Browse expandable folder trees, search filenames, filter document states/types/mention surfaces, find
 text across the whole document and navigate documents, fragments and mentions.
 
-Every crossing/nested/equal-boundary annotation remains selectable. A highlighted
-atomic region shows its annotation count; selecting it reveals every covering
-entity. Details show exact offsets, model and actual confidence. Emoji/combining
-marks use code-point mapping, not naive JavaScript UTF-16 offsets. A synchronized annotation table and individual TXT/ANN downloads are available.
+Every crossing/nested/equal-boundary annotation remains selectable. Choose inline
+highlights or labeled **Entity towers** inspired by BRAT. The original text appears
+once in each view; overlaps never insert counters inside words. Towers show one tag
+per entity, with collision lanes and continuation brackets across wrapped lines.
+Selecting a region reveals every covering entity. Canonical category colors stay
+the same across document/UI languages. Details show complete surfaces, exact
+`[start, end)` offsets (end exclusive), model and actual confidence. Emoji/combining
+marks keep whole display graphemes while retaining untouched code-point offsets.
+A synchronized annotation table and individual TXT/ANN downloads are available.
 No HTML from a
 document is interpreted and no content is sent to third-party services.
 See [overlap rendering](docs/OVERLAP_RENDERING.md) and
-[viewer architecture](docs/VISUALIZATION_ARCHITECTURE.md).
+[viewer architecture](docs/VISUALIZATION_ARCHITECTURE.md) and
+[review with before/after captures](docs/OVERLAP_REVIEW.md).
 
 The archive retains original relative paths **including `.txt`** under
 brat/documents/, matching ANN files, annotation.conf with unrestricted overlap

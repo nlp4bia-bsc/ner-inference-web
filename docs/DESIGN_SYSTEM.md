@@ -67,11 +67,20 @@ framework migration or production component library was introduced.
 
 ## NER entities and layout
 
-Eight deterministic entity palettes pair a dark category border with a pale fill.
+Thirteen explicit canonical entity palettes pair a dark category border with a pale fill.
 Offsets, literal labels, mention IDs, model provenance and scores remain visible.
 Selected spans use an outline; other spans retain readable text contrast. Nested,
 equal-boundary and crossing mentions remain individually selectable. Color is not
-the only cue: labels, overlap counts, lists and tables expose the same annotations.
+the only cue: labels, an outside-text overlap summary, lists and tables expose the
+same annotations. Canonical colors are shared across languages/checkpoints; known
+aliases reuse that color and new categories use a neutral fallback. Disease is
+red/pink, medication blue and procedure green. The full mapping is in spans.js.
+
+The reader offers inline highlights and labeled SVG entity towers. Neither mode
+duplicates source text. Inline multiplicity uses a double underline, without word-
+breaking counters. Towers allocate separate lanes for colliding span/tag extents,
+show one label per mention, preserve whole display graphemes and expose untouched
+half-open source offsets. See [OVERLAP_RENDERING.md](OVERLAP_RENDERING.md).
 
 Desktop uses three panels: documents, original text and entity information. Side
 panels/tables scroll within deliberate bounds, avoiding a very tall empty reader.
@@ -129,3 +138,6 @@ and institutional usability review.
 The [15-pair palette check](security/v5-contrast-palette.json) records normal-text
 foreground/background ratios of at least4.5:1. It is bounded to design tokens, not
 a substitute for the incomplete browser/overlap assessments or human review.
+The [V5.1 entity palette check](security/v5.1-entity-palette.json) additionally
+records text and border contrast above 4.5:1 for all 13 canonical categories and
+the neutral fallback.

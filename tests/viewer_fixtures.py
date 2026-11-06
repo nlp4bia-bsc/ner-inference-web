@@ -7,7 +7,7 @@ from app.visualization.repository import write_index
 TEXT = "😀 Severe chronic kidney disease\r\nA B C D E F\t漢字 e\u0301.\n<script>alert(1)</script>"
 
 
-def seed_viewer(settings):
+def seed_viewer(settings, text=TEXT, ranges=None):
     from app.main import create_app
 
     app = create_app(settings)
@@ -25,29 +25,30 @@ def seed_viewer(settings):
     with acting_as(app):
         accepted = service.submit(
             form,
-            [("nested/sample.txt", TEXT.encode()), ("empty-predictions.txt", b"No mentions here.")],
+            [("nested/sample.txt", text.encode()), ("empty-predictions.txt", b"No mentions here.")],
             "fixture-ip",
         )
     job = service.db.claim()
-    docs = {"nested/sample.txt": TEXT.encode(), "empty-predictions.txt": b"No mentions here."}
-    start = TEXT.index("Severe")
-    cross = TEXT.index("A B C")
-    ranges = [
-        ("SEVERITY", start, TEXT.index("\r")),
-        ("DISEASE", TEXT.index("chronic"), TEXT.index("\r")),
-        ("FINDING", TEXT.index("chronic"), TEXT.index("\r")),
-        ("CROSS_A", cross, cross + 5),
-        ("CROSS_B", cross + 4, cross + 9),
-        ("EMOJI", 0, 1),
-        ("THIRD", TEXT.index("kidney"), TEXT.index("\r")),
-    ]
+    docs = {"nested/sample.txt": text.encode(), "empty-predictions.txt": b"No mentions here."}
+    if ranges is None:
+        start = text.index("Severe")
+        cross = text.index("A B C")
+        ranges = [
+            ("SEVERITY", start, text.index("\r")),
+            ("DISEASE", text.index("chronic"), text.index("\r")),
+            ("FINDING", text.index("chronic"), text.index("\r")),
+            ("CROSS_A", cross, cross + 5),
+            ("CROSS_B", cross + 4, cross + 9),
+            ("EMOJI", 0, 1),
+            ("THIRD", text.index("kidney"), text.index("\r")),
+        ]
     spans = [
         {
             "filename": "nested/sample.txt",
             "label": label,
             "start_span": a,
             "end_span": b,
-            "text": TEXT[a:b],
+            "text": text[a:b],
             "score": 0.85,
             "model_id": "synthetic-test-only",
         }
@@ -61,7 +62,7 @@ def seed_viewer(settings):
             "words": None,
             "tokens": None,
             "sentences": None,
-            "entities_total": 7 if name.startswith("nested") else 0,
+            "entities_total": len(ranges) if name.startswith("nested") else 0,
             "processing_status": "COMPLETED",
         }
         for name, raw in docs.items()
@@ -69,8 +70,8 @@ def seed_viewer(settings):
     stats = {
         "operational": {
             "documents": 2,
-            "annotations": 7,
-            "characters": len(TEXT) + 17,
+            "annotations": len(ranges),
+            "characters": len(text) + 17,
             "words": None,
             "tokens": None,
             "sentences": None,

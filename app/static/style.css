@@ -450,6 +450,8 @@ fieldset {
 .document-list summary {
   font-size: 12px;
   margin: 8px 0;
+  min-height: 32px;
+  padding-block: 6px;
 }
 .document-item {
   display: block;
@@ -598,15 +600,10 @@ fieldset {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
-.annotated[data-count]:not([data-count=""]):after {
-  content: attr(data-count);
-  font: 700 10px system-ui;
-  vertical-align: super;
-  background: #263a61;
-  color: #fff;
-  border-radius: 3px;
-  padding: 1px 3px;
-  margin-inline-start: 2px;
+.annotated[data-count]:not([data-count=""]) {
+  /* Counts live outside the source text: never insert glyphs inside a word. */
+  border-bottom-style: double;
+  border-bottom-width: 3px;
 }
 .annotated.selected {
   outline: 2px solid #233858;
@@ -1171,4 +1168,110 @@ fieldset {
   height: 56px;
   background: #edf1f7;
   border-radius: 8px;
+}
+.reader-modes {
+  display: flex;
+  gap: 10px;
+  padding: 12px 24px;
+  flex-wrap: wrap;
+}
+.reader-modes [aria-pressed="true"] {
+  background: var(--accent);
+  color: white;
+}
+.tower-view {
+  padding: 12px;
+  max-height: 75vh;
+  overflow: auto;
+  background: white;
+}
+.tower-source {
+  font:
+    15px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  fill: var(--ink);
+  white-space: pre;
+}
+.tower-caption {
+  font:
+    12px ui-monospace,
+    monospace;
+  fill: var(--ink);
+}
+.tower-bracket {
+  stroke: var(--entity-color);
+  stroke-width: 1.5;
+}
+.tower-bracket.selected {
+  stroke-width: 2.5;
+}
+.tower-tag {
+  fill: var(--entity-bg);
+  stroke: var(--entity-color);
+}
+.tower-annotation {
+  cursor: pointer;
+}
+.tower-annotation:focus .tower-tag,
+.tower-annotation.selected .tower-tag {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.entity-disease {
+  --entity-color: #b52d43;
+  --entity-bg: #ffe8ed;
+}
+.entity-symptom {
+  --entity-color: #9b451c;
+  --entity-bg: #ffedde;
+}
+.entity-medication {
+  --entity-color: #2554a4;
+  --entity-bg: #e8efff;
+}
+.entity-procedure {
+  --entity-color: #16704e;
+  --entity-bg: #def5e9;
+}
+.entity-anonymization {
+  --entity-color: #5b556e;
+  --entity-bg: #f0edf6;
+}
+.entity-event {
+  --entity-color: #8c456f;
+  --entity-bg: #fae8f3;
+}
+.entity-human {
+  --entity-color: #805326;
+  --entity-bg: #faefde;
+}
+.entity-location {
+  --entity-color: #066b79;
+  --entity-bg: #dff4f8;
+}
+.entity-negation {
+  --entity-color: #75429e;
+  --entity-bg: #f1e7fb;
+}
+.entity-profession {
+  --entity-color: #5b6424;
+  --entity-bg: #f1f4dc;
+}
+.entity-situation {
+  --entity-color: #7c4750;
+  --entity-bg: #f8ecef;
+}
+.entity-species {
+  --entity-color: #32634e;
+  --entity-bg: #e6f2e8;
+}
+.entity-temporality {
+  --entity-color: #735c14;
+  --entity-bg: #fff4ce;
+}
+.entity-other {
+  --entity-color: #53647a;
+  --entity-bg: #edf1f6;
 }

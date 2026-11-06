@@ -1,6 +1,7 @@
+import { drawTowers } from "./towers.js";
 import { startProgress, showDialog } from "./progress.js";
 import { t, date, number, onLocaleChange, localized } from "./auth.js";
-import { segments, lanes, color } from "./spans.js";
+import { segments, readableSegments, lanes, color } from "./spans.js";
 const base = document.querySelector("meta[name=app-prefix]").content;
 const token = location.pathname.split("/").at(-2),
   endpoint = base + "/api/jobs/" + encodeURIComponent(token);
@@ -70,8 +71,11 @@ function expire() {
     "document-stats",
     "filename",
     "job-distribution",
+    "overlap-summary",
+    "tower-view",
   ])
     $(id).replaceChildren();
+  $("overlap-summary").hidden = true;
   $("viewer-status").textContent = t(
     "Your results have expired. Documents are no longer available.",
   );
@@ -269,7 +273,19 @@ function render() {
   const rows = visible(),
     byId = new Map(rows.map((a) => [a.id, a])),
     fragment = document.createDocumentFragment();
-  for (const part of segments(chunk.text, chunk.start, rows)) {
+  const parts = segments(chunk.text, chunk.start, rows);
+  const overlapping = new Set(
+    parts.filter((part) => part.ids.length > 1).flatMap((part) => part.ids),
+  );
+  const overlapSummary = $("overlap-summary");
+  overlapSummary.hidden = overlapping.size === 0;
+  overlapSummary.textContent = overlapping.size
+    ? t(
+        "Overlapping annotations: {count}. Select a highlight to inspect them.",
+        { count: number(overlapping.size) },
+      )
+    : "";
+  for (const part of readableSegments(chunk.text, chunk.start, rows, parts)) {
     if (!part.ids.length) {
       fragment.append(document.createTextNode(part.text));
       continue;
@@ -279,6 +295,12 @@ function render() {
     span.dataset.ids = part.ids.join(" ");
     span.dataset.start = part.start;
     span.dataset.count = part.ids.length > 1 ? part.ids.length : "";
+    span.title = part.ids
+      .map((id) => {
+        const row = byId.get(id);
+        return `${row.label}: ${row.text} [${row.start}, ${row.end})`;
+      })
+      .join("\n");
     span.tabIndex = 0;
     span.setAttribute("role", "button");
     span.setAttribute(
@@ -318,6 +340,7 @@ function render() {
   }
   $("annotated-text").replaceChildren(fragment);
   renderList(rows);
+  paintTowers();
   highlight();
 }
 function renderList(rows) {
@@ -354,6 +377,7 @@ function select(id, scroll = false) {
   const a = annotations.find((x) => x.id === id);
   if (!a) return;
   selected = id;
+  paintTowers();
   $("entity-sheet-trigger").hidden = !matchMedia("(max-width:760px)").matches;
   const selectedIndex = visible().findIndex((x) => x.id === id);
   if (selectedIndex >= 0) mentionOffset = Math.floor(selectedIndex / 50) * 50;
@@ -400,9 +424,13 @@ function select(id, scroll = false) {
   highlight();
   renderList(visible());
   if (scroll) {
-    const node = [...$("annotated-text").querySelectorAll("[data-ids]")].find(
-      (x) => x.dataset.ids.split(" ").includes(id),
-    );
+    const node = !$("tower-view").hidden
+      ? [...$("tower-view").querySelectorAll(".tower-annotation")].find(
+          (x) => x.dataset.annotation === id,
+        )
+      : [...$("annotated-text").querySelectorAll("[data-ids]")].find((x) =>
+          x.dataset.ids.split(" ").includes(id),
+        );
     node?.scrollIntoView({ block: "center" });
   }
 }
@@ -846,3 +874,44 @@ onLocaleChange(() => {
     if (selected) select(selected);
   }
 });
+
+function paintTowers() {
+  const host = document.getElementById("tower-view");
+  if (host && chunk && !expired && !host.hidden) {
+    const focused = host.contains(document.activeElement)
+      ? document.activeElement.dataset.annotation
+      : null;
+    drawTowers(
+      host,
+      chunk.text,
+      chunk.start,
+      visible(),
+      (id) => select(id),
+      selected,
+    );
+    if (focused)
+      [...host.querySelectorAll(".tower-annotation")]
+        .find((node) => node.dataset.annotation === focused)
+        ?.focus({ preventScroll: true });
+  }
+}
+for (const button of document.querySelectorAll("[data-reader-mode]"))
+  button.onclick = () => {
+    const tower = button.dataset.readerMode === "towers";
+    document.getElementById("tower-view").hidden = !tower;
+    document.getElementById("annotated-text").hidden = tower;
+    for (const control of document.querySelectorAll("[data-reader-mode]"))
+      control.setAttribute("aria-pressed", String(control === button));
+    paintTowers();
+  };
+let resizeFrame;
+const readerObserver = new ResizeObserver(() => {
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(paintTowers);
+});
+readerObserver.observe(document.querySelector(".reading-panel"));
+window.addEventListener("pagehide", () => {
+  readerObserver.disconnect();
+  cancelAnimationFrame(resizeFrame);
+});
+onLocaleChange(paintTowers);

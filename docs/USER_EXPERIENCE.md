@@ -84,6 +84,14 @@ refresh. Expired results clear, downloads are removed and backend expiry checks
 remain authoritative. Session revocation/change of account also clears the old
 view and shows a translated sign-in notice; copied/downloaded data cannot be recalled.
 
+The annotation reader also offers **Inline highlights** and **Entity towers**.
+Inline overlaps use a double underline without counters inside words. Towers
+show one category/ID tag per entity and separate colliding mentions into lanes,
+including multiword and wrapped mentions. Selecting a tag opens its full surface,
+original `[start, end)` range and provenance. The end is exclusive. Canonical
+colors remain the same across languages; changing the reading mode changes only
+presentation. Both views preserve the original text and scientific records.
+
 ## Profile, sessions and administration
 
 Profile displays identity, verification, institution/profession, saved language,

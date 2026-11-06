@@ -20,17 +20,43 @@ Combining characters, emoji, non-Latin text, CRLF and tabs are not normalized.
 CSS pre-wrap preserves whitespace; the scientific source remains unchanged.
 
 Example: A=[0,5), B=[4,9) yields [0,4):A, [4,5):A+B, [5,9):B.
-Two additional annotations on [4,9) remain individually selectable; the region
-shows a multiplicity indicator rather than hiding one label behind another.
+Two additional annotations on [4,9) remain individually selectable. A double
+underline marks multiplicity; a summary outside the source counts overlapping
+annotations. No generated counter is inserted into a word.
 
 A greedy interval allocator assigns stable display lanes to intersecting spans.
-Lane numbers appear in the alternative mention list. The text uses a soft
-highlight with underline and a multiple-annotation count, keeping wrapping and
-mobile line height readable instead of stacking an arbitrary number of labels.
+Lane numbers appear in the alternative mention list. The inline text uses a soft
+highlight and underline. Native tooltips include all covering categories, complete
+surfaces and exact half-open ranges. Display segments keep whole graphemes when a
+model boundary splits a combining sequence; this does not change stored offsets,
+surfaces, selection details or exports. The original sweep remains authoritative
+for actual overlap counts, so visual grapheme expansion invents no scientific overlap.
 Selecting a region opens a button for every covering annotation; selecting one
 highlights all its fragments and shows its own label, complete surface, offsets,
 model and actual confidence. This works with pointer, touch, Enter or Space.
 The mention list provides direct selection without relying on color or hover.
+
+The alternate **Entity towers** mode uses a local SVG renderer in `towers.js`.
+Source lines wrap at grapheme boundaries, preferring whitespace, and concatenate
+to the exact fragment, including CRLF. Each annotation has one labeled, keyboard
+selectable chip, even across words/lines. Continuation brackets retain its ID and
+exact original offsets. Full surfaces/ranges/provenance are available in accessible
+names, tooltips and the inspector. A greedy allocator reserves the union of each
+span's bracket and tag width; intersecting intervals get separate 32px lanes.
+Connectors paint behind tags, and labels leave a clear gap above the source.
+SVG prefix geometry converts code points explicitly; split graphemes get whole
+visual glyphs while retaining their original ranges. Selection survives redraws;
+resize, filters, chunk changes and locale switches redraw the same records.
+
+Both modes use an explicit palette for every current canonical category, independent
+of document/UI language and checkpoint. This is the application's consistent
+convention, not a universal biomedical NER color standard. Familiar aliases map to
+the canonical color; unrecognized categories use a neutral fallback. Existing
+scientific consolidation remains the sole duplicate-vote rule.
+
+This is a BRAT-inspired read-only span viewer; it does not embed the BRAT editor
+or infer relation arcs. BRAT TXT/ANN exports remain available. See the concrete
+[overlap review and captures](OVERLAP_REVIEW.md).
 
 Entity-type toggles and surface search only filter the current drawing/list.
 Previous/next annotation navigates that filtered list. Text search uses a private whole-document endpoint and jumps to a fragment

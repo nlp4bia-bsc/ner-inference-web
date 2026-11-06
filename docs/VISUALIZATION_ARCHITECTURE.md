@@ -29,8 +29,8 @@ flowchart LR
     W[Sequential worker] --> C[Validated original-coordinate spans]
     C --> E[BRAT / TSV package]
     C --> I[Private viewer index]
-    I --> A[Token-protected paginated API]
-    A --> V[Native DOM explorer]
+    I --> A[Owner-protected paginated API]
+    A --> V[Native DOM and SVG explorer]
     R[Retention sweep] --> I
     R --> E
 ```
@@ -51,7 +51,8 @@ and wraps after the last match; the client loads its containing fragment.
 The client pages through annotation responses for only the visible fragment;
 mention-list DOM is paged at 50. Details and filters do not alter stored data.
 
-Every API access validates token, completion and expiry before opening data.
+Every API access validates the authenticated owner, document availability and
+expiry before opening data. Historical capability links grant no access alone.
 No browser persistent storage, remote requests, inline document HTML or public
 cache is used. The open viewer clears private DOM content at its deadline and
 refuses late responses after expiry. Document-change generations discard stale
@@ -80,3 +81,13 @@ annotated documents only. Exact server-clock expiry clears private content,
 including table rows and individual links. TXT/ANN downloads are individually
 available; batch downloads wait for explicit final/partial packaging. The previous
 v2 final-index/backfill path remains for valid old jobs.
+
+## V5.1 overlap reader
+
+`spans.js` owns exact sweep segments, grapheme-preserving display segments and the
+shared canonical color map. `viewer.js` draws the inline DOM and selection/details.
+`towers.js` wraps the same original fragment, allocates collision lanes and draws
+one SVG tag per annotation with continuation brackets. All three modules are local
+and use safe text nodes, never document HTML. They consume the existing private
+annotation APIs and introduce no schema, inference or export changes. Expiry and
+account revocation clear both source views. Details: [OVERLAP_RENDERING.md](OVERLAP_RENDERING.md).

@@ -81,6 +81,7 @@
             <a id="individual-txt">{{ copy("Download TXT") }}</a>{{ copy("·") }}<a id="individual-ann">{{ copy("Download ANN") }}</a>
           </div>
           <p id="chunk-info" class="hint"></p>
+          <p class="hint">{{ copy("Offsets use [start, end): end is exclusive.") }}</p>
         </div>
         <div class="reader-toolbar">
           <label for="text-search">{{ copy("Find text in this document") }}</label>
@@ -97,7 +98,10 @@
           </div>
         </div>
         <div class="model-filter-control"><label for="model-filter">{{ copy('Filter by model') }}</label><select id="model-filter"><option value="">{{ u('All models') }}</option></select></div><div class="legend" id="legend" role="group" aria-label="{{ u('Entity type filters') }}" data-i18n-aria-label="Entity type filters"></div>
-        <p class="hint reader-hint">{{ copy("Select highlighted text to inspect every annotation covering that region. Overlap counts indicate multiple mentions.") }}</p>
+        <p class="hint reader-hint">{{ copy("A double underline marks text with multiple annotations. Select a highlight to inspect their exact offsets.") }}</p>
+        <p id="overlap-summary" class="hint reader-hint" aria-live="polite" hidden></p>
+        <div class="reader-modes" role="group" aria-label="{{ u('Reading mode') }}" data-i18n-aria-label="Reading mode"><button type="button" class="secondary" data-reader-mode="inline" aria-pressed="true">{{ copy('Inline highlights') }}</button><button type="button" class="secondary" data-reader-mode="towers" aria-pressed="false">{{ copy('Entity towers') }}</button></div>
+        <div id="tower-view" class="tower-view" role="group" aria-label="{{ u('Original annotated document') }}" data-i18n-aria-label="Original annotated document" hidden></div>
         <div
           id="annotated-text" role="group"
           class="annotated-text"
