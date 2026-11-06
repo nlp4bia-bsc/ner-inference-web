@@ -15,6 +15,75 @@ Set PUBLIC_BASE_URL=https://temu.bsc.es/ner and preserve /ner in upstream reques
 prefix-aware. See README's complete /ner/ Nginx example. Prefix behavior is tested
 locally; BSC TLS/domain deployment has not been performed.
 
+## Native Python and remote port forwarding
+
+Run these steps on the machine hosting Uvicorn and the worker, from the checkout
+root and the same Python environment. Updating a different checkout or recreating
+containers elsewhere does not update this process. Stop both old processes before
+starting replacements. Use `python -m uvicorn` so the web server uses the active
+Python environment rather than a different `uvicorn` executable on PATH.
+
+`PUBLIC_BASE_URL` describes the address visible in the **browser**. If a remote
+port is forwarded to `http://127.0.0.1:8000` on the browser's machine, use that
+origin; the remote hostname is not the browser origin. A different forwarded
+port, hostname or HTTPS scheme requires its own matching setting. Keep the
+remote Uvicorn bound to loopback for a tunnel. This HTTP/local-cookie setup is
+for loopback/tunneled development; public deployment retains HTTPS/Secure cookies.
+
+Pydantic's precedence is explicit constructor values, **process environment**,
+the `.env` in the working directory, then defaults. `git pull` does not update a
+private `.env`, and copying `.env.example` cannot override an old shell export,
+Conda activation variable or service-manager environment. A log still showing
+`configured_origin=https://localhost:8000` means the running process has not
+adopted the expected `http://127.0.0.1:8000` value. Check it in **each terminal**:
+
+```sh
+python -m scripts.check_config --expect-origin http://127.0.0.1:8000
+```
+
+The report shows each safe effective setting's source (`environment`, `.env` or
+`default`), the absolute configuration/application/interpreter paths, and installed
+inference modules without importing models or making network requests. It excludes
+SMTP passwords, Hub tokens, cookies and patient data. Origin mismatch exits 1.
+`REQUIRE_EMAIL_VERIFICATION` should be false; its default is false. Correct any old
+variables in shell startup/Conda/service configuration for a permanent fix.
+
+To override stale values explicitly for the local forwarded origin, execute the
+following in **both terminals** before launching their respective process:
+
+```sh
+export APP_ENV=development COOKIE_SECURE=false
+export PUBLIC_BASE_URL=http://127.0.0.1:8000
+export REQUIRE_EMAIL_VERIFICATION=false MAIL_BACKEND=none
+export MODEL_LOADING_MODE=on_demand HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0
+python -m scripts.check_config --expect-origin http://127.0.0.1:8000
+```
+
+In terminal 1:
+
+```sh
+python -m uvicorn app.asgi:app --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
+```
+
+In terminal 2:
+
+```sh
+python -m app.worker
+```
+
+Open the matching browser address, sign in again after a cookie-policy change,
+and submit. There is no database migration or account re-verification for this
+fix. Do not erase the storage directory; startup initializes schema idempotently.
+The workspace banner is hidden when verification is disabled, including for
+accounts with no `email_verified_at` value.
+
+`requirements.lock` installs HTTP dependencies only. If the diagnostic reports
+missing inference modules, install the actual worker profile in that same Python
+environment: `python -m pip install -r requirements-cpu.lock` for CPU, or the
+deployment's CUDA-compatible `requirements-nlp.lock` profile for GPU. This installs
+libraries, not model weights; weights are downloaded/cached on first use. Test
+execution and manual database initialization are not required for every update.
+
 ## Containers
 
 For local browser use, copy `.env.example` to `.env` before starting Compose and

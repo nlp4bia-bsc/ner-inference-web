@@ -156,21 +156,33 @@ cd ner-inference-web
 git checkout work
 python -m venv .venv
 . .venv/bin/activate
-pip install -r requirements.lock
-pip install -e '.[test]'
+# CPU inference libraries, including HTTP dependencies; no model weights:
+python -m pip install -r requirements-cpu.lock
+python -m pip install -e '.[test]'
 cp .env.example .env
-# Creates the database/tables and private rate-limit key idempotently:
-python -c 'from app.config import Settings; from app.db import Database; Database(Settings())'
-python -m pytest -q
-uvicorn app.asgi:app --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
+python -m scripts.check_config --expect-origin http://127.0.0.1:8000
+python -m uvicorn app.asgi:app --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
 ```
 
 In another terminal with the same working directory/environment:
 
 ```sh
 . .venv/bin/activate
+python -m scripts.check_config --expect-origin http://127.0.0.1:8000
 python -m app.worker
 ```
+
+Startup creates the database/tables and private key idempotently. Running pytest
+is an optional development check, not a startup/migration step. On later updates,
+keep your private `.env`, review changed examples and restart both processes.
+
+Exported shell variables override `.env`; copying the file cannot replace an old
+export. The diagnostic above prints the effective safe settings, their sources,
+the file/application/interpreter paths and whether inference libraries are
+installed. It never prints credentials. `origin_matches` must be true, and
+`REQUIRE_EMAIL_VERIFICATION` must be false for the default no-verification policy.
+See [remote native startup and stale exports](docs/DEPLOYMENT.md#native-python-and-remote-port-forwarding)
+for exact recovery commands on the machine that actually runs the services.
 
 Open http://127.0.0.1:8000 after copying the local-development .env example.
 Keep `PUBLIC_BASE_URL` identical to the browser origin, including scheme and port:
@@ -183,13 +195,8 @@ the selected configured checkpoints on first use and caches them persistently.
 /health and /ready expose only minimal status. Production requires HTTPS/Secure
 cookies. SMTP is optional unless email verification or password recovery is
 enabled; local capture mail is rejected in production.
-For actual CPU inference install the revision-pinned CPU dependency set:
-
-```sh
-pip install -r requirements-cpu.lock
-```
-
-requirements.lock pins HTTP dependencies; requirements-cpu.lock pins the CPU NER
+The CPU setup above installs the revision-pinned inference libraries.
+requirements.lock alone pins HTTP dependencies; requirements-cpu.lock pins the CPU NER
 profile and requirements-nlp.lock the CUDA NER profile, both with the exact upstream
 revision archive. Upstream also includes training/search
 packages, making this image large. Local installation/test commands were exercised;
@@ -199,12 +206,12 @@ no clinical production checkpoint is part of this checkout.
 
 V4 delivery: [implementation, acceptance results and remaining limits](docs/DELIVERY_V4.md).
 
-The .env example is **local development only**: loopback HTTP, insecure local
-cookies and private file-captured mail. For production set APP_ENV=production,
-COOKIE_SECURE=true, PUBLIC_BASE_URL=https://temu.bsc.es/ner, APP_PREFIX=/ner,
-MAIL_BACKEND=smtp and your authorized SMTP_HOST/PORT/USERNAME/PASSWORD/FROM.
-STARTTLS and certificate verification are mandatory. Keep .env/credentials private
-and untracked. Missing mail returns503; it never bypasses email verification.
+The .env example is **local development only**: loopback HTTP, local cookies and
+`MAIL_BACKEND=none`. For production set APP_ENV=production, COOKIE_SECURE=true,
+PUBLIC_BASE_URL=https://temu.bsc.es/ner and APP_PREFIX=/ner. Verification stays off
+unless explicitly enabled. SMTP is optional for recovery or email integrations;
+when used, configure authorized SMTP_HOST/PORT/USERNAME/PASSWORD/FROM with STARTTLS
+and certificate verification. Keep .env/credentials private and untracked.
 
 ```sh
 python -m scripts.create_admin

@@ -1,4 +1,59 @@
-# Latest: local ZIP submission and origin diagnosis (0.6.1)
+# Latest: native configuration diagnostics and workspace verification policy (0.6.2)
+
+The user's actual deployment runs native Uvicorn and a Python worker on another
+machine, reached through a forwarded port. Earlier local-container recreation did
+not change that remote process. Its log still reports `https://localhost:8000`;
+changing a private `.env` cannot override a stale process environment variable.
+Settings precedence is preserved, and origin/CSRF checks remain mandatory.
+
+`python -m scripts.check_config --expect-origin http://127.0.0.1:8000` reports the
+active interpreter, checkout/config paths, safe effective settings and their
+sources, plus inference-module availability without importing model weights or
+making network requests. Real CLI subprocess checks reproduce a stale shell value
+overriding a correct `.env` (exit 1) and explicit corrected values (exit 0).
+Tests assert SMTP/Hub credentials never appear in the report. Native/forwarded-port
+instructions distinguish browser origin, per-terminal configuration, library
+installation, web startup and worker startup. HTTP-only requirements are not
+presented as sufficient for inference. Existing private settings/data need no reset.
+
+The workspace had a separate rendering bug: its verification notice depended
+only on `email_verified_at`, even when verification was disabled. Dashboard and
+My jobs now also honor `REQUIRE_EMAIL_VERIFICATION`. No verified timestamp is
+fabricated; registration/session/authorization policy is unchanged. Acceptance
+checks cover both policies, root and `/ner`, and English/Spanish/Catalan. Existing
+real Chromium default-registration cases now also assert the notice/link is absent.
+
+The focused configuration/registration/ZIP set passes **21 cases in 23.73s**.
+The strengthened production-registration cases reproduce the old notice before
+the fix. A legacy production-settings test also depended on the absence of a
+local `.env`; it now explicitly constructs production settings so local development
+configuration does not invalidate its safety checks. The corrected isolation set
+passes **7 cases in 1.50s**.
+
+Final full regression with the local `.env` present: **230 passed in 367.60s**,
+zero failures/skips, using:
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/runtime-config-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/runtime-config-release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 axe scans](security/v6.2-axe.jsonl) have zero automatic violations. Color
+contrast remains incomplete in 44 scans, so these do not certify WCAG conformance.
+Ruff lint/format (102 Python files), Bandit medium/high checks and wheel/sdist
+0.6.2 builds pass. Packaged dashboard/API source matches the checkout. The initial
+full run was interrupted after identifying the local `.env` isolation issue;
+the final complete run above includes that corrected production validation.
+
+This release is tested in the selected environment. The user's remote machine
+must pull the commit, apply its own effective settings and restart both processes;
+no remote deployment or clinical-model execution on that machine is claimed.
+
+---
+
+# Historical: local ZIP submission and origin diagnosis (0.6.1)
 
 The running service was configured for `https://localhost:8000` while the user
 opened `http://127.0.0.1:8000/annotate?lang=en`. Its real XHR Origin therefore failed

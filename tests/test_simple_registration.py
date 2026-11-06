@@ -71,6 +71,10 @@ def test_production_registration_without_mail_and_duplicate_email(tmp_path, pref
         csrf = client.get(prefix + "/api/auth/session").json()["csrf_token"]
         assert client.get(prefix + "/annotate").status_code == 200
         assert client.get(prefix + "/api/profile").json()["email_verified_at"] is None
+        for path in ["/", "/my-jobs"]:
+            dashboard = client.get(prefix + path)
+            assert dashboard.status_code == 200
+            assert "/resend-verification" not in dashboard.text
         assert client.get(prefix + "/api/admin/users").status_code == 403
         admitted = client.post(
             prefix + "/api/jobs",
@@ -265,6 +269,7 @@ def test_four_character_signup_login_without_verification(simple_server, width):
         page.locator("#password").fill("abcd")
         page.locator('button[type="submit"]').click()
         page.wait_for_url(base + "/?lang=es")
+        assert page.locator('a[href*="resend-verification"]').count() == 0
         page.goto(base + "/annotate")
         page.wait_for_selector("#files")
         page.goto(base + "/profile")

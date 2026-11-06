@@ -433,12 +433,20 @@ def test_auth_throttle_i18n_and_safe_configuration(settings):
                 response = client.get("/" + path + "?lang=" + language)
                 assert response.status_code == 200 and f'lang="{language}"' in response.text
         assert all(len(row) == 3 and all(row) for row in ROWS.values())
-    with pytest.raises(ValueError):
-        type(settings)(cookie_secure=False)
-    with pytest.raises(ValueError):
-        type(settings)(mail_backend="memory")
-    with pytest.raises(ValueError):
-        type(settings)(public_base_url="http://example.org")
+    production = {
+        "_env_file": None,
+        "app_env": "production",
+        "cookie_secure": True,
+        "mail_backend": "none",
+        "public_base_url": "https://testserver",
+    }
+    for invalid in [
+        {"cookie_secure": False},
+        {"mail_backend": "memory"},
+        {"public_base_url": "http://example.org"},
+    ]:
+        with pytest.raises(ValueError):
+            type(settings)(**{**production, **invalid})
     app = create_app(settings.model_copy(update={"mail_backend": "none"}))
     with TestClient(app) as client:
         assert public_post(client, "/api/auth/register", register_values()).status_code == 503
