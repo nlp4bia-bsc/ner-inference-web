@@ -898,6 +898,8 @@ function paintTowers() {
 for (const button of document.querySelectorAll("[data-reader-mode]"))
   button.onclick = () => {
     const tower = button.dataset.readerMode === "towers";
+    $("inline-hint").hidden = tower;
+    $("tower-hint").hidden = !tower;
     document.getElementById("tower-view").hidden = !tower;
     document.getElementById("annotated-text").hidden = tower;
     for (const control of document.querySelectorAll("[data-reader-mode]"))

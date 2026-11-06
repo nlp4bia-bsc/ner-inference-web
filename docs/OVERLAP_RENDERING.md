@@ -41,9 +41,17 @@ Source lines wrap at grapheme boundaries, preferring whitespace, and concatenate
 to the exact fragment, including CRLF. Each annotation has one labeled, keyboard
 selectable chip, even across words/lines. Continuation brackets retain its ID and
 exact original offsets. Full surfaces/ranges/provenance are available in accessible
-names, tooltips and the inspector. A greedy allocator reserves the union of each
-span's bracket and tag width; intersecting intervals get separate 32px lanes.
-Connectors paint behind tags, and labels leave a clear gap above the source.
+names, tooltips and the inspector. Each source line owns an independent tower
+block. Spans are placed in ascending original range length: shorter intersecting
+mentions remain nearest the source and larger mentions stack above them. The
+allocator reserves both the range and its centered label, using 40px lanes.
+Labels are centered on `(visibleStartX + visibleEndX) / 2`, including spans near
+line edges. Short range caps stay within their own lane; no vertical connector
+passes through another label or through the text. Line blocks have separate
+vertical space, so towers never enter the preceding source line.
+Captions remain at 12px without SVG scaling or text compression. When a centered
+edge label extends beyond the source column, measured gutters expand the SVG
+and the reader scrolls horizontally instead of shifting or shrinking that label.
 SVG prefix geometry converts code points explicitly; split graphemes get whole
 visual glyphs while retaining their original ranges. Selection survives redraws;
 resize, filters, chunk changes and locale switches redraw the same records.

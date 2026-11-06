@@ -195,7 +195,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert page.locator(".tower-caption").count() == len(ranges)
         assert page.locator(".tower-annotation").count() == len(ranges)
         assert "".join(page.locator(".tower-source").all_text_contents()) == text
-        geometry = page.evaluate("""() => {
+        geometry_script = """() => {
           const tags=[...document.querySelectorAll('.tower-tag')].map(n=>n.getBoundingClientRect());
           const collisions=tags.flatMap((a,i)=>tags.slice(i+1).filter(b=>a.left<b.right-.1 && a.right>b.left+.1 && a.top<b.bottom-.1 && a.bottom>b.top+.1));
           const sources=[...document.querySelectorAll('.tower-source')].map(n=>n.getBoundingClientRect());
@@ -209,10 +209,36 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             const first=path.getPointAtLength(0),last=path.getPointAtLength(path.getTotalLength());
             return {start:Math.abs(first.x-position(from)),end:Math.abs(last.x-Math.max(position(from)+1,position(to)))};
           });
-          return {collisions:collisions.length,textCollisions,errors};
-        }""")
+          const paths=[...document.querySelectorAll('.tower-bracket')];
+          const lineBoxes=[...document.querySelectorAll('.tower-line')].map(n=>n.getBoundingClientRect());
+          const lineCollisions=lineBoxes.some((a,i)=>lineBoxes.slice(i+1).some(b=>a.top<b.bottom && a.bottom>b.top));
+          const railCollisions=paths.some(p=>{const a=p.getBoundingClientRect();return [...tags,...sources].some(b=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top);});
+          const centers=[...document.querySelectorAll('.tower-annotation')].map(n=>{
+            const tag=n.querySelector('.tower-tag').getBoundingClientRect();
+            const path=[...n.parentNode.querySelectorAll('.tower-bracket')].find(p=>p.dataset.annotation===n.dataset.annotation).getBoundingClientRect();
+            const caption=n.querySelector('.tower-caption');
+            return {error:Math.abs(tag.x+tag.width/2-path.x-path.width/2),font:parseFloat(getComputedStyle(caption).fontSize),scale:caption.getScreenCTM().a,fits:caption.getComputedTextLength()<=tag.width-14,compressed:caption.hasAttribute('textLength')};
+          });
+          const orderErrors=[...document.querySelectorAll('.tower-line')].flatMap(line=>{
+            const spans=[...line.querySelectorAll('.tower-bracket')];
+            return spans.flatMap(a=>spans.filter(b=>Number(a.dataset.end)-Number(a.dataset.start)<Number(b.dataset.end)-Number(b.dataset.start) && Number(a.dataset.start)<Number(b.dataset.end) && Number(a.dataset.end)>Number(b.dataset.start) && a.getBoundingClientRect().y<=b.getBoundingClientRect().y));
+          }).length;
+          return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,errors,centers,orderErrors};
+        }"""
+        geometry = page.evaluate(geometry_script)
         assert geometry["collisions"] == 0
         assert not geometry["textCollisions"]
+        assert not geometry["lineCollisions"]
+        assert not geometry["railCollisions"]
+        assert geometry["orderErrors"] == 0
+        assert all(
+            row["error"] < 1
+            and row["font"] == 12
+            and abs(row["scale"] - 1) < 0.001
+            and row["fits"]
+            and not row["compressed"]
+            for row in geometry["centers"]
+        ), geometry
         assert all(row["start"] < 1 and row["end"] < 1 for row in geometry["errors"]), geometry
         for identity in page.locator(".tower-annotation").evaluate_all(
             "(nodes)=>nodes.map(n=>n.dataset.annotation)"
@@ -221,7 +247,31 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             page.keyboard.press("Enter")
             assert identity in page.locator("#annotation-details").text_content()
             assert page.evaluate("document.activeElement.dataset.annotation") == identity
+        # Each line remains independent after reflow; fonts and labels never shrink.
+        for next_width in (width + 80, width):
+            old_svg = page.locator("#tower-view > svg").element_handle()
+            focused = page.evaluate("document.activeElement.dataset.annotation")
+            page.set_viewport_size({"width": next_width, "height": 900})
+            page.wait_for_function("old=>!old.isConnected", arg=old_svg)
+            resized = page.evaluate(geometry_script)
+            assert not any(
+                resized[key]
+                for key in (
+                    "lineCollisions",
+                    "railCollisions",
+                    "collisions",
+                    "textCollisions",
+                    "orderErrors",
+                )
+            ), resized
+            assert all(
+                row["error"] < 1 and row["fits"] and abs(row["scale"] - 1) < 0.001
+                for row in resized["centers"]
+            ), resized
+            assert page.evaluate("document.activeElement.dataset.annotation") == focused
         if name == "inside-word" and width == 390:
+            page.locator('.tower-annotation[data-annotation="T3"]').focus()
+            page.keyboard.press("Space")
             contracts = page.evaluate("""async () => {
               const {color,ENTITY_COLORS}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','spans.js'));
               const {layoutLines}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','towers.js'));

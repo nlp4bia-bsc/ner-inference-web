@@ -1185,6 +1185,10 @@ fieldset {
   overflow: auto;
   background: white;
 }
+.tower-view > svg {
+  display: block;
+  max-width: none;
+}
 .tower-source {
   font:
     15px ui-monospace,
@@ -1197,6 +1201,8 @@ fieldset {
 .tower-caption {
   font:
     12px ui-monospace,
+    SFMono-Regular,
+    Consolas,
     monospace;
   fill: var(--ink);
 }

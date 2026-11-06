@@ -411,7 +411,9 @@ text across the whole document and navigate documents, fragments and mentions.
 Every crossing/nested/equal-boundary annotation remains selectable. Choose inline
 highlights or labeled **Entity towers** inspired by BRAT. The original text appears
 once in each view; overlaps never insert counters inside words. Towers show one tag
-per entity, with collision lanes and continuation brackets across wrapped lines.
+per entity, centered over its range in independent towers per source line.
+Shorter overlapping mentions sit nearest the text and longer mentions above them;
+range marks stay clear of labels and source. Continuations keep their original ID.
 Selecting a region reveals every covering entity. Canonical category colors stay
 the same across document/UI languages. Details show complete surfaces, exact
 `[start, end)` offsets (end exclusive), model and actual confidence. Emoji/combining

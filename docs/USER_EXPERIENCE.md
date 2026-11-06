@@ -86,7 +86,8 @@ view and shows a translated sign-in notice; copied/downloaded data cannot be rec
 
 The annotation reader also offers **Inline highlights** and **Entity towers**.
 Inline overlaps use a double underline without counters inside words. Towers
-show one category/ID tag per entity and separate colliding mentions into lanes,
+show one centered category/ID tag per entity in independent blocks per source line.
+Shorter overlaps appear nearest the text, with longer mentions above them,
 including multiword and wrapped mentions. Selecting a tag opens its full surface,
 original `[start, end)` range and provenance. The end is exclusive. Canonical
 colors remain the same across languages; changing the reading mode changes only

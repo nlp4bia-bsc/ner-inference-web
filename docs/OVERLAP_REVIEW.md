@@ -1,10 +1,32 @@
-# Annotation reader review · 0.5.1
+# Annotation reader review · 0.5.2
 
 The reader offers inline highlights and BRAT-inspired entity towers over the same
 original source and canonical annotations. Nested, crossing and equal-range
 mentions remain distinct. Inference, consolidation and export rules are unchanged.
 
 ## Findings and corrections
+
+### Per-line centered towers (0.5.2)
+
+The previous layout anchored labels to span starts and drew tall endpoint
+connectors across lower lanes. It did not enforce shorter-below/longer-above
+ordering. Towers now belong to independent source-line blocks. Labels are centered
+over each visible entity range; shorter overlapping mentions are placed first,
+closest to the text, and longer mentions above them. Equal lengths use a stable
+position/ID order. The allocator reserves both label and range extents.
+
+Every lane has a 26px label, its own short range caps and 40px spacing. No range
+connector crosses another label or the source. Blocks reserve their full height
+before drawing the next source line. Captions retain 12px glyphs without horizontal
+compression or SVG scaling. Measured gutters retain exact centering at line edges;
+horizontal scrolling exposes labels that extend beyond a narrow column.
+
+Browser regressions now check centering against actual range geometry, all
+shorter/longer overlap pairs, collisions between range marks and labels/source,
+separation between complete line blocks, and font scale/readability before and
+after resizing. Enter and Space selection and focus restoration remain covered.
+
+### Earlier source/offset corrections (0.5.1)
 
 The sweep renderer already emitted each source character once. The visible defect
 was a CSS `::after` counter inserted at every multi-annotation segment: it could
@@ -29,9 +51,9 @@ Emoji sequences, combining marks, CRLF and non-Latin text are not normalized.
 Towers show **one category/ID tag per annotation**, including multiword mentions
 and mentions spanning wrapped lines. Continuations use brackets with the same ID.
 Lane allocation considers both bracket and label width, preventing tag collisions.
-Connectors paint behind labels, with a clear gap above source text. Tags support
+Range marks stay in their own levels, with a clear gap above source text. Tags support
 pointer, Enter and Space, retain focus after redraw, and expose complete surfaces,
-offsets and provenance through the inspector/tooltips. They are at least 24px tall.
+offsets and provenance through the inspector/tooltips. They are 26px tall.
 Resize, locale, filter and fragment changes redraw the same records. Page teardown
 disconnects the observer so privacy clearing cannot trigger a stale redraw.
 Folder controls also have a minimum 32px height, correcting a touch-target failure
@@ -104,7 +126,7 @@ do not establish WCAG certification. Extremely dense annotations can create tall
 towers; the bounded reader scrolls and filters remain available. Long documents
 retain the existing fragment API rather than being silently truncated.
 
-The [72 axe-core scans](security/v5.1-axe.jsonl) report zero automatic WCAG-tagged
+The [72 axe-core scans](security/v5.2-axe.jsonl) report zero automatic WCAG-tagged
 violations. Color contrast remains an incomplete rule in 44 scans, including
 overlapping/SVG states; the separate static palette check does not resolve those
 browser assessments. Human and assistive-technology review remains necessary.

@@ -1,4 +1,36 @@
-# Latest: V5.1 annotation reader (0.5.1)
+# Latest: V5.2 centered line towers (0.5.2)
+
+Final complete regression: **200 passed in 355.15s**, zero failures/skips.
+The strengthened overlap cases additionally pass **12/12 in53.64s**, comparing
+the actual pixel heights of overlapping spans rather than only lane metadata.
+They verify centered labels, shorter mentions below longer ones, complete line
+block separation, no range-mark/label/source collisions, readable unscaled text
+and keyboard focus before/after viewport resizing.
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/towers-centered-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/towers-centered/release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 axe-core scans](security/v5.2-axe.jsonl) report zero automatic violations;
+color contrast remains incomplete in44 scans and still needs manual review.
+Ruff lint/format, static JS/CSS Prettier, generated translations and Bandit
+medium/high checks pass. Wheel/sdist0.5.2 and no-NLP Docker build successfully;
+final packaged/running renderer assets match repository bytes. Root and `/ner`
+container checks pass, including real registration, captured email confirmation,
+login, private dashboard and logout/revocation in the isolated test container.
+Local web/worker run0.5.2; no BSC production deployment is claimed.
+
+The [updated captures and review](OVERLAP_REVIEW.md) show independent towers per
+source line, with centered labels and shorter-below/longer-above hierarchy.
+Offsets, original text, canonical colors, inference/export rules, authentication
+and retention remain unchanged. Earlier deployment/clinical limitations still apply.
+
+---
+
+# Historical: V5.1 annotation reader (0.5.1)
 
 Final complete regression: **200 passed in 320.85s**, zero failures/skips. Includes
 real Chromium account/owner/admin/MFA flows, root/prefix routing, incremental

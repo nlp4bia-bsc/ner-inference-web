@@ -40,15 +40,21 @@ export function layoutLines(text, width, measure) {
 }
 export function drawTowers(host, text, start, rows, onSelect, selected) {
   const width = Math.max(180, host.clientWidth - 24),
-    font = "15px ui-monospace, SFMono-Regular, Consolas, monospace";
+    font = "15px ui-monospace, SFMono-Regular, Consolas, monospace",
+    captionFont = "12px ui-monospace, SFMono-Regular, Consolas, monospace";
   const canvas = document.createElement("canvas"),
     ctx = canvas.getContext("2d");
   ctx.font = font;
   const measure = (s) => ctx.measureText(s.replace(/[\r\n]/g, "")).width;
+  const measureCaption = (s) => {
+    ctx.font = captionFont;
+    const size = ctx.measureText(s).width;
+    ctx.font = font;
+    return size;
+  };
   const lines = layoutLines(text, width - 16, measure),
     ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("width", "100%");
   svg.setAttribute("role", "group");
   const create = (tag, attrs, text_) => {
     const n = document.createElementNS(ns, tag);
@@ -56,7 +62,11 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     if (text_ !== undefined) n.textContent = text_;
     return n;
   };
-  let y = 12;
+  const content = create("g", {});
+  svg.append(content);
+  let y = 0,
+    minX = 0,
+    maxX = width;
   const labelled = new Set();
   for (const line of lines) {
     const points = Array.from(line.text),
@@ -81,29 +91,45 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
         x2 = 8 + measure(points.slice(0, to).join(""));
       const label = !labelled.has(a.id),
         caption = `${a.label} · ${a.id}`,
-        labelWidth = Math.min(
-          width - 8,
-          Math.max(50, measure(caption) * 0.8 + 14),
-        );
+        labelWidth = Math.max(50, measureCaption(caption) + 16);
       parts.push({ a, x1, x2, label, caption, labelWidth });
     }
     parts.sort(
-      (a, b) => a.x1 - b.x1 || b.x2 - a.x2 || a.a.id.localeCompare(b.a.id),
+      (a, b) =>
+        a.a.end - a.a.start - (b.a.end - b.a.start) ||
+        a.x1 - b.x1 ||
+        a.a.id.localeCompare(b.a.id),
     );
-    const occupied = [];
+    const placed = [];
+    let laneCount = 0;
     for (const p of parts) {
-      p.labelX = Math.max(2, Math.min(p.x1, width - p.labelWidth - 2));
-      const lo = Math.min(p.x1, p.labelX),
+      p.center = (p.x1 + p.x2) / 2;
+      p.labelX = p.center - p.labelWidth / 2;
+      const lo = Math.min(p.x1, p.label ? p.labelX : p.x1),
         hi = Math.max(p.x2, p.label ? p.labelX + p.labelWidth : p.x2);
-      let lane = 0;
-      while (occupied[lane]?.some(([a, b]) => lo < b + 6 && hi + 6 > a)) lane++;
-      (occupied[lane] ??= []).push([lo, hi]);
-      p.lane = lane;
+      // Increasing span length gives every intersecting larger span a higher row.
+      p.lane = placed.reduce(
+        (lane, other) =>
+          lo < other.hi + 8 && hi + 8 > other.lo
+            ? Math.max(lane, other.lane + 1)
+            : lane,
+        0,
+      );
+      placed.push({ lo, hi, lane: p.lane });
+      laneCount = Math.max(laneCount, p.lane + 1);
+      minX = Math.min(minX, lo - 4);
+      maxX = Math.max(maxX, hi + 4);
     }
-    const textY = y + occupied.length * 32 + 22;
+    const textY = y + laneCount * 40 + 28;
+    const lineGroup = create("g", {
+      class: "tower-line",
+      "data-start": left,
+      "data-end": right,
+    });
+    content.append(lineGroup);
     const brackets = create("g", { "aria-hidden": "true" });
     // Put every connector behind all tags, including tags in lower lanes.
-    svg.append(brackets);
+    lineGroup.append(brackets);
     // Only these nodes hold source text; labels and brackets are separate controls.
     const source = create(
       "text",
@@ -119,16 +145,18 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     );
     const ending = line.text.match(/[\r\n]+$/)?.[0];
     if (ending) source.append(create("tspan", { display: "none" }, ending));
-    svg.append(source);
+    lineGroup.append(source);
     for (const p of parts) {
-      const top = textY - 44 - p.lane * 32;
+      const top = textY - 56 - p.lane * 40,
+        railY = top + 30;
       brackets.append(
         create("path", {
-          d: `M ${p.x1} ${textY + 4} V ${top + 24} H ${Math.max(p.x1 + 1, p.x2)} V ${textY + 4}`,
+          d: `M ${p.x1} ${railY + 4} V ${railY} H ${Math.max(p.x1 + 1, p.x2)} V ${railY + 4}`,
           class: `tower-bracket ${color(p.a.label)}${selected === p.a.id ? " selected" : ""}`,
           "data-annotation": p.a.id,
           "data-start": p.a.start,
           "data-end": p.a.end,
+          "data-lane": p.lane,
           fill: "none",
         }),
       );
@@ -137,6 +165,9 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
       const group = create("g", {
         class: `tower-annotation ${color(p.a.label)}${selected === p.a.id ? " selected" : ""}`,
         "data-annotation": p.a.id,
+        "data-start": p.a.start,
+        "data-end": p.a.end,
+        "data-lane": p.lane,
         role: "button",
         tabindex: 0,
         "aria-label": `${p.a.label}: ${p.a.text} [${p.a.start}, ${p.a.end})`,
@@ -154,20 +185,21 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
             x: p.labelX,
             y: top,
             width: p.labelWidth,
-            height: 24,
+            height: 26,
             rx: 3,
             class: "tower-tag",
           }),
         );
         const caption = create(
           "text",
-          { x: p.labelX + 6, y: top + 16, class: "tower-caption" },
+          {
+            x: p.center,
+            y: top + 17,
+            "text-anchor": "middle",
+            class: "tower-caption",
+          },
           p.caption,
         );
-        if (measure(p.caption) * 0.8 > p.labelWidth - 12) {
-          caption.setAttribute("textLength", p.labelWidth - 12);
-          caption.setAttribute("lengthAdjust", "spacingAndGlyphs");
-        }
         group.append(caption);
         labelled.add(p.a.id);
       }
@@ -179,11 +211,16 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
           activate();
         }
       };
-      svg.append(group);
+      lineGroup.append(group);
     }
-    y = textY + 28;
+    y = textY + 20;
   }
+  // Keep exact centering at the line edges. Overflow scrolls instead of shifting
+  // labels away from their entity or shrinking their text to fit the viewport.
+  const totalWidth = maxX - minX;
+  content.setAttribute("transform", `translate(${-minX} 0)`);
+  svg.setAttribute("width", totalWidth);
   svg.setAttribute("height", y);
-  svg.setAttribute("viewBox", `0 0 ${width} ${y}`);
+  svg.setAttribute("viewBox", `0 0 ${totalWidth} ${y}`);
   host.replaceChildren(svg);
 }

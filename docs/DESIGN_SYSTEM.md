@@ -78,8 +78,11 @@ red/pink, medication blue and procedure green. The full mapping is in spans.js.
 
 The reader offers inline highlights and labeled SVG entity towers. Neither mode
 duplicates source text. Inline multiplicity uses a double underline, without word-
-breaking counters. Towers allocate separate lanes for colliding span/tag extents,
-show one label per mention, preserve whole display graphemes and expose untouched
+breaking counters. Towers allocate independent blocks per source line and center
+each tag over its range. Shorter overlapping mentions remain below longer ones;
+40px levels keep range marks separate from labels/text. Edge labels retain their
+12px font and exact centering using horizontal scrolling when necessary.
+Towers show one label per mention, preserve whole display graphemes and expose untouched
 half-open source offsets. See [OVERLAP_RENDERING.md](OVERLAP_RENDERING.md).
 
 Desktop uses three panels: documents, original text and entity information. Side
