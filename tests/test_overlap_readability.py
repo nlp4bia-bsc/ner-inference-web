@@ -192,6 +192,10 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             page.locator(".reading-panel").screenshot(path=str(path / f"{name}-{width}.png"))
         page.locator('[data-reader-mode="towers"]').click()
         page.wait_for_selector(".tower-caption")
+        visible_lines_script = """() => [...new Set([...document.querySelectorAll('.tower-bracket')]
+          .filter(n=>Number(getComputedStyle(n).opacity)>0).map(n=>n.dataset.annotation))]"""
+        # Previous inline selection must not reveal rails before a label is activated.
+        assert page.evaluate(visible_lines_script) == []
         assert page.locator(".tower-caption").count() == len(ranges)
         assert page.locator(".tower-annotation").count() == len(ranges)
         assert "".join(page.locator(".tower-source").all_text_contents()) == text
@@ -247,6 +251,18 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             page.keyboard.press("Enter")
             assert identity in page.locator("#annotation-details").text_content()
             assert page.evaluate("document.activeElement.dataset.annotation") == identity
+            assert page.evaluate(visible_lines_script) == [identity]
+            assert (
+                page.locator(f'.tower-annotation[data-annotation="{identity}"]').get_attribute(
+                    "aria-pressed"
+                )
+                == "true"
+            )
+        active_tag = page.locator(f'.tower-annotation[data-annotation="{identity}"]')
+        active_tag.click()
+        assert page.evaluate(visible_lines_script) == []
+        active_tag.click()
+        assert page.evaluate(visible_lines_script) == [identity]
         # Each line remains independent after reflow; fonts and labels never shrink.
         for next_width in (width + 80, width):
             old_svg = page.locator("#tower-view > svg").element_handle()
@@ -269,6 +285,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                 for row in resized["centers"]
             ), resized
             assert page.evaluate("document.activeElement.dataset.annotation") == focused
+            assert page.evaluate(visible_lines_script) == [focused]
         if name == "inside-word" and width == 390:
             page.locator('.tower-annotation[data-annotation="T3"]').focus()
             page.keyboard.press("Space")
@@ -291,7 +308,41 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             }
             assert set(contracts["categories"]) == categories
             assert contracts["same"] and contracts["roundtrips"]
-            assert contracts["unknown"] == "entity-other"
+            assert contracts["unknown"].startswith("entity-custom-")
+            raw_labels = {}
+            for model in catalog["models"].values():
+                for raw, category in model.get("label_mapping", {}).items():
+                    raw_labels.setdefault(raw, set()).add(category)
+            actual_colors = page.evaluate(
+                """async (labels) => {
+              const {color,CUSTOM_COLOR_COUNT}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','spans.js'));
+              function styled(label) {
+                const node=document.createElement('span');node.className=color(label);document.body.append(node);
+                const style=getComputedStyle(node),value={color:color(label),border:style.getPropertyValue('--entity-color').trim(),background:style.getPropertyValue('--entity-bg').trim()};node.remove();return value;
+              }
+              return {originals:labels.map(row=>({...styled(row.raw),allowed:row.targets.map(color),bio:color('B-'+row.raw)})),
+                custom:Array.from({length:CUSTOM_COLOR_COUNT},(_,i)=>{const node=document.createElement('span');node.className='entity-custom-'+i;document.body.append(node);const value=getComputedStyle(node).getPropertyValue('--entity-color').trim();node.remove();return value;}),
+                extensions:Array.from({length:16},(_,i)=>styled('TYPE_'+i)),
+                stable:color('NÉW_LABEL')===color('new_label')&&color('NEW_LABEL')===color('I-NEW_LABEL'),
+                profession:color('PROFESIÓN')===color('PROFESSION'),drug:color('FÁRMACO')===color('MEDICATION')};
+            }""",
+                [{"raw": raw, "targets": sorted(targets)} for raw, targets in raw_labels.items()],
+            )
+            assert len(raw_labels) == 54
+            assert all(
+                row["color"] in row["allowed"]
+                and row["bio"] == row["color"]
+                and row["border"]
+                and row["background"]
+                for row in actual_colors["originals"]
+            )
+            assert len(set(actual_colors["custom"])) == 24 and all(actual_colors["custom"])
+            assert all(
+                row["border"] and row["background"] and row["color"].startswith("entity-custom-")
+                for row in actual_colors["extensions"]
+            )
+            assert len({row["color"] for row in actual_colors["extensions"]}) >= 8
+            assert actual_colors["stable"] and actual_colors["profession"] and actual_colors["drug"]
             assert page.locator("#annotation-details blockquote").text_content() == "carcinoma"
         if os.environ.get("AXE_CORE_PATH"):
             page.evaluate(Path(os.environ["AXE_CORE_PATH"]).read_text())
@@ -318,6 +369,9 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                     )
         if os.environ.get("SCREENSHOT_OUTPUT"):
             page.locator(".reading-panel").screenshot(path=str(path / f"towers-{name}-{width}.png"))
+        page.locator('[data-reader-mode="inline"]').click()
+        page.locator('[data-reader-mode="towers"]').click()
+        assert page.evaluate(visible_lines_script) == []
         page.locator('[data-reader-mode="inline"]').click()
         page.select_option("#auth-locale", "es")
         assert page.locator("#annotated-text").text_content() == text

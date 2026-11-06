@@ -56,10 +56,22 @@ SVG prefix geometry converts code points explicitly; split graphemes get whole
 visual glyphs while retaining their original ranges. Selection survives redraws;
 resize, filters, chunk changes and locale switches redraw the same records.
 
+Range marks are invisible by default (`opacity:0`, preserving their geometry).
+Only activating a tower label with click, Enter or Space reveals that annotation's
+marks, including wrapped continuations. Activating it again hides them; selecting
+another label hides the previous marks. `aria-pressed` exposes this toggle state.
+Inspector selection alone does not reveal marks. Changing document/reader mode or
+filtering out the active mention clears the reveal; resize/locale redraws retain it.
+
 Both modes use an explicit palette for every current canonical category, independent
 of document/UI language and checkpoint. This is the application's consistent
 convention, not a universal biomedical NER color standard. Familiar aliases map to
-the canonical color; unrecognized categories use a neutral fallback. Existing
+the canonical color. Display aliases now cover all54 original model labels in the
+catalog and accented/BIO variants. The ambiguous raw PROFESION display alias uses
+the profession color; canonical ANONYMIZATION remains distinct. Unknown categories
+receive a deterministic color from24 extension palettes instead of all sharing
+gray. These finite palettes may reuse colors; literal labels/IDs stay authoritative.
+No display alias changes stored scientific labels, model mappings or exports. Existing
 scientific consolidation remains the sole duplicate-vote rule.
 
 This is a BRAT-inspired read-only span viewer; it does not embed the BRAT editor

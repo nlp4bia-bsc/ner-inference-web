@@ -14,6 +14,7 @@ let records = [],
   annotations = [],
   enabled = new Set(),
   selected = null,
+  revealedTowerId = null,
   mentionOffset = 0,
   generation = 0,
   expiryTimer,
@@ -57,6 +58,7 @@ function expire() {
   annotations = [];
   records = [];
   selected = null;
+  revealedTowerId = null;
   enabled.clear();
   getSelection()?.removeAllRanges();
   chunk = null;
@@ -163,6 +165,7 @@ async function openDocument(id, start = 0) {
   const current = ++generation;
   identity = id;
   selected = null;
+  revealedTowerId = null;
   mentionOffset = 0;
   $("text-search").value = "";
   $("region-annotations").replaceChildren();
@@ -273,6 +276,7 @@ function render() {
   const rows = visible(),
     byId = new Map(rows.map((a) => [a.id, a])),
     fragment = document.createDocumentFragment();
+  if (!rows.some((row) => row.id === revealedTowerId)) revealedTowerId = null;
   const parts = segments(chunk.text, chunk.start, rows);
   const overlapping = new Set(
     parts.filter((part) => part.ids.length > 1).flatMap((part) => part.ids),
@@ -377,6 +381,7 @@ function select(id, scroll = false) {
   const a = annotations.find((x) => x.id === id);
   if (!a) return;
   selected = id;
+  if (revealedTowerId !== id) revealedTowerId = null;
   paintTowers();
   $("entity-sheet-trigger").hidden = !matchMedia("(max-width:760px)").matches;
   const selectedIndex = visible().findIndex((x) => x.id === id);
@@ -467,6 +472,7 @@ $("mentions-next").onclick = () => {
 $("entity-search").oninput = () => {
   mentionOffset = 0;
   selected = null;
+  revealedTowerId = null;
   $("region-annotations").replaceChildren();
   render();
 };
@@ -806,6 +812,7 @@ function sourceDetails(annotation) {
 $("model-filter").onchange = () => {
   mentionOffset = 0;
   selected = null;
+  revealedTowerId = null;
   $("region-annotations").replaceChildren();
   $("annotation-details").replaceChildren();
   render();
@@ -886,8 +893,12 @@ function paintTowers() {
       chunk.text,
       chunk.start,
       visible(),
-      (id) => select(id),
+      (id) => {
+        revealedTowerId = revealedTowerId === id ? null : id;
+        select(id);
+      },
       selected,
+      revealedTowerId,
     );
     if (focused)
       [...host.querySelectorAll(".tower-annotation")]
@@ -898,6 +909,7 @@ function paintTowers() {
 for (const button of document.querySelectorAll("[data-reader-mode]"))
   button.onclick = () => {
     const tower = button.dataset.readerMode === "towers";
+    revealedTowerId = null;
     $("inline-hint").hidden = tower;
     $("tower-hint").hidden = !tower;
     document.getElementById("tower-view").hidden = !tower;

@@ -38,7 +38,15 @@ export function layoutLines(text, width, measure) {
   if (line || !lines.length) emit(line);
   return lines;
 }
-export function drawTowers(host, text, start, rows, onSelect, selected) {
+export function drawTowers(
+  host,
+  text,
+  start,
+  rows,
+  onSelect,
+  selected,
+  revealed = null,
+) {
   const width = Math.max(180, host.clientWidth - 24),
     font = "15px ui-monospace, SFMono-Regular, Consolas, monospace",
     captionFont = "12px ui-monospace, SFMono-Regular, Consolas, monospace";
@@ -152,7 +160,7 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
       brackets.append(
         create("path", {
           d: `M ${p.x1} ${railY + 4} V ${railY} H ${Math.max(p.x1 + 1, p.x2)} V ${railY + 4}`,
-          class: `tower-bracket ${color(p.a.label)}${selected === p.a.id ? " selected" : ""}`,
+          class: `tower-bracket ${color(p.a.label)}${revealed === p.a.id ? " revealed" : ""}`,
           "data-annotation": p.a.id,
           "data-start": p.a.start,
           "data-end": p.a.end,
@@ -171,6 +179,7 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
         role: "button",
         tabindex: 0,
         "aria-label": `${p.a.label}: ${p.a.text} [${p.a.start}, ${p.a.end})`,
+        "aria-pressed": String(revealed === p.a.id),
       });
       group.append(
         create(

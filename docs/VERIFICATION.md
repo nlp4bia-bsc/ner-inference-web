@@ -1,4 +1,41 @@
-# Latest: V5.2 centered line towers (0.5.2)
+# Latest: V5.3 selective marks and complete color coverage (0.5.3)
+
+Final full regression: **200 passed in349.39s**, zero failures/skips. The12 focused
+browser cases additionally passed in40.49s before the full run. They verify marks
+are initially invisible even after inline selection, only the activated label's
+marks appear, click-again hides them, and keyboard activation/resize preserve the
+correct state. Existing source, offset, centering and size-hierarchy checks remain.
+
+Color checks cover all54 original catalog labels against their declared canonical
+families, accented/BIO equivalents, and all24 extension palettes. Unknown labels
+receive stable colors instead of a shared gray. The raw PROFESION alias is
+ambiguous between schemas; its display fallback is PROFESSION, while canonical
+ANONYMIZATION remains distinct. No scientific labels/mappings were modified.
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/towers-focus-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/towers-focus/release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 axe-core scans](security/v5.3-axe.jsonl) report zero automatic violations;
+color contrast remains incomplete in44 scans, so manual review remains necessary.
+All37 active palette pairs have border, main-text and mention-metadata contrast
+above4.5:1 in the [bounded static check](security/v5.3-entity-palette.json).
+Ruff, Prettier, generated translation equality and Bandit medium/high checks pass.
+Wheel/sdist0.5.3 and no-NLP Docker build successfully; packaged and running renderer
+assets match repository bytes. Root and `/ner` smoke checks pass, including isolated
+real registration/captured verification email/login/dashboard/logout. Local
+web/worker run0.5.3; no BSC production deployment or clinical validation is claimed.
+
+[Captures and review](OVERLAP_REVIEW.md) show both the quiet initial tower view and
+the selected entity's marks. Earlier scientific/authentication/retention contracts
+and operational limitations remain unchanged.
+
+---
+
+# Historical: V5.2 centered line towers (0.5.2)
 
 Final complete regression: **200 passed in 355.15s**, zero failures/skips.
 The strengthened overlap cases additionally pass **12/12 in53.64s**, comparing

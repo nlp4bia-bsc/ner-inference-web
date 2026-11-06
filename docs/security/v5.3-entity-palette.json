@@ -1,0 +1,375 @@
+{
+  "scope": "37 active static palettes; CSS contrast checks do not certify WCAG conformance",
+  "pairs": [
+    {
+      "palette": "disease",
+      "border": "#b52d43",
+      "background": "#ffe8ed",
+      "contrast": {
+        "border": 5.267,
+        "text": 12.17,
+        "metadata": 5.463
+      }
+    },
+    {
+      "palette": "symptom",
+      "border": "#9b451c",
+      "background": "#ffedde",
+      "contrast": {
+        "border": 5.647,
+        "text": 12.442,
+        "metadata": 5.585
+      }
+    },
+    {
+      "palette": "medication",
+      "border": "#2554a4",
+      "background": "#e8efff",
+      "contrast": {
+        "border": 6.321,
+        "text": 12.308,
+        "metadata": 5.525
+      }
+    },
+    {
+      "palette": "procedure",
+      "border": "#16704e",
+      "background": "#def5e9",
+      "contrast": {
+        "border": 5.299,
+        "text": 12.39,
+        "metadata": 5.562
+      }
+    },
+    {
+      "palette": "anonymization",
+      "border": "#5b556e",
+      "background": "#f0edf6",
+      "contrast": {
+        "border": 6.112,
+        "text": 12.259,
+        "metadata": 5.503
+      }
+    },
+    {
+      "palette": "event",
+      "border": "#8c456f",
+      "background": "#fae8f3",
+      "contrast": {
+        "border": 5.601,
+        "text": 12.092,
+        "metadata": 5.428
+      }
+    },
+    {
+      "palette": "human",
+      "border": "#805326",
+      "background": "#faefde",
+      "contrast": {
+        "border": 5.801,
+        "text": 12.473,
+        "metadata": 5.599
+      }
+    },
+    {
+      "palette": "location",
+      "border": "#066b79",
+      "background": "#dff4f8",
+      "contrast": {
+        "border": 5.443,
+        "text": 12.451,
+        "metadata": 5.589
+      }
+    },
+    {
+      "palette": "negation",
+      "border": "#75429e",
+      "background": "#f1e7fb",
+      "contrast": {
+        "border": 5.798,
+        "text": 11.864,
+        "metadata": 5.325
+      }
+    },
+    {
+      "palette": "profession",
+      "border": "#5b6424",
+      "background": "#f1f4dc",
+      "contrast": {
+        "border": 5.683,
+        "text": 12.641,
+        "metadata": 5.674
+      }
+    },
+    {
+      "palette": "situation",
+      "border": "#7c4750",
+      "background": "#f8ecef",
+      "contrast": {
+        "border": 6.345,
+        "text": 12.318,
+        "metadata": 5.529
+      }
+    },
+    {
+      "palette": "species",
+      "border": "#32634e",
+      "background": "#e6f2e8",
+      "contrast": {
+        "border": 6.016,
+        "text": 12.314,
+        "metadata": 5.527
+      }
+    },
+    {
+      "palette": "temporality",
+      "border": "#735c14",
+      "background": "#fff4ce",
+      "contrast": {
+        "border": 5.836,
+        "text": 12.89,
+        "metadata": 5.786
+      }
+    },
+    {
+      "palette": "custom-0",
+      "border": "#6d1717",
+      "background": "#f9e7e7",
+      "contrast": {
+        "border": 9.866,
+        "text": 11.896,
+        "metadata": 5.34
+      }
+    },
+    {
+      "palette": "custom-1",
+      "border": "#6d2d17",
+      "background": "#f9ebe7",
+      "contrast": {
+        "border": 8.864,
+        "text": 12.202,
+        "metadata": 5.477
+      }
+    },
+    {
+      "palette": "custom-2",
+      "border": "#6d4217",
+      "background": "#f9f0e7",
+      "contrast": {
+        "border": 7.636,
+        "text": 12.595,
+        "metadata": 5.653
+      }
+    },
+    {
+      "palette": "custom-3",
+      "border": "#6d5817",
+      "background": "#f9f4e7",
+      "contrast": {
+        "border": 6.252,
+        "text": 12.916,
+        "metadata": 5.798
+      }
+    },
+    {
+      "palette": "custom-4",
+      "border": "#6d6d17",
+      "background": "#f9f9e7",
+      "contrast": {
+        "border": 5.125,
+        "text": 13.328,
+        "metadata": 5.983
+      }
+    },
+    {
+      "palette": "custom-5",
+      "border": "#586d17",
+      "background": "#f4f9e7",
+      "contrast": {
+        "border": 5.409,
+        "text": 13.206,
+        "metadata": 5.928
+      }
+    },
+    {
+      "palette": "custom-6",
+      "border": "#426d17",
+      "background": "#f0f9e7",
+      "contrast": {
+        "border": 5.656,
+        "text": 13.11,
+        "metadata": 5.885
+      }
+    },
+    {
+      "palette": "custom-7",
+      "border": "#2d6d17",
+      "background": "#ebf9e7",
+      "contrast": {
+        "border": 5.809,
+        "text": 12.994,
+        "metadata": 5.832
+      }
+    },
+    {
+      "palette": "custom-8",
+      "border": "#176d17",
+      "background": "#e7f9e7",
+      "contrast": {
+        "border": 5.902,
+        "text": 12.903,
+        "metadata": 5.791
+      }
+    },
+    {
+      "palette": "custom-9",
+      "border": "#176d2d",
+      "background": "#e7f9eb",
+      "contrast": {
+        "border": 5.87,
+        "text": 12.934,
+        "metadata": 5.805
+      }
+    },
+    {
+      "palette": "custom-10",
+      "border": "#176d42",
+      "background": "#e7f9f0",
+      "contrast": {
+        "border": 5.816,
+        "text": 12.973,
+        "metadata": 5.823
+      }
+    },
+    {
+      "palette": "custom-11",
+      "border": "#176d58",
+      "background": "#e7f9f4",
+      "contrast": {
+        "border": 5.722,
+        "text": 13.006,
+        "metadata": 5.838
+      }
+    },
+    {
+      "palette": "custom-12",
+      "border": "#176d6d",
+      "background": "#e7f9f9",
+      "contrast": {
+        "border": 5.607,
+        "text": 13.047,
+        "metadata": 5.856
+      }
+    },
+    {
+      "palette": "custom-13",
+      "border": "#17586d",
+      "background": "#e7f4f9",
+      "contrast": {
+        "border": 7.05,
+        "text": 12.635,
+        "metadata": 5.671
+      }
+    },
+    {
+      "palette": "custom-14",
+      "border": "#17426d",
+      "background": "#e7f0f9",
+      "contrast": {
+        "border": 8.951,
+        "text": 12.314,
+        "metadata": 5.527
+      }
+    },
+    {
+      "palette": "custom-15",
+      "border": "#172d6d",
+      "background": "#e7ebf9",
+      "contrast": {
+        "border": 10.81,
+        "text": 11.921,
+        "metadata": 5.351
+      }
+    },
+    {
+      "palette": "custom-16",
+      "border": "#17176d",
+      "background": "#e7e7f9",
+      "contrast": {
+        "border": 12.463,
+        "text": 11.615,
+        "metadata": 5.214
+      }
+    },
+    {
+      "palette": "custom-17",
+      "border": "#2d176d",
+      "background": "#ebe7f9",
+      "contrast": {
+        "border": 11.911,
+        "text": 11.706,
+        "metadata": 5.254
+      }
+    },
+    {
+      "palette": "custom-18",
+      "border": "#42176d",
+      "background": "#f0e7f9",
+      "contrast": {
+        "border": 11.113,
+        "text": 11.823,
+        "metadata": 5.307
+      }
+    },
+    {
+      "palette": "custom-19",
+      "border": "#58176d",
+      "background": "#f4e7f9",
+      "contrast": {
+        "border": 10.035,
+        "text": 11.919,
+        "metadata": 5.35
+      }
+    },
+    {
+      "palette": "custom-20",
+      "border": "#6d176d",
+      "background": "#f9e7f9",
+      "contrast": {
+        "border": 8.942,
+        "text": 12.041,
+        "metadata": 5.405
+      }
+    },
+    {
+      "palette": "custom-21",
+      "border": "#6d1758",
+      "background": "#f9e7f4",
+      "contrast": {
+        "border": 9.283,
+        "text": 11.999,
+        "metadata": 5.386
+      }
+    },
+    {
+      "palette": "custom-22",
+      "border": "#6d1742",
+      "background": "#f9e7f0",
+      "contrast": {
+        "border": 9.569,
+        "text": 11.967,
+        "metadata": 5.371
+      }
+    },
+    {
+      "palette": "custom-23",
+      "border": "#6d172d",
+      "background": "#f9e7eb",
+      "contrast": {
+        "border": 9.752,
+        "text": 11.927,
+        "metadata": 5.354
+      }
+    }
+  ]
+}

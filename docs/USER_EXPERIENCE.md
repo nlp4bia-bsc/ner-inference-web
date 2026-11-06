@@ -92,6 +92,10 @@ including multiword and wrapped mentions. Selecting a tag opens its full surface
 original `[start, end)` range and provenance. The end is exclusive. Canonical
 colors remain the same across languages; changing the reading mode changes only
 presentation. Both views preserve the original text and scientific records.
+Tower marks are invisible initially. Clicking a label or pressing Enter/Space
+shows only its range marks; activating it again hides them. Labels remain in place.
+Original model-label aliases share category colors and new labels get stable
+extension colors instead of appearing uniformly gray.
 
 ## Profile, sessions and administration
 

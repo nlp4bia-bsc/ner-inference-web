@@ -414,6 +414,9 @@ once in each view; overlaps never insert counters inside words. Towers show one 
 per entity, centered over its range in independent towers per source line.
 Shorter overlapping mentions sit nearest the text and longer mentions above them;
 range marks stay clear of labels and source. Continuations keep their original ID.
+Marks remain invisible until a label is activated; another activation hides them.
+Only that entity's marks are shown. Original catalog labels and new extension
+labels also receive stable colors instead of a shared gray fallback.
 Selecting a region reveals every covering entity. Canonical category colors stay
 the same across document/UI languages. Details show complete surfaces, exact
 `[start, end)` offsets (end exclusive), model and actual confidence. Emoji/combining

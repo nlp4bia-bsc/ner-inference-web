@@ -1,10 +1,29 @@
-# Annotation reader review · 0.5.2
+# Annotation reader review · 0.5.3
 
 The reader offers inline highlights and BRAT-inspired entity towers over the same
 original source and canonical annotations. Nested, crossing and equal-range
 mentions remain distinct. Inference, consolidation and export rules are unchanged.
 
 ## Findings and corrections
+
+### Reveal only the activated entity's marks (0.5.3)
+
+All range marks are now invisible while labels retain their centered tower
+positions. Clicking a label, or activating it with Enter/Space, reveals only that
+annotation's marks, including wrapped fragments. Another activation hides them;
+activating a different label switches the reveal. Hover/focus and prior inline
+selection do not expose marks. The `aria-pressed` state indicates the toggle.
+Resize/locale redraws preserve the active reveal; changing documents/modes or
+filtering out the active annotation clears it. Label/source positions never shift
+as marks are shown or hidden.
+
+The previous gray fallback also made original model labels and unknown extensions
+look uncolored. Display aliases now cover all54 original catalog labels and common
+accented/BIO variants, with96 aliases in total. Canonical category colors stay
+unchanged; new labels use24 stable, non-gray extension palettes. These are finite
+palettes and may reuse colors. Scientific categories/labels/mappings are not
+rewritten. The raw PROFESION display alias follows PROFESSION when no canonical
+category is available; canonical ANONYMIZATION always retains its own color.
 
 ### Per-line centered towers (0.5.2)
 
@@ -67,7 +86,7 @@ still use the same validated original ranges.
 
 Color depends on canonical category, never UI/document language, checkpoint or a
 hash bucket. All 13 current catalog categories have explicit colors; known aliases
-share their canonical color. Unknown labels have a neutral fallback. This is a
+share their canonical color. Unknown labels use24 stable extension palettes. This is a
 consistent project convention, not a universal biomedical NER color standard.
 
 | Category | Border / pale background |
@@ -89,8 +108,8 @@ consistent project convention, not a universal biomedical NER color standard.
 Labels, IDs, outlines, mention lists and the technical table supply redundant
 cues; color alone is not used to identify a span.
 
-The [static palette measurements](security/v5.1-entity-palette.json) record text
-and border contrast above 4.5:1 for all 13 categories and the neutral fallback.
+The [static palette measurements](security/v5.3-entity-palette.json) record main
+text, mention metadata and border contrast above4.5:1 for all37 active palettes.
 These bounded CSS checks supplement browser scans, not conformance certification.
 
 ## Captures
@@ -105,7 +124,11 @@ its purpose is to show CSS counters inside a word.
 
 ![Entity towers, mobile](previews/overlaps/towers-390.png)
 
+![Only the activated entity's marks, mobile](previews/overlaps/towers-selected-390.png)
+
 ![Entity towers, desktop](previews/overlaps/towers-1440.png)
+
+![Only the activated entity's marks, desktop](previews/overlaps/towers-selected-1440.png)
 
 ## Verification scope
 
@@ -126,7 +149,7 @@ do not establish WCAG certification. Extremely dense annotations can create tall
 towers; the bounded reader scrolls and filters remain available. Long documents
 retain the existing fragment API rather than being silently truncated.
 
-The [72 axe-core scans](security/v5.2-axe.jsonl) report zero automatic WCAG-tagged
+The [72 axe-core scans](security/v5.3-axe.jsonl) report zero automatic WCAG-tagged
 violations. Color contrast remains an incomplete rule in 44 scans, including
 overlapping/SVG states; the separate static palette check does not resolve those
 browser assessments. Human and assistive-technology review remains necessary.

@@ -73,7 +73,8 @@ Selected spans use an outline; other spans retain readable text contrast. Nested
 equal-boundary and crossing mentions remain individually selectable. Color is not
 the only cue: labels, an outside-text overlap summary, lists and tables expose the
 same annotations. Canonical colors are shared across languages/checkpoints; known
-aliases reuse that color and new categories use a neutral fallback. Disease is
+aliases reuse that color. All54 original catalog labels have display colors, and
+new labels receive a stable color from24 extension palettes. Disease is
 red/pink, medication blue and procedure green. The full mapping is in spans.js.
 
 The reader offers inline highlights and labeled SVG entity towers. Neither mode
@@ -84,6 +85,9 @@ each tag over its range. Shorter overlapping mentions remain below longer ones;
 12px font and exact centering using horizontal scrolling when necessary.
 Towers show one label per mention, preserve whole display graphemes and expose untouched
 half-open source offsets. See [OVERLAP_RENDERING.md](OVERLAP_RENDERING.md).
+Range marks stay invisible until the corresponding label is activated. Only that
+annotation's marks appear; activating the label again hides them. The tower layout
+does not move when marks appear/disappear, and keyboard activation works identically.
 
 Desktop uses three panels: documents, original text and entity information. Side
 panels/tables scroll within deliberate bounds, avoiding a very tall empty reader.
@@ -144,3 +148,5 @@ a substitute for the incomplete browser/overlap assessments or human review.
 The [V5.1 entity palette check](security/v5.1-entity-palette.json) additionally
 records text and border contrast above 4.5:1 for all 13 canonical categories and
 the neutral fallback.
+The [V5.3 palette check](security/v5.3-entity-palette.json) records contrast above
+4.5:1 for borders, main text and mention metadata on all37 active palettes.

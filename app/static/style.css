@@ -1209,8 +1209,11 @@ fieldset {
 .tower-bracket {
   stroke: var(--entity-color);
   stroke-width: 1.5;
+  opacity: 0;
+  pointer-events: none;
 }
-.tower-bracket.selected {
+.tower-bracket.revealed {
+  opacity: 1;
   stroke-width: 2.5;
 }
 .tower-tag {
@@ -1280,4 +1283,124 @@ fieldset {
 .entity-other {
   --entity-color: #53647a;
   --entity-bg: #edf1f6;
+}
+
+.entity-custom-0 {
+  --entity-color: #6d1717;
+  --entity-bg: #f9e7e7;
+}
+
+.entity-custom-1 {
+  --entity-color: #6d2d17;
+  --entity-bg: #f9ebe7;
+}
+
+.entity-custom-2 {
+  --entity-color: #6d4217;
+  --entity-bg: #f9f0e7;
+}
+
+.entity-custom-3 {
+  --entity-color: #6d5817;
+  --entity-bg: #f9f4e7;
+}
+
+.entity-custom-4 {
+  --entity-color: #6d6d17;
+  --entity-bg: #f9f9e7;
+}
+
+.entity-custom-5 {
+  --entity-color: #586d17;
+  --entity-bg: #f4f9e7;
+}
+
+.entity-custom-6 {
+  --entity-color: #426d17;
+  --entity-bg: #f0f9e7;
+}
+
+.entity-custom-7 {
+  --entity-color: #2d6d17;
+  --entity-bg: #ebf9e7;
+}
+
+.entity-custom-8 {
+  --entity-color: #176d17;
+  --entity-bg: #e7f9e7;
+}
+
+.entity-custom-9 {
+  --entity-color: #176d2d;
+  --entity-bg: #e7f9eb;
+}
+
+.entity-custom-10 {
+  --entity-color: #176d42;
+  --entity-bg: #e7f9f0;
+}
+
+.entity-custom-11 {
+  --entity-color: #176d58;
+  --entity-bg: #e7f9f4;
+}
+
+.entity-custom-12 {
+  --entity-color: #176d6d;
+  --entity-bg: #e7f9f9;
+}
+
+.entity-custom-13 {
+  --entity-color: #17586d;
+  --entity-bg: #e7f4f9;
+}
+
+.entity-custom-14 {
+  --entity-color: #17426d;
+  --entity-bg: #e7f0f9;
+}
+
+.entity-custom-15 {
+  --entity-color: #172d6d;
+  --entity-bg: #e7ebf9;
+}
+
+.entity-custom-16 {
+  --entity-color: #17176d;
+  --entity-bg: #e7e7f9;
+}
+
+.entity-custom-17 {
+  --entity-color: #2d176d;
+  --entity-bg: #ebe7f9;
+}
+
+.entity-custom-18 {
+  --entity-color: #42176d;
+  --entity-bg: #f0e7f9;
+}
+
+.entity-custom-19 {
+  --entity-color: #58176d;
+  --entity-bg: #f4e7f9;
+}
+
+.entity-custom-20 {
+  --entity-color: #6d176d;
+  --entity-bg: #f9e7f9;
+}
+
+.entity-custom-21 {
+  --entity-color: #6d1758;
+  --entity-bg: #f9e7f4;
+}
+
+.entity-custom-22 {
+  --entity-color: #6d1742;
+  --entity-bg: #f9e7f0;
+}
+
+.entity-custom-23 {
+  --entity-color: #6d172d;
+  --entity-bg: #f9e7eb;
 }
