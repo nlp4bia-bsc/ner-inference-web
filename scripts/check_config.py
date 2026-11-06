@@ -4,14 +4,15 @@ import argparse
 import json
 import os
 import sys
-from importlib.util import find_spec
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
 
 import app
+from app.auth.origins import trusted_origin
 from app.config import Settings
+from app.services.runtime import inference_dependencies
 
 SAFE_FIELDS = (
     "app_env",
@@ -71,13 +72,10 @@ def main(argv=None):
             }
             for key in SAFE_FIELDS
         },
-        "inference_dependencies": {
-            name: find_spec(name) is not None
-            for name in ("torch", "transformers", "huggingface_hub", "lab")
-        },
+        "inference_dependencies": inference_dependencies(),
     }
     if args.expect_origin:
-        result["origin_matches"] = origin(settings.public_base_url) == origin(args.expect_origin)
+        result["origin_matches"] = trusted_origin(args.expect_origin, settings)
     print(json.dumps(result, indent=2))
     return 1 if result.get("origin_matches") is False else 0
 

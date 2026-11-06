@@ -8,12 +8,13 @@ import re
 import sqlite3
 import time
 from http.cookies import SimpleCookie
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs
 
 from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
 from app.auth.i18n import locale, translate
+from app.auth.origins import safe_origin, trusted_origin
 from app.errors import ServiceError
 from app.permissions.policies import principal, require_owner
 
@@ -119,10 +120,8 @@ class AuthMiddleware:
             if located:
                 await run_in_threadpool(lambda: require_owner(self.auth.db.get(located.group(1))))
             if method not in SAFE:
-                expected_origin = urlsplit(self.s.public_base_url)
                 origin = headers.get(b"origin")
                 referer = headers.get(b"referer")
-                source = urlsplit(origin or referer or "")
                 # Chromium navigations under no-referrer may use an opaque Origin.
                 # Fetch Metadata must still prove same-origin; the HMAC CSRF check
                 # below is mandatory for this case too.
@@ -133,14 +132,18 @@ class AuthMiddleware:
                     headers.get(b"sec-fetch-site") == "cross-site"
                     or (origin or referer)
                     and not opaque_same_origin
-                    and (source.scheme, source.netloc)
-                    != (expected_origin.scheme, expected_origin.netloc)
+                    and not trusted_origin(origin or referer, self.s)
                 ):
+                    site = headers.get(b"sec-fetch-site", "missing")
                     logging.getLogger("temu.auth").warning(
-                        "csrf_rejected reason=origin_mismatch configured_origin=%s://%s "
-                        "check=PUBLIC_BASE_URL",
-                        expected_origin.scheme,
-                        expected_origin.netloc,
+                        "csrf_rejected reason=origin_mismatch configured_origin=%s "
+                        "request_origin=%s referer_origin=%s fetch_site=%s check=PUBLIC_BASE_URL",
+                        safe_origin(self.s.public_base_url),
+                        safe_origin(origin),
+                        safe_origin(referer),
+                        site
+                        if site in ("same-origin", "same-site", "cross-site", "none", "missing")
+                        else "invalid",
                     )
                     raise ServiceError("origin_mismatch", 403)
                 public_auth = path in AUTH_PAGES or path in PUBLIC_API

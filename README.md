@@ -185,8 +185,11 @@ See [remote native startup and stale exports](docs/DEPLOYMENT.md#native-python-a
 for exact recovery commands on the machine that actually runs the services.
 
 Open http://127.0.0.1:8000 after copying the local-development .env example.
-Keep `PUBLIC_BASE_URL` identical to the browser origin, including scheme and port:
-`localhost` and `127.0.0.1` are different origins. A mismatch rejects submissions.
+Local development accepts both `localhost` and `127.0.0.1` on the configured
+scheme and port. Their cookies remain separate, so sign in on each hostname;
+private job links preserve the browser's hostname. This alias pair applies only
+to development/test with local cookies. Production requires its configured origin.
+`0.0.0.0` is a listen address, not a wildcard browser origin or a CSRF setting.
 Anonymous access redirects to login. Register with a unique email and a password
 of at least four characters, then sign in; the dashboard shows the STANDARD
 100-document tier. No verification email is required by default. Use /annotate for
@@ -201,6 +204,13 @@ profile and requirements-nlp.lock the CUDA NER profile, both with the exact upst
 revision archive. Upstream also includes training/search
 packages, making this image large. Local installation/test commands were exercised;
 no clinical production checkpoint is part of this checkout.
+
+The worker checks inference modules at startup, without loading model weights.
+Missing modules produce a clear installation message and stop the worker before
+claiming jobs. Install the chosen profile using the same interpreter that runs
+the worker (for example `python3 -m pip install -r requirements-cpu.lock` when
+`python3` is the working Conda executable). Resubmit previously failed jobs after
+fixing the runtime; they are not silently rerun or rewritten.
 
 ## Account and administrator setup
 

@@ -6,6 +6,7 @@ import logging
 import multiprocessing
 import os
 import shutil
+import sys
 import time
 
 from app.config import Settings
@@ -13,6 +14,7 @@ from app.db import Database
 from app.services import pipeline
 from app.services.cleanup import cleanup
 from app.services.registry import Registry
+from app.services.runtime import inference_dependencies
 from app.services.statistics import statistics
 from app.storage import LocalStorage
 
@@ -107,6 +109,18 @@ def run():
     os.umask(0o077)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     s = Settings()
+    missing = [name for name, present in inference_dependencies().items() if not present]
+    if missing:
+        log.error(
+            "worker_runtime_unavailable missing_modules=%s python=%s",
+            ",".join(missing),
+            sys.executable,
+        )
+        raise SystemExit(
+            "Install inference libraries in this Python environment: "
+            "python3 -m pip install -r requirements-cpu.lock (CPU) "
+            "or requirements-nlp.lock (GPU). No jobs were claimed."
+        )
     storage, db = LocalStorage(s.storage_root), Database(s)
     with (s.storage_root / "worker.lock").open("w") as lock:
         try:

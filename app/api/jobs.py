@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 from pydantic import ValidationError
 
 from app.api.schemas import JobAccepted, JobStatus, ProgressResponse, Submission
+from app.auth.origins import trusted_origin
 from app.errors import ServiceError
 
 
@@ -120,7 +121,7 @@ def router(service):
                 streams = [(f.filename, f.file) for f in files]
             else:
                 raise ServiceError("Unknown input mode.")
-            return await run_in_threadpool(
+            accepted = await run_in_threadpool(
                 service.submit_streams,
                 form,
                 streams,
@@ -128,6 +129,12 @@ def router(service):
                 mode,
                 request.scope.get("admission_lease"),
             )
+            browser_origin = str(request.base_url).rstrip("/")
+            if trusted_origin(browser_origin, service.settings):
+                accepted["url"] = (
+                    browser_origin + service.settings.app_prefix + "/jobs/" + accepted["job_id"]
+                )
+            return accepted
 
     @api.get("/api/jobs/{token}", response_model=JobStatus)
     def status(token: str):

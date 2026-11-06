@@ -26,7 +26,8 @@ Python environment rather than a different `uvicorn` executable on PATH.
 `PUBLIC_BASE_URL` describes the address visible in the **browser**. If a remote
 port is forwarded to `http://127.0.0.1:8000` on the browser's machine, use that
 origin; the remote hostname is not the browser origin. A different forwarded
-port, hostname or HTTPS scheme requires its own matching setting. Keep the
+port or HTTPS scheme requires its own matching setting. Local mode also accepts
+the `localhost`/`127.0.0.1` pair on that same scheme/port, as described below. Keep the
 remote Uvicorn bound to loopback for a tunnel. This HTTP/local-cookie setup is
 for loopback/tunneled development; public deployment retains HTTPS/Secure cookies.
 
@@ -45,6 +46,7 @@ The report shows each safe effective setting's source (`environment`, `.env` or
 `default`), the absolute configuration/application/interpreter paths, and installed
 inference modules without importing models or making network requests. It excludes
 SMTP passwords, Hub tokens, cookies and patient data. Origin mismatch exits 1.
+The comparison uses the same local-alias policy as the HTTP middleware.
 `REQUIRE_EMAIL_VERIFICATION` should be false; its default is false. Correct any old
 variables in shell startup/Conda/service configuration for a permanent fix.
 
@@ -84,6 +86,45 @@ deployment's CUDA-compatible `requirements-nlp.lock` profile for GPU. This insta
 libraries, not model weights; weights are downloaded/cached on first use. Test
 execution and manual database initialization are not required for every update.
 
+### Local aliases, cookies and inference dependencies
+
+With `APP_ENV=development` (or test) and `COOKIE_SECURE=false`, a configured
+`http://127.0.0.1:8000` accepts requests originating at both that address and
+`http://localhost:8000`. The reverse configuration also works. Scheme and port
+must stay equal; arbitrary domains, other loopback IPs and `0.0.0.0` are not
+aliases. Production and Secure-cookie configurations retain a single configured
+origin. CSRF proofs remain mandatory, and cross-site Fetch Metadata stays blocked.
+
+Listening on `0.0.0.0` exposes network interfaces; it does not make browser origins
+interchangeable. A forwarded loopback setup can keep `--host 127.0.0.1`. Browsers
+isolate cookies between `localhost` and `127.0.0.1`, so switching hosts requires
+sign-in on that host. Submission links preserve the validated local request host
+instead of switching to the other alias; unrelated Host/forwarding values cannot
+choose the returned private origin. Production retains its canonical configured URL.
+
+An empty/missing `.env` is permitted when all settings come from the process
+environment, but those exports must be supplied to each service on every restart
+or kept in its launch configuration. Use `python3` consistently when `python` is
+an old alias/function pointing at an unavailable Python 3.10. No Python 3.10
+installation is needed for this project (Python 3.12 is recommended).
+
+`inference_dependencies` must report all four modules present in the actual
+worker environment. Install its profile once with the working interpreter:
+
+```sh
+python3 -m pip install -r requirements-cpu.lock
+python3 -m scripts.check_config --expect-origin http://127.0.0.1:8000
+python3 -m app.worker
+```
+
+Use the CUDA-compatible `requirements-nlp.lock` profile instead for GPU. These
+are runtime libraries, not model weights. An incompletely provisioned worker now
+exits before touching storage or claiming/recovering jobs, naming the missing
+modules and installation command. Web can remain lightweight. If a dependency
+fails later during a model invocation, safe model logs also identify a missing
+top-level inference module. Fixing dependencies does not rerun a job already
+marked FAILED; submit it again to produce a new audited job.
+
 ## Containers
 
 For local browser use, copy `.env.example` to `.env` before starting Compose and
@@ -91,8 +132,8 @@ open **http://127.0.0.1:8000**. The example sets `APP_ENV=development`,
 `COOKIE_SECURE=false`, `PUBLIC_BASE_URL=http://127.0.0.1:8000` and `MAIL_BACKEND=none`.
 The checked-in Compose fallback remains production/HTTPS; running without a local
 environment file while browsing plain HTTP can allow a login navigation but
-reject the subsequent XHR upload's Origin. `localhost` is also distinct from
-`127.0.0.1`; scheme, host, port and configured prefix must match the browser URL.
+reject the subsequent XHR upload's Origin. The local alias pair above accepts
+`localhost` and `127.0.0.1`; scheme, port and configured prefix must match.
 
 For an existing deployment, update those settings in its private environment and
 recreate web and worker (`docker compose up -d --force-recreate`). Restart does not
@@ -103,7 +144,8 @@ do not relax CSRF checks or trust arbitrary forwarding headers to fix a mismatch
 
 Origin rejection now returns a service-address configuration message instead of
 suggesting a reload. The private `temu.auth` log records
-`csrf_rejected reason=origin_mismatch configured_origin=... check=PUBLIC_BASE_URL`;
+`csrf_rejected reason=origin_mismatch configured_origin=... request_origin=...
+referer_origin=... fetch_site=... check=PUBLIC_BASE_URL`;
 it does not log the submitted ZIP, patient text, cookies or CSRF proof. A rejected
 submission clears the upload progress while preserving selected files/models.
 

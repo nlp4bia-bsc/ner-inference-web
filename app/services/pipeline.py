@@ -17,6 +17,7 @@ from app.services.inference import NerLabSession, merge_predictions
 from app.services.model_cache import ModelCache
 from app.services.publication import publish, read_publication
 from app.services.registry import Registry, model_snapshot, statistics_reference
+from app.services.runtime import INFERENCE_MODULES
 from app.services.statistics import StreamingStatistics, statistics
 from app.storage import LocalStorage, StorageBudget, directory_bytes
 
@@ -61,6 +62,10 @@ def process_job(
 
     def model_failed(model, exc, stage):
         error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
+        if isinstance(exc, ModuleNotFoundError):
+            module = (exc.name or "").split(".", 1)[0]
+            if module in INFERENCE_MODULES:
+                error["missing_module"] = module
         cause = exc
         for _ in range(6):
             response = getattr(cause, "response", None)
@@ -75,12 +80,13 @@ def process_job(
             for frame in traceback.extract_tb(exc.__traceback__)[-20:]
         ]
         logging.getLogger("temu.pipeline").error(
-            "model_failed job_id=%s model_id=%s stage=%s error_type=%s http_status=%s frames=%s",
+            "model_failed job_id=%s model_id=%s stage=%s error_type=%s http_status=%s missing_module=%s frames=%s",
             job["id"],
             model["model_id"],
             stage,
             type(exc).__name__,
             error.get("http_status"),
+            error.get("missing_module"),
             frames,
         )
         if error not in model_errors:

@@ -1,4 +1,56 @@
-# Latest: native configuration diagnostics and workspace verification policy (0.6.2)
+# Latest: loopback aliases and missing inference runtime (0.6.3)
+
+Local development/test with non-Secure cookies accepts the explicit
+`localhost`/`127.0.0.1` alias pair on the same scheme and port. Production,
+Secure-cookie deployments, unrelated domains/IPs, other ports/schemes and
+`0.0.0.0` retain their restrictions. CSRF HMAC/session proof and cross-site Fetch
+Metadata rejection remain mandatory. Host comparisons normalize default ports
+and case; malformed origins are rejected safely. Request-origin diagnostics record
+bounded scheme/host/port and enumerated Fetch Metadata without paths/queries,
+credentials, cookies, patient text or body data.
+
+Accepted private links retain the validated browser origin so localhost submission
+does not jump to 127.0.0.1 and lose its host-only session cookie. Untrusted Host
+values cannot choose that link's origin. API cases cover both alias directions,
+root and `/ner`, required CSRF proof, touch and ZIP submission, private-page
+access and malicious Host fallback. Real Chromium on localhost, against a server
+configured for 127.0.0.1, signs in, uploads a nested ZIP and opens its private link
+at both root and `/ner`. A canonical-host session check proves cookies were not
+shared between domains.
+
+The user's failed job had no installed inference libraries. A worker now checks
+module availability before touching storage, recovering or claiming jobs. Missing
+modules produce a direct installation instruction with the effective interpreter;
+no model weights are imported/downloaded by this check. Web stays lightweight.
+Safe per-model errors also name missing top-level inference modules from a fixed
+allowlist without exposing exception strings. A previously FAILED job remains
+failed; it must be resubmitted after repairing the environment.
+
+The focused aliases/configuration/submission/cache set passes **43 cases in
+30.24s**, including isolation of a synthetic missing-module failure and log
+privacy. These are mechanics tests, not clinical-model validation.
+
+Full regression: **251 passed in 376.38s**, zero failures/skips:
+
+```sh
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=work/local-aliases-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=work/local-aliases-release \
+work/locked-env/bin/python -m pytest -q
+```
+
+[72 axe scans](security/v6.3-axe.jsonl) have zero automatic violations; contrast
+remains incomplete in 44 scans, so these do not certify WCAG conformance. Ruff
+lint/format (105 Python files), Bandit medium/high checks and wheel/sdist 0.6.3
+builds pass. The actual configuration CLI accepts localhost for a local
+127.0.0.1 configuration using the same origin policy as HTTP admission. Packaged
+origin, worker, pipeline, runtime and API code match the checkout. No native
+library versions changed; no model weights are bundled. No installation/deployment
+on the user's remote machine is claimed.
+
+---
+
+# Historical: native configuration diagnostics and workspace verification policy (0.6.2)
 
 The user's actual deployment runs native Uvicorn and a Python worker on another
 machine, reached through a forwarded port. Earlier local-container recreation did

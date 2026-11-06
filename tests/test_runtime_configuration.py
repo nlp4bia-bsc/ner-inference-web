@@ -73,7 +73,7 @@ def test_diagnostic_reports_missing_env_and_inference_libraries(tmp_path, monkey
     monkeypatch.chdir(tmp_path)
     for name in ["PUBLIC_BASE_URL", "APP_ENV", "COOKIE_SECURE", "REQUIRE_EMAIL_VERIFICATION"]:
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr("scripts.check_config.find_spec", lambda _: None)
+    monkeypatch.setattr("app.services.runtime.find_spec", lambda _: None)
     assert main([]) == 0
     data = json.loads(capsys.readouterr().out)
     assert not data["env_file"]["exists"]

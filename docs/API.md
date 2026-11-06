@@ -71,6 +71,11 @@ Example accepted response (token abbreviated for illustration):
 {"job_id":"opaque-uuid","status":"QUEUED","token":"random-capability-token","url":"https://temu.bsc.es/jobs/random-capability-token"}
 ```
 
+In local development, `localhost` and `127.0.0.1` are accepted on the configured
+scheme/port. The accepted URL preserves the validated browser host so it does not
+cross into the other hostname's cookie jar. Production still uses its configured
+origin; untrusted Host/forwarding values cannot supply a private-link origin.
+
 Keep the locator URL: token hashes are stored for compatibility, but tokens
 never authorize anonymous or cross-account reads. Status
 contains job_id, status, document_count, processed_documents (0 until a full batch

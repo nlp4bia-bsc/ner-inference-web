@@ -65,7 +65,7 @@ def test_all_published_configured_models_are_selectable_without_preflight(settin
     assert not s.hub_cache.exists()  # Listing/selecting does not download anything.
 
 
-@pytest.mark.parametrize("kind", ["exception", "bad-offset"])
+@pytest.mark.parametrize("kind", ["exception", "bad-offset", "missing-module"])
 def test_failed_model_is_logged_without_patient_text_and_other_results_survive(
     settings, tmp_path, caplog, kind
 ):
@@ -74,6 +74,10 @@ def test_failed_model_is_logged_without_patient_text_and_other_results_survive(
 
     class Predictor:
         def predict(self, model, documents, output, device):
+            if model["model_id"] == "bad" and kind == "missing-module":
+                raise ModuleNotFoundError(
+                    "PATIENT_SECRET must never enter logs", name="huggingface_hub"
+                )
             if model["model_id"] == "bad" and kind == "exception":
                 raise RuntimeError("PATIENT_SECRET must never enter logs")
             return [
@@ -101,6 +105,9 @@ def test_failed_model_is_logged_without_patient_text_and_other_results_survive(
         status = client.get("/api/jobs/" + accepted.json()["token"]).json()
         assert status["status"] == "COMPLETED_WITH_ERRORS"
         assert summary["failed_models"] == 1 and summary["successful_documents"] == 1
+        if kind == "missing-module":
+            assert summary["model_errors"][0]["missing_module"] == "huggingface_hub"
+            assert "missing_module=huggingface_hub" in caplog.text
         root = app.state.jobs.storage.job(job["id"])
         manifest = json.loads((root / "output" / "manifest.json").read_text())
         assert manifest["partial"] and manifest["model_errors"][0]["model_id"] == "bad"

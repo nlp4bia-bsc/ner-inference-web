@@ -2,11 +2,11 @@
 
 import asyncio
 import tempfile
-from urllib.parse import urlsplit
 
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+from app.auth.origins import trusted_origin
 from app.errors import ServiceError
 
 
@@ -49,10 +49,7 @@ class AdmissionMiddleware:
             if (
                 origin
                 and not scope.get("csrf_verified")
-                and origin.decode().rstrip("/")
-                != urlsplit(self.s.public_base_url).scheme
-                + "://"
-                + urlsplit(self.s.public_base_url).netloc
+                and not trusted_origin(origin.decode("latin-1"), self.s)
             ):
                 raise ServiceError("Untrusted request origin.", 403)
             maximum = self.s.upload_bytes + 1024**2  # bounded multipart overhead
