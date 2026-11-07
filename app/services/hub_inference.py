@@ -54,6 +54,8 @@ class HubSession(NerLabSession):
         started = monotonic()
         key = (model["model_dir"], model.get("resolved_revision"), device)
         loaded = key not in self.cache
+        if self.on_progress:
+            self.on_progress("LOADING_MODEL")
         if loaded:
             while len(self.cache) >= self.max_models:
                 _, old = self.cache.popitem(last=False)
@@ -112,9 +114,15 @@ class HubSession(NerLabSession):
             "id2label": encoder.id2label,
             "label2id": encoder.label2id,
         }
+        if self.on_progress:
+            self.on_progress("ENCODING")
         rows = encoder.encode(read_documents(documents))
         if rows.empty:
             raise ModelSchemaError("No inference windows")
+        from app.services.inference_progress import prediction_trainer
+
+        if self.on_progress:
+            self.on_progress("INFERENCE", 0, len(rows), "windows")
         logits = predict_logits(
             model=weights,
             tokenizer=tokenizer,
@@ -122,7 +130,10 @@ class HubSession(NerLabSession):
             batch_size=model.get("batch_size", 16),
             device=device,
             pad_to_multiple_of=8,
+            trainer_class=prediction_trainer(weights, self.on_progress, len(rows)),
         )
+        if self.on_progress:
+            self.on_progress("DECODING", len(rows), len(rows), "windows")
         spans = decode_spans(
             rows=rows,
             predictions=logits,

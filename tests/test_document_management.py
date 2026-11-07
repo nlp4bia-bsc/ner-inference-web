@@ -219,3 +219,34 @@ def test_two_simultaneous_submissions_cannot_claim_the_same_last_quota_slot(sett
             statuses = list(pool.map(attempt, range(2)))
         assert sorted(statuses) == [202, 422]
         assert client.get("/api/my/document-usage").json()["occupied"] == 100
+
+
+def test_bulk_delete_all_projects_is_owner_scoped_and_preserves_upload_history(settings):
+    settings.rate_limit_seconds = 0
+    app = application(settings)
+    with AccountClient(app) as owner, TestClient(app) as foreign:
+        identities = [upload(owner, 2).json()["job_id"] for _ in range(2)]
+        execute(app, settings)  # Completed content plus a queued project.
+        authenticate(foreign, "another-owner@example.org")
+        foreign_id = upload(foreign, 1).json()["job_id"]
+        proof = owner.headers.pop("X-CSRF-Token")
+        assert owner.delete("/api/my/documents").status_code == 403
+        owner.headers["X-CSRF-Token"] = proof
+        result = owner.delete("/api/my/documents")
+        assert result.status_code == 200 and result.json()["deleted"] == 4
+        assert result.json()["quota"] == {
+            "occupied": 0,
+            "remaining": 100,
+            "limit": 100,
+            "total_uploaded": 4,
+        }
+        assert owner.get("/api/my/documents").json()["total"] == 4
+        assert all(
+            row["state"] == "DELETED" for row in owner.get("/api/my/documents").json()["items"]
+        )
+        for identity in identities:
+            assert not app.state.jobs.storage.job(identity).exists()
+            assert identity not in owner.get("/?lang=en").text
+        assert foreign.get("/api/my/document-usage").json()["occupied"] == 1
+        assert app.state.jobs.storage.job(foreign_id).exists()
+        assert owner.delete("/api/my/documents").json()["deleted"] == 0

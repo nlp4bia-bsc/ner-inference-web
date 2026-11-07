@@ -184,3 +184,35 @@ similarity, ranked candidates, requested/resolved language, English fallback,
 encoder/revision and dictionary hash. TSV serializes this object as JSON; BRAT
 adds N Reference records while keeping T records and original offsets unchanged.
 See [NORMALIZATION.md](NORMALIZATION.md) for private resource installation.
+
+
+## Per-model progress and project deletion (0.8)
+
+`GET /api/jobs/{id}/progress` retains `progress_percent` (published documents /
+retained total). New `inference_percent` averages NER member completion, including
+completed/failed model attempts and fractional completed windows in the current
+batch; it is neither wall-clock progress nor normalization completion. The UI
+labels the distinction. `models` contains only that owner's selected model IDs,
+kind (NER/NORMALIZATION), status, phase, completed/failed/total documents, current
+batch, completed/total units (`windows`, `terms`, `mentions`), safe exception type
+and activity timestamps. Native prediction batches update these counters before
+publication; restarts reset attempt counters and reuse validated publications.
+No model input, document name, weights path or mention text is exposed in progress.
+Rows from stale deleted-content generations are ignored and cannot overwrite new
+ones. Queued projects have pending model placeholders, without fabricated timings.
+
+`worker` exposes only `available`, `state` (`idle`, `busy`, `unavailable`), heartbeat
+age and last-seen timestamp. No other owner's job IDs, counts or language are
+returned. Heartbeat expiry is 15 seconds. Polling uses 1s while visible, with
+connection backoff and a longer interval for hidden tabs.
+
+`DELETE /api/jobs/{id}` erases the owner's entire project content and downloads,
+releases its retained quota, hides it from Dashboard/My jobs and cancels stale
+processing. Existing individual document DELETE remains supported.
+`DELETE /api/my/documents` deletes retained content across all current projects
+of the signed-in owner. Both require a live session and CSRF proof. Bulk deletion
+snapshots eligible project IDs; newly submitted projects after that snapshot are
+not included. Returns `{deleted, quota}`; deleted counts documents. Upload ledger
+metadata and lifetime totals remain. Concurrent expiry is tolerated; an error
+partway through bulk deletion leaves already completed deletions in effect and
+can be retried safely. There is no administrator bypass to clinical content.

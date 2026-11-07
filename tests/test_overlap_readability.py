@@ -358,7 +358,17 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
               runOnly: {type:'tag', values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}
             })""")
             assert not result["violations"], [
-                {"rule": row["id"], "nodes": [node["target"] for node in row["nodes"]]}
+                {
+                    "rule": row["id"],
+                    "nodes": [
+                        {
+                            "target": node["target"],
+                            "html": node["html"],
+                            "summary": node["failureSummary"],
+                        }
+                        for node in row["nodes"]
+                    ],
+                }
                 for row in result["violations"]
             ]
             if os.environ.get("AXE_REPORT"):

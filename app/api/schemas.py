@@ -54,6 +54,10 @@ class JobStatus(BaseModel):
 
 
 class ProgressResponse(BaseModel):
+    models: list[dict] = Field(default_factory=list)
+    worker: dict = Field(default_factory=dict)
+    inference_percent: float = 0
+
     status: str
     stage: str
     total_documents: int

@@ -43,6 +43,10 @@ def cleanup(db: Database, storage: LocalStorage):
         c.execute(
             "DELETE FROM documents WHERE job_id IN (SELECT id FROM jobs WHERE expired_at<?)", (old,)
         )
+        c.execute(
+            "DELETE FROM model_progress WHERE job_id IN (SELECT id FROM jobs WHERE expired_at<?)",
+            (old,),
+        )
         c.execute("DELETE FROM jobs WHERE expired_at<?", (old,))
         c.execute("DELETE FROM limits WHERE accepted_at<?", (now - db.s.rate_limit_seconds,))
         # Upload middleware has a hard 5 minute body timeout. Lease sweep after 10 minutes.

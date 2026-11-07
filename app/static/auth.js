@@ -180,7 +180,18 @@ export function openDialog(title, message, actions = []) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = action.label;
-    button.onclick = () => action.run(dialog);
+    button.onclick = async () => {
+      button.disabled = true;
+      try {
+        await action.run(dialog);
+      } catch (_) {
+        text.textContent = t(
+          "The request could not be submitted. Please try again.",
+        );
+      } finally {
+        button.disabled = false;
+      }
+    };
     dialog.append(button);
   }
   const close = document.createElement("button");

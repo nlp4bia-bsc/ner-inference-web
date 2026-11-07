@@ -20,12 +20,16 @@ export function startProgress(
     description = document.createElement("p"),
     bar = document.createElement("progress"),
     counts = document.createElement("p"),
-    countdown = document.createElement("div");
+    countdown = document.createElement("div"),
+    worker = document.createElement("p"),
+    models = document.createElement("div");
+  worker.setAttribute("role", "status");
+  models.className = "model-progress-list";
   bar.max = 100;
   bar.value = 0;
   description.setAttribute("role", "status");
   countdown.className = "countdown";
-  panel.append(summary, description, bar, counts, countdown);
+  panel.append(summary, description, worker, bar, counts, models, countdown);
   host?.append(panel);
   let stopped = false,
     polling = false,
@@ -37,8 +41,104 @@ export function startProgress(
     expired = false,
     latest = null;
   const terminal = ["COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED", "EXPIRED"];
+  const phases = {
+    PENDING: "Pending",
+    CHECKING_CACHE: "Checking model availability",
+    DOWNLOADING_MODEL: "Preparing models · downloading uncached checkpoints",
+    LOADING_MODEL: "Loading model",
+    ENCODING: "Encoding documents",
+    INFERENCE: "Model inference progress",
+    DECODING: "Preparing annotations",
+    READY: "Ready",
+    WAITING: "Waiting for next batch",
+    WAITING_FOR_INDEX: "Waiting for terminology index",
+    LOADING_INDEX: "Loading terminology index",
+    READING_TERMINOLOGY: "Reading terminology",
+    BUILDING_INDEX: "Building terminology index",
+    SAVING_INDEX: "Writing terminology index",
+    NORMALIZING: "Normalizing mentions",
+  };
+  let modelSignature = "";
+  function renderModels(data) {
+    const signature = JSON.stringify([currentLocale(), data.models]);
+    if (signature === modelSignature) return;
+    modelSignature = signature;
+    models.replaceChildren();
+    for (const model of data.models || []) {
+      const card = document.createElement("section"),
+        title = document.createElement("strong"),
+        phase = document.createElement("p"),
+        detail = document.createElement("small"),
+        meter = document.createElement("progress"),
+        activity = document.createElement("small");
+      card.className = "model-progress-card";
+      card.dataset.modelId = model.model_id;
+      title.textContent = model.model_id;
+      const finished = [
+        "COMPLETED",
+        "COMPLETED_WITH_ERRORS",
+        "FAILED",
+        "SKIPPED",
+      ].includes(model.status);
+      phase.textContent =
+        (model.kind === "NORMALIZATION"
+          ? t("Concept normalization") + " · "
+          : "") +
+        t(
+          finished
+            ? model.status === "SKIPPED"
+              ? "Skipped"
+              : model.status
+            : phases[model.stage] || "Processing",
+        );
+      const parts = [];
+      if (model.kind === "NER")
+        parts.push(
+          `${t("Documents")}: ${number(model.completed_documents)} / ${number(model.total_documents)}`,
+        );
+      if (model.failed_documents)
+        parts.push(`${t("Failed")}: ${number(model.failed_documents)}`);
+      if (model.batch_index)
+        parts.push(
+          `${t("Batch")}: ${number(model.batch_index)}${model.batch_count ? " / " + number(model.batch_count) : ""}`,
+        );
+      if (model.total_units != null)
+        parts.push(
+          `${t({ windows: "Windows", terms: "Terms", mentions: "Mentions" }[model.unit] || "Documents")}: ${number(model.completed_units)} / ${number(model.total_units)}`,
+        );
+      if (model.error_code) parts.push(model.error_code);
+      detail.textContent = parts.join(" · ");
+      meter.max = 100;
+      meter.setAttribute(
+        "aria-label",
+        model.model_id + " · " + phase.textContent,
+      );
+      if (model.kind === "NORMALIZATION" && model.total_units)
+        meter.value = (100 * model.completed_units) / model.total_units;
+      else if (finished)
+        meter.value =
+          model.status === "COMPLETED" ? 100 : model.progress_percent;
+      else if (model.stage === "INFERENCE" || model.stage === "WAITING")
+        meter.value = model.progress_percent;
+      // Downloads, loading and index preparation have no elapsed-time percentage.
+      if (model.updated_at)
+        activity.textContent =
+          t("Last activity") + ": " + date(model.updated_at);
+      card.append(title, phase, meter, detail, activity);
+      models.append(card);
+    }
+  }
   function render() {
-    bar.setAttribute("aria-label", t("Annotated document progress"));
+    const inference =
+      latest?.status === "PROCESSING" &&
+      latest?.models?.some((m) => m.kind === "NER");
+    const percentage = inference
+      ? latest.inference_percent
+      : latest?.progress_percent;
+    bar.setAttribute(
+      "aria-label",
+      t(inference ? "Model inference progress" : "Annotated document progress"),
+    );
     if (expired) {
       description.textContent = t("Results have expired.");
       summary.textContent = t("Expired");
@@ -49,7 +149,8 @@ export function startProgress(
     }
     if (!latest) return;
     const data = latest;
-    summary.textContent = `${t(data.status)} · ${new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 1 }).format(data.progress_percent)}% · ${t(panel.open ? "Hide progress" : "Show progress")}`;
+    host?.classList.toggle("progress-active", !terminal.includes(data.status));
+    summary.textContent = `${t(data.status)} · ${inference ? t("Model inference progress") + ": " : ""}${new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 1 }).format(percentage)}% · ${t(panel.open ? "Hide progress" : "Show progress")}`;
     description.textContent =
       data.stage === "PREPARING_MODELS"
         ? t("Preparing models · downloading uncached checkpoints")
@@ -70,7 +171,19 @@ export function startProgress(
                         "Processing failed · published documents, if any, are partial results",
                       )
                     : t("Processing your documents");
-    bar.value = data.progress_percent;
+    bar.value = percentage;
+    const unavailable =
+      ["QUEUED", "PROCESSING"].includes(data.status) &&
+      data.worker?.available === false;
+    worker.className = unavailable ? "worker-unavailable" : "";
+    worker.textContent = unavailable
+      ? t(
+          "Processing service unavailable. Start the worker using the same configuration.",
+        )
+      : data.status === "QUEUED" && data.worker?.state === "busy"
+        ? t("The worker is processing another project.")
+        : "";
+    renderModels(data);
     counts.textContent =
       t(
         "{done} / {total} annotated · {processing} processing · {pending} pending · {failed} failed",
@@ -89,6 +202,7 @@ export function startProgress(
   function expire() {
     if (expired) return;
     expired = true;
+    host?.classList.remove("progress-active");
     stopped = true;
     clearTimeout(timer);
     clearInterval(clock);
@@ -209,7 +323,7 @@ export function startProgress(
       if (!stopped)
         timer = setTimeout(
           poll,
-          document.hidden ? 30000 : Math.min(30000, 2500 * 2 ** retries),
+          document.hidden ? 30000 : Math.min(30000, 1000 * 2 ** retries),
         );
     }
   }

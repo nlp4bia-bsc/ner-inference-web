@@ -48,17 +48,24 @@ def policy(path, method):
             "No clinical access",
             "admin/MFA tests + independent review",
         )
+    if path in ("/api/my/documents", "/api/my/document-usage", "/documents"):
+        return (
+            "Session",
+            "Live owner; CSRF for DELETE",
+            "Owner-filtered metadata and quota",
+            "individual/bulk deletion + two-user history + browser",
+        )
     if path.startswith(("/api/jobs/", "/jobs/")):
         return (
             "Session",
-            "Central and service owner guard + expiry",
+            "Central and service owner guard + expiry; CSRF for DELETE",
             "Strict owner only; ADMIN has no bypass",
             "two-user API/browser + legacy/TTL",
         )
     if path in ("/api/jobs", "/annotate"):
         return (
             "Session",
-            "Verified email; CSRF for POST; account quota atomically",
+            "Optional email verification; CSRF for POST; retained quota atomically",
             "Owner from session only",
             "quota + unverified + delayed-upload tests",
         )

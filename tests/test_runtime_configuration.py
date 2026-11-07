@@ -83,3 +83,17 @@ def test_diagnostic_reports_missing_env_and_inference_libraries(tmp_path, monkey
     }
     assert data["settings"]["REQUIRE_EMAIL_VERIFICATION"]["value"] is False
     assert not any(data["inference_dependencies"].values())
+    assert data["processing_service"]["state"] == "unavailable"
+    assert not (tmp_path / "storage").exists()
+
+
+def test_config_diagnostic_reports_shared_storage_and_worker_liveness(settings):
+    from app.db import Database
+    from scripts.check_config import processing_status
+
+    db = Database(settings)
+    assert processing_status(settings)["state"] == "unavailable"
+    db.heartbeat()
+    result = processing_status(settings)
+    assert result["state"] == "idle" and result["available"]
+    assert result["database"] == str(settings.db_path.resolve())

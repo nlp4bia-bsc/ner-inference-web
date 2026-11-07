@@ -60,7 +60,15 @@ def test_native_encoder_index_reuse_and_fallback_preserve_original_offsets(termi
     }
     for expected_hit in (False, True):
         session = NormalizationSession(s, root)
+        events = []
+        session.on_progress = lambda *args: events.append(args)
         spans = session.normalize([dict(span)], "et", lambda *args: errors.append(args))
+        assert ("DISEASE", "NORMALIZING", 1, 1, "mentions") in events
+        if expected_hit:
+            assert any(event[1] == "LOADING_INDEX" for event in events)
+            assert not any(event[1] == "BUILDING_INDEX" for event in events)
+        else:
+            assert ("DISEASE", "BUILDING_INDEX", 2, 2, "terms") in events
         assert not errors
         result = spans[0]["normalization"]
         assert result["language"] == "en" and result["fallback_to_english"]

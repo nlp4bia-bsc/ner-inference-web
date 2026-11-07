@@ -17,6 +17,12 @@ def router(service):
 
         return delete_documents(service, token)
 
+    @api.delete("/api/my/documents")
+    def delete_all():
+        from app.services.document_management import delete_all_documents
+
+        return delete_all_documents(service)
+
     @api.get("/api/my/document-usage")
     def document_usage():
         return service.quota()
@@ -168,18 +174,15 @@ def router(service):
 
     @api.get("/api/jobs/{token}/progress", response_model=ProgressResponse)
     def progress(token: str):
-        import time
-
-        from app.persistence.progress import ProgressRepository
         from app.services.jobs import iso
 
-        job = service.available(token)
-        result = ProgressRepository(service.db).snapshot(job)
+        data = service.status(token)
+        result = data["progress"]
         result["updated_at"] = iso(result["updated_at"])
         result.update(
-            server_now=iso(time.time()),
-            expires_at=iso(job["expires_at"]),
-            queue_position=service.status(token)["queue_position"],
+            server_now=data["server_now"],
+            expires_at=data["expires_at"],
+            queue_position=data["queue_position"],
         )
         return result
 

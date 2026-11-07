@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from importlib.metadata import version
 from pathlib import Path
 
+from app.persistence.job_locks import JobContentChanged
 from app.services.model_cache import ModelCache
 from app.services.normalization_catalog import CATEGORIES, NormalizationCatalog, file_sha256
 
@@ -61,7 +62,7 @@ class NormalizationCache:
                 if acquired:
                     self.prune()
 
-    def load_or_build(self, resource, model, retriever):
+    def load_or_build(self, resource, model, retriever, on_progress=None):
         import faiss
         import pandas as pd
 
@@ -83,6 +84,8 @@ class NormalizationCache:
             signature["revision"] = hashlib.sha256(
                 "".join(file_sha256(path) for path in weights).encode()
             ).hexdigest()
+        if on_progress:
+            on_progress("WAITING_FOR_INDEX")
         with self.locked():
             self.prune(keep=language)
             parent = self.root / language
@@ -94,6 +97,8 @@ class NormalizationCache:
             stored = json.loads(manifest.read_text()) if manifest.is_file() else {}
             hit = stored.get("signature") == signature
             if hit:
+                if on_progress:
+                    on_progress("LOADING_INDEX")
                 if file_sha256(destination / "index.faiss") != stored.get(
                     "index_sha256"
                 ) or file_sha256(destination / "vocabulary.parquet") != stored.get(
@@ -117,6 +122,8 @@ class NormalizationCache:
                     raise NormalizationUnavailable("Terminology changed since admission")
                 from lab.nel.retrieval import build_vocabulary
 
+                if on_progress:
+                    on_progress("READING_TERMINOLOGY")
                 vocabulary = build_vocabulary(pd.read_parquet(resource["file"]))
                 estimate = (
                     len(vocabulary) * getattr(retriever.model.config, "hidden_size", 1024) * 4
@@ -127,9 +134,16 @@ class NormalizationCache:
                 temporary = parent / (".building-" + uuid.uuid4().hex)
                 temporary.mkdir()
                 try:
-                    retriever.fit_faiss(
-                        vocab=vocabulary, batch_size=self.s.normalization_batch_size
-                    )
+                    from app.services.inference_progress import encoder_progress
+
+                    with encoder_progress(
+                        retriever.model, on_progress, "BUILDING_INDEX", len(vocabulary), "terms"
+                    ):
+                        retriever.fit_faiss(
+                            vocab=vocabulary, batch_size=self.s.normalization_batch_size
+                        )
+                    if on_progress:
+                        on_progress("SAVING_INDEX")
                     faiss.write_index(retriever.faiss_index, str(temporary / "index.faiss"))
                     vocabulary.to_parquet(temporary / "vocabulary.parquet", index=False)
                     (temporary / "manifest.json").write_text(
@@ -168,6 +182,12 @@ class NormalizationSession:
         self.encoder_key = None
         self.prepared = {}
         self.metadata = []
+        self.on_progress = None
+        self.current_entity = None
+
+    def report(self, stage, completed=0, total=None, unit=None):
+        if self.on_progress:
+            self.on_progress(self.current_entity, stage, completed, total, unit)
 
     def _encoder(self, resource):
         from lab.nel.retrieval import TransformerFaissRetriever
@@ -177,10 +197,12 @@ class NormalizationSession:
             failure = None
             for index, candidate in enumerate(resource["models"]):
                 try:
+                    self.models.on_progress = self.report
                     model = self.models.prepare(
                         {**candidate, "model_id": f"normalizer-{language}-{index}"}
                     )
                     # A local snapshot path prevents remote code/model-name dispatch.
+                    self.report("LOADING_MODEL")
                     encoder = TransformerFaissRetriever(
                         str(model["model_dir"]),
                         f_type="FlatIP",
@@ -194,6 +216,8 @@ class NormalizationSession:
                     self.encoder_key = language
                     self.encoder = encoder
                     break
+                except JobContentChanged:
+                    raise
                 except Exception as exc:
                     failure = exc
                     logging.getLogger("temu.normalization").warning(
@@ -209,6 +233,7 @@ class NormalizationSession:
         model = self.prepared[language]
         if self.encoder_key != language:
             self.encoder = None
+            self.report("LOADING_MODEL")
             self.encoder = TransformerFaissRetriever(
                 str(model["model_dir"]),
                 f_type="FlatIP",
@@ -226,18 +251,24 @@ class NormalizationSession:
             selected = [row for row in spans if row["label"] == entity]
             if not selected:
                 continue
+            self.current_entity = entity
             try:
                 resource = self.catalog.resolve(language, entity)
                 if resource is None:
                     raise NormalizationUnavailable("No terminology resource for category")
                 model, encoder = self._encoder(resource)
-                cached = self.cache.load_or_build(resource, model, encoder)
+                cached = self.cache.load_or_build(resource, model, encoder, on_progress=self.report)
                 mentions = list(dict.fromkeys(row["text"] for row in selected))
-                terms, codes, scores = encoder.get_candidates(
-                    mentions,
-                    k=self.s.normalization_top_k,
-                    batch_size=self.s.normalization_batch_size,
-                )
+                from app.services.inference_progress import encoder_progress
+
+                with encoder_progress(
+                    encoder.model, self.report, "NORMALIZING", len(mentions), "mentions"
+                ):
+                    terms, codes, scores = encoder.get_candidates(
+                        mentions,
+                        k=self.s.normalization_top_k,
+                        batch_size=self.s.normalization_batch_size,
+                    )
                 lookup = {}
                 for text, row_terms, row_codes, row_scores in zip(
                     mentions, terms, codes, scores, strict=True
@@ -276,6 +307,8 @@ class NormalizationSession:
                         "fallback_to_english": resource["fallback_to_english"],
                     }
                 )
+            except JobContentChanged:
+                raise
             except Exception as exc:
                 on_error({"model_id": f"normalizer-{language}-{entity}"}, exc, "NORMALIZATION")
         return spans

@@ -296,8 +296,8 @@ class Database:
                 return None
             now = time.time()
             c.execute(
-                "UPDATE jobs SET status='PROCESSING',started_at=?,attempts=attempts+1,processing_version=content_version WHERE id=?",
-                (now, row["id"]),
+                "UPDATE jobs SET status='PROCESSING',stage='STARTING',updated_at=?,started_at=?,attempts=attempts+1,processing_version=content_version WHERE id=?",
+                (now, now, row["id"]),
             )
             self.event(c, row["id"], "PROCESSING", now)
             return dict(row)

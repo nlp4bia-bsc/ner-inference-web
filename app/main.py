@@ -41,6 +41,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app):
+        import logging
+        import sys
+
+        logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(message)s")
+        logging.getLogger("temu").setLevel(logging.INFO)
+        logging.getLogger("temu.runtime").info(
+            "web_ready python=%s database=%s", sys.executable, settings.db_path.resolve()
+        )
+
         async def sweep():
             while True:
                 try:
@@ -70,7 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="NLP4BIA · Multilingual NER Platform",
-        version="0.7.0",
+        version="0.8.0",
         lifespan=lifespan,
         redirect_slashes=False,
         docs_url=None,

@@ -67,7 +67,17 @@ class ProgressRepository:
             provisional = {key: saved.get(key) for key in ("words", "tokens", "sentences")}
         else:
             saved = {}
+        from app.persistence.model_progress import ModelProgressRepository
+        from app.services.worker_status import worker_status
+
+        models = ModelProgressRepository.snapshot(self.db, job, total)
+        ner = [row for row in models if row["kind"] == "NER"]
         return {
+            "models": models,
+            "worker": worker_status(self.db),
+            "inference_percent": sum(row["progress_percent"] for row in ner) / len(ner)
+            if ner
+            else 0,
             "provisional_statistics": provisional,
             "mentions": sum(r["annotation_count"] for r in rows if r["status"] == "ANNOTATED")
             if rows

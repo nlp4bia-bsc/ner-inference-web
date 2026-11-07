@@ -36,6 +36,8 @@ def child(job: dict, settings_dict: dict, parent_pid: int):
     libc = ctypes.CDLL(None)
     if libc.prctl(1, signal.SIGKILL) != 0 or os.getppid() != parent_pid:
         raise SystemExit("Worker supervision unavailable")
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("temu").setLevel(logging.INFO)
     try:
         # Scientific children do not need email credentials or .env parsing.
         for name in tuple(os.environ):
@@ -50,6 +52,14 @@ def child(job: dict, settings_dict: dict, parent_pid: int):
         temp.replace(path)
     except Exception as exc:
         # No exception strings: they can contain patient text, names or private paths.
+        from app.persistence.model_progress import ModelProgressRepository
+
+        try:
+            ModelProgressRepository.interrupt(
+                Database(Settings(**settings_dict, _env_file=None)), job, type(exc).__name__
+            )
+        except Exception:
+            log.error("progress_unavailable job_id=%s", job["id"])
         log.error("job_failed job_id=%s error_type=%s", job["id"], type(exc).__name__)
         raise SystemExit(1) from None
 
@@ -112,7 +122,8 @@ def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, 
 
 def run():
     os.umask(0o077)
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("temu").setLevel(logging.INFO)
     s = Settings()
     missing = [name for name, present in inference_dependencies().items() if not present]
     if missing:
@@ -133,6 +144,12 @@ def run():
         except BlockingIOError:
             raise SystemExit("Another worker is already active") from None
         db.recover()
+        log.info(
+            "worker_ready python=%s database=%s loading_mode=%s waiting_for_jobs=true",
+            sys.executable,
+            s.db_path.resolve(),
+            s.model_loading_mode,
+        )
         while True:
             db.heartbeat()
             cleanup(db, storage)
@@ -140,14 +157,19 @@ def run():
             if not job:
                 time.sleep(1)
                 continue
+            log.info("job_started job_id=%s documents=%s", job["id"], job["document_count"])
             ok, summary = execute(job, s, db, storage)
             if not ok:
+                from app.persistence.model_progress import ModelProgressRepository
+
+                ModelProgressRepository.interrupt(db, job, "WorkerInterrupted")
                 with job_lock(s, job["id"]):
                     shutil.rmtree(storage.job(job["id"]) / "building", ignore_errors=True)
                     shutil.rmtree(storage.job(job["id"]) / "output", ignore_errors=True)
             db.finish(
                 job["id"], summary, failed=not ok, claimed_version=job.get("content_version", 0)
             )
+            log.info("job_finished job_id=%s success=%s", job["id"], ok)
 
 
 if __name__ == "__main__":

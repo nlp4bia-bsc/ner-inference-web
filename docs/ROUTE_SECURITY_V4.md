@@ -6,38 +6,44 @@ Public assets: /static/assets/bsc-blue.svg, /static/auth.css, /static/auth.js, /
 
 | Method | Route | Authentication | Authorization policy | Ownership | Coverage |
 |---|---|---|---|---|---|
+| DELETE | /api/jobs/{token} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| DELETE | /api/jobs/{token}/documents/{document_id} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| DELETE | /api/my/documents | Session | Live owner; CSRF for DELETE | Owner-filtered metadata and quota | individual/bulk deletion + two-user history + browser |
 | GET | / | Session | Own account and owner-filtered history | SQL owner filter; no foreign queue counts | two-user history + anonymous sweep |
 | GET | /account-deletion | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | GET | /admin | Session | Live ADMIN + MFA; atomic revalidation for writes | No clinical access | admin/MFA tests + independent review |
-| GET | /annotate | Session | Verified email; CSRF for POST; account quota atomically | Owner from session only | quota + unverified + delayed-upload tests |
+| GET | /annotate | Session | Optional email verification; CSRF for POST; retained quota atomically | Owner from session only | quota + unverified + delayed-upload tests |
 | GET | /api/admin/audit | Session | Live ADMIN + MFA; atomic revalidation for writes | No clinical access | admin/MFA tests + independent review |
 | GET | /api/admin/metrics | Session | Live ADMIN + MFA; atomic revalidation for writes | No clinical access | admin/MFA tests + independent review |
 | GET | /api/admin/users | Session | Live ADMIN + MFA; atomic revalidation for writes | No clinical access | admin/MFA tests + independent review |
 | GET | /api/auth/session | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | GET | /api/auth/sessions | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
-| GET | /api/jobs/{token} | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents/{document_id} | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents/{document_id}/annotations | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents/{document_id}/download/{format} | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents/{document_id}/search | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/documents/{document_id}/statistics | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/download/brat | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/download/tsv | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/progress | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/statistics | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /api/jobs/{token}/viewer | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents/{document_id} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents/{document_id}/annotations | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents/{document_id}/download/{format} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents/{document_id}/search | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/documents/{document_id}/statistics | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/download/brat | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/download/tsv | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/progress | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/statistics | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /api/jobs/{token}/viewer | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
 | GET | /api/languages | Session | Authenticated shared model metadata | No job data | catalog + anonymous sweep |
 | GET | /api/models | Session | Authenticated shared model metadata | No job data | catalog + anonymous sweep |
+| GET | /api/my/document-usage | Session | Live owner; CSRF for DELETE | Owner-filtered metadata and quota | individual/bulk deletion + two-user history + browser |
+| GET | /api/my/documents | Session | Live owner; CSRF for DELETE | Owner-filtered metadata and quota | individual/bulk deletion + two-user history + browser |
 | GET | /api/my/jobs | Session | Own account and owner-filtered history | SQL owner filter; no foreign queue counts | two-user history + anonymous sweep |
 | GET | /api/profile | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | GET | /change-password | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | GET | /dashboard | Session | Own account and owner-filtered history | SQL owner filter; no foreign queue counts | two-user history + anonymous sweep |
 | GET | /docs | Session | Authenticated schema access | No clinical contents | anonymous sweep |
+| GET | /documents | Session | Live owner; CSRF for DELETE | Owner-filtered metadata and quota | individual/bulk deletion + two-user history + browser |
 | GET | /forgot-password | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
 | GET | /health | Public minimal | None | No job data | anonymous sweep |
-| GET | /jobs/{token} | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
-| GET | /jobs/{token}/viewer | Session | Central and service owner guard + expiry | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /jobs/{token} | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
+| GET | /jobs/{token}/viewer | Session | Central and service owner guard + expiry; CSRF for DELETE | Strict owner only; ADMIN has no bypass | two-user API/browser + legacy/TTL |
 | GET | /login | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
 | GET | /mfa | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | GET | /models | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
@@ -72,7 +78,7 @@ Public assets: /static/assets/bsc-blue.svg, /static/auth.css, /static/auth.js, /
 | POST | /api/auth/rotate-session | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /api/auth/touch | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /api/auth/verify-email | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
-| POST | /api/jobs | Session | Verified email; CSRF for POST; account quota atomically | Owner from session only | quota + unverified + delayed-upload tests |
+| POST | /api/jobs | Session | Optional email verification; CSRF for POST; retained quota atomically | Owner from session only | quota + unverified + delayed-upload tests |
 | POST | /change-password | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /forgot-password | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
 | POST | /login | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
@@ -87,16 +93,3 @@ Public assets: /static/assets/bsc-blue.svg, /static/auth.css, /static/auth.js, /
 | POST | /rotate-session | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /touch | Session | Own account/session only; CSRF for writes | Identity from live session; allowlisted fields | auth lifecycle + anonymous sweep |
 | POST | /verify-email | Public authentication | CSRF for writes; throttle; validated fields | One-use verifier for account actions | auth_v4 + real browser |
-
-## 0.7 owner document management
-
-The new `/documents` UI and `GET /api/my/document-usage`,
-`GET /api/my/documents` are authenticated, owner-scoped routes. Historical
-filename/size/language metadata is never an administrative cross-user endpoint.
-`DELETE /api/jobs/{id}` and
-`DELETE /api/jobs/{id}/documents/{document_id}` require the live owner and CSRF.
-Foreign IDs are 404. Deletion is serialized with publication, increments the
-content generation, invalidates derived exports and prevents stale worker
-completion. Quota admission counts retained documents in the same write
-transaction as insertion. Expiry/deletion free quota without removing the
-private lifetime upload ledger. No new public exception was added.

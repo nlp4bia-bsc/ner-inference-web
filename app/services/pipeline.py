@@ -10,7 +10,7 @@ from pathlib import Path
 
 from app.config import Settings
 from app.db import Database
-from app.persistence.job_locks import check_content_version, job_lock
+from app.persistence.job_locks import JobContentChanged, check_content_version, job_lock
 from app.persistence.progress import ProgressRepository
 from app.services.hub_inference import HubSession
 from app.services.incremental_export import package_publications
@@ -60,6 +60,11 @@ def process_job(
                 )
         rows = [row for row in progress.rows(job["id"]) if row["status"] != "DELETED"]
     payload["documents"] = [row["filename"] for row in rows]
+    from app.persistence.model_progress import ModelProgressRepository
+
+    reporter = ModelProgressRepository(db, job)
+    reporter.initialize(models, len(rows), s.inference_document_batch_size)
+    current_batch_size = None
     model_errors = []
     normalizer = None
     if payload.get("normalize"):
@@ -72,8 +77,20 @@ def process_job(
         ):
             raise ValueError("Terminology configuration changed; resubmit with current resources")
         normalizer = NormalizationSession(s, root, terminology)
+        for row in payload.get("normalization_resources", []):
+            reporter.ensure(
+                f"normalizer-{payload['language']}-{row['entity']}", len(rows), "NORMALIZATION", 0
+            )
+        normalizer.on_progress = lambda entity, stage, completed, total, unit: reporter.update(
+            f"normalizer-{payload['language']}-{entity}", stage, completed, total, unit
+        )
 
     def model_failed(model, exc, stage):
+        reporter.fail(
+            model["model_id"],
+            exc,
+            current_batch_size if stage in ("INFERENCE", "NORMALIZATION") else None,
+        )
         error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
         if isinstance(exc, ModuleNotFoundError):
             module = (exc.name or "").split(".", 1)[0]
@@ -123,7 +140,12 @@ def process_job(
         prepared = []
         for model in models:
             try:
+                reporter.update(model["model_id"], "CHECKING_CACHE")
+                cache.on_progress = reporter.callback(model["model_id"])
                 prepared.append(cache.prepare(model))
+                reporter.update(model["model_id"], "READY", status="WAITING")
+            except JobContentChanged:
+                raise
             except Exception as exc:
                 model_failed(model, exc, "PREPARING_MODELS")
         models = prepared
@@ -155,6 +177,8 @@ def process_job(
                     or model.get("checkpoint_sha256")
                 )
                 break
+            except JobContentChanged:
+                raise
             except Exception as exc:
                 model_failed(model, exc, "TOKENIZER")
         if accumulator is None:
@@ -178,6 +202,7 @@ def process_job(
         except (OSError, ValueError, KeyError):
             record = None
         if record:
+            reporter.restore_document(record.get("models", []))
             for meta in record.get("models", []):
                 if meta.get("status") == "FAILED":
                     error = {k: v for k, v in meta.items() if k != "status"}
@@ -220,6 +245,7 @@ def process_job(
     try:
         for offset in range(0, len(pending), s.inference_document_batch_size):
             batch = pending[offset : offset + s.inference_document_batch_size]
+            current_batch_size = len(batch)
             identities = [r["document_id"] for r in batch]
             progress.mark(job["id"], identities, "PROCESSING")
             with job_lock(s, job["id"]):
@@ -240,6 +266,11 @@ def process_job(
                     else list(reversed(models))
                 )
                 for i, model in enumerate(ordered):
+                    reporter.start_batch(
+                        model["model_id"], offset // s.inference_document_batch_size + 1, len(batch)
+                    )
+                    if hasattr(engine, "on_progress"):
+                        engine.on_progress = reporter.callback(model["model_id"])
                     try:
                         if model.get("task", "ner") != "ner" or model.get("requires"):
                             # Never feed an annotation-dependent classifier raw text alone.
@@ -259,8 +290,11 @@ def process_job(
                         merge_predictions(
                             texts, [(resolved, spans)]
                         )  # Reject only this model's malformed output.
+                        reporter.complete_batch(model["model_id"], len(batch))
                         predictions.append((resolved, spans))
                         metadata.append(meta)
+                    except JobContentChanged:
+                        raise
                     except Exception as exc:
                         metadata.append(model_failed(model, exc, "INFERENCE"))
                 if not predictions:
@@ -268,12 +302,32 @@ def process_job(
                 merged = merge_predictions(texts, predictions)
                 if normalizer:
                     progress.stage(job["id"], "NORMALIZATION")
+                    active_normalizers = {
+                        row["label"]
+                        for row in merged
+                        if row["label"] in ("DISEASE", "SYMPTOM", "PROCEDURE", "MEDICATION")
+                    }
+                    for entity in active_normalizers:
+                        reporter.start_batch(
+                            f"normalizer-{payload['language']}-{entity}",
+                            offset // s.inference_document_batch_size + 1,
+                            len(batch),
+                        )
                     normalizer.normalize(
                         merged,
                         payload["language"],
                         lambda model, exc, stage: metadata.append(model_failed(model, exc, stage)),
                     )
+                    for entity in active_normalizers:
+                        if all(
+                            row.get("normalization") for row in merged if row["label"] == entity
+                        ):
+                            reporter.complete_batch(
+                                f"normalizer-{payload['language']}-{entity}", len(batch)
+                            )
                     progress.stage(job["id"], "INFERENCE")
+            except JobContentChanged:
+                raise
             except Exception as exc:
                 logging.getLogger("temu.pipeline").error(
                     "microbatch_failed job_id=%s error_type=%s", job["id"], type(exc).__name__
@@ -347,6 +401,7 @@ def process_job(
             model_errors=model_errors,
             models=provenance,
         )
+        reporter.finish()
         progress.stage(job["id"], "PREPARING_DOWNLOADS")
         manifest = {
             k: payload[k]

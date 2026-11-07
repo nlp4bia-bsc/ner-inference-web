@@ -177,3 +177,23 @@ def delete_documents(service, token, document_id=None):
                 )
             service.db.event(connection, job["id"], "DOCUMENTS_DELETED", time.time())
     return {"deleted": len(selected), "quota": quota(service.db, account)}
+
+
+def delete_all_documents(service):
+    account = user()
+    with service.db.connect() as connection:
+        identities = [
+            row[0]
+            for row in connection.execute(
+                "SELECT id FROM jobs WHERE owner_user_id=? AND status NOT IN ('DELETED','EXPIRED')",
+                (account["id"],),
+            )
+        ]
+    deleted = 0
+    for identity in identities:
+        try:
+            deleted += delete_documents(service, identity)["deleted"]
+        except ServiceError as exc:
+            if exc.status not in (404, 410):
+                raise
+    return {"deleted": deleted, "quota": quota(service.db, account)}

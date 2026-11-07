@@ -1702,3 +1702,62 @@ html {
   max-width: 100%;
   overflow: auto;
 }
+.action-success {
+  border-color: #14804a;
+  box-shadow: inset 4px 0 #14804a;
+  color: #11643b;
+}
+.action-danger {
+  border-color: #b52d43;
+  box-shadow: inset 4px 0 #b52d43;
+  color: #922338;
+}
+.action-success:hover {
+  background: #edf9f1;
+}
+.action-danger:hover {
+  background: #fff1f2;
+}
+.model-progress-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+  max-height: 26rem;
+  overflow: auto;
+  margin: 16px 0;
+}
+.model-progress-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+  min-width: 0;
+}
+.model-progress-card > strong {
+  display: block;
+  font-size: 0.875rem;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.model-progress-card p {
+  font-size: 0.8125rem;
+  margin: 4px 0;
+}
+.model-progress-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.model-progress-card progress {
+  width: 100%;
+  margin: 6px 0;
+}
+.worker-unavailable {
+  border-left: 4px solid #a66d00;
+  padding: 10px 14px;
+  background: #fff8e8;
+}
+
+.job-management-action {
+  margin-top: 12px;
+}

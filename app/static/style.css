@@ -755,11 +755,14 @@ fieldset {
   --entity-bg: #eef0f5;
 }
 #global-progress {
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 30;
   background: var(--bg);
   padding-top: 1px;
+}
+#global-progress.progress-active:has(.global-progress:not([open])) {
+  position: sticky;
 }
 .global-progress {
   margin: 16px 32px;

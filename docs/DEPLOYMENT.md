@@ -20,7 +20,7 @@ locally; BSC TLS/domain deployment has not been performed.
 Run these steps on the machine hosting Uvicorn and the worker, from the checkout
 root and the same Python environment. Updating a different checkout or recreating
 containers elsewhere does not update this process. Stop both old processes before
-starting replacements. Use `python -m uvicorn` so the web server uses the active
+starting replacements. Use `python3 -m uvicorn` so the web server uses the active
 Python environment rather than a different `uvicorn` executable on PATH.
 
 `PUBLIC_BASE_URL` describes the address visible in the **browser**. If a remote
@@ -127,12 +127,13 @@ marked FAILED; submit it again to produce a new audited job.
 
 ## Containers
 
-For local browser use, copy `.env.example` to `.env` before starting Compose and
-open **http://127.0.0.1:8000**. The example sets `APP_ENV=development`,
+For local browser use, run `docker compose up --build -d` and open
+**http://127.0.0.1:8000**. The example and Compose defaults set `APP_ENV=development`,
 `COOKIE_SECURE=false`, `PUBLIC_BASE_URL=http://127.0.0.1:8000` and `MAIL_BACKEND=none`.
-The checked-in Compose fallback remains production/HTTPS; running without a local
-environment file while browsing plain HTTP can allow a login navigation but
-reject the subsequent XHR upload's Origin. The local alias pair above accepts
+Since 0.8 the Compose defaults also use this local HTTP configuration, so no
+environment file or shell exports are needed for loopback use. Existing `.env`
+files and exported values still override those defaults; review stale settings.
+The local alias pair above accepts
 `localhost` and `127.0.0.1`; scheme, port and configured prefix must match.
 
 For an existing deployment, update those settings in its private environment and
@@ -153,7 +154,7 @@ submission clears the upload progress while preserving selected files/models.
 the HTTP dependencies; worker installs the pinned CPU inference libraries by
 default (`INSTALL_NLP=true`, `NLP_PROFILE=cpu`). No model weights are downloaded
 during image build or application startup. `requirements-cpu.lock` selects Torch
-2.10.0+cpu without CUDA runtime packages; the GPU profile is opt-in.
+2.15.0+cpu without CUDA runtime packages; the GPU profile is opt-in.
 Allow sufficient build disk/network capacity. Production model initialization and
 GPU drivers must be validated on BSC; the Compose file does not request GPUs.
 To use GPU hardware add the site's supported NVIDIA runtime/device grant and size
@@ -279,8 +280,8 @@ interrupted jobs replay at their original FIFO sequence up to MAX_ATTEMPTS.
 Inference exceptions/timeouts fail terminally without partial downloads.
 
 The site still requires BSC domain/TLS/reverse proxy, checkpoint paths/revisions,
-resource limits, backup/privacy policy, monitoring and any GPU mounts. Production now requires configured STARTTLS SMTP for account verification/recovery,
-HTTPS/Secure cookies and administrator MFA. The local file-mail example is for
+resource limits, backup/privacy policy, monitoring and any GPU mounts. Production requires HTTPS/Secure cookies and administrator MFA. STARTTLS SMTP
+is needed only if email recovery or explicit email verification is enabled. The local file-mail example is for
 loopback development only. See AUTHENTICATION_V4.md for exact settings/bootstrap
 and RECOVERY_V4.md for coordinated upgrade/restore and MFA recovery.
 
@@ -352,3 +353,63 @@ The original retention deadline does not extend. The lifetime upload ledger
 retains metadata (filename, size, language, upload/removal time), never deleted
 clinical text. Include this metadata retention in institutional privacy notices.
 Files already downloaded to a user's own machine cannot be erased remotely.
+
+
+## 0.8: persistent local configuration and queue diagnostics
+
+For native Conda execution, keep both processes, from the same checkout root.
+Persist these lines in the existing private `.env` **once**, merging rather than
+replacing its storage/model paths. Remove conflicting old shell/Conda variables:
+
+```dotenv
+APP_ENV=development
+COOKIE_SECURE=false
+PUBLIC_BASE_URL=http://127.0.0.1:8000
+REQUIRE_EMAIL_VERIFICATION=false
+MAIL_BACKEND=none
+MODEL_LOADING_MODE=on_demand
+HF_HUB_OFFLINE=0
+TRANSFORMERS_OFFLINE=0
+```
+
+Then launch in two terminals with `conda activate ner-inference-web`:
+
+```sh
+# Terminal 1, from the repository root:
+python3 -m uvicorn app.asgi:app --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
+# Terminal 2, from the same root, same Conda environment:
+python3 -m app.worker
+```
+
+`python3 -m scripts.check_config --expect-origin http://127.0.0.1:8000` now reports
+`processing_service`: absolute database path, existence, heartbeat age and
+`idle`/`busy`/`unavailable`. It reads an existing database without creating one.
+Compare the database paths in `web_ready` and `worker_ready` logs. Different
+working directories, storage settings, interpreters or Conda environments can
+otherwise run two valid processes against different queues. `worker_ready`
+explicitly means it is waiting for jobs. Each accepted/started/finished project
+and model phase is logged; logs omit clinical text and exception strings.
+
+A heartbeat older than 15 seconds is unavailable. A queued project cannot yet be
+building its FAISS index: the worker first claims it, changing it to PROCESSING.
+The UI shows unavailable processing service or a busy worker, then per-model
+loading, native inference-window counts and normalization/index phases. Downloads
+and initialization show indeterminate progress; no elapsed-time ETA is invented.
+Expanded model details scroll with the page; the compact active summary can stay
+sticky. Terminal summaries no longer cover document controls in the viewer.
+The model inference percentage excludes normalization. The separate published
+annotation count still means documents with validated results on disk.
+
+For Docker, `docker compose up --build -d` starts both services with shared storage
+and the local defaults above. No exports or model precompilation are required.
+Use `--force-recreate` after changing environment configuration; keep the volume.
+For public HTTPS deployments explicitly set `APP_ENV=production`,
+`COOKIE_SECURE=true` and the real HTTPS `PUBLIC_BASE_URL`, with the documented
+reverse proxy/TLS setup. Production validation has not been relaxed.
+
+The additive schema migration 5 stores per-model counters and generation guards.
+Restart web and worker together after updating; do not reset accounts or storage.
+Project deletion is available on Dashboard/My jobs, while My documents retains
+individual deletion and adds bulk deletion. A project-scoped manager deletes
+that project's documents; the unfiltered manager deletes across the account.
+Confirmations state the scope. Neither action clears lifetime upload metadata.

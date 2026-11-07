@@ -67,10 +67,13 @@ def cached_snapshot(settings, repository, revision="main"):
 class ModelCache:
     def __init__(self, settings, job_root):
         self.s, self.job_root = settings, Path(job_root)
+        self.on_progress = None
         self.pins_file = self.job_root / "resolved-models.json"
         self.pins = json.loads(self.pins_file.read_text()) if self.pins_file.exists() else {}
 
     def prepare(self, model):
+        if self.on_progress:
+            self.on_progress("CHECKING_CACHE")
         repository = model.get("repository")
         local = model.get("model_dir")
         if local and Path(local).is_dir():
@@ -93,6 +96,8 @@ class ModelCache:
             path = cached_snapshot(self.s, repository, revision)
             hit = path is not None
             if path is None:
+                if self.on_progress:
+                    self.on_progress("DOWNLOADING_MODEL")
                 from huggingface_hub import snapshot_download
 
                 options = dict(

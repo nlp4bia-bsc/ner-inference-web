@@ -109,6 +109,7 @@ class NerLabSession:
         self.cache = OrderedDict()
         self.max_models = max_models
         self.timings = []
+        self.on_progress = None
 
     def predict(self, model, documents, output, device):
         from lab.ner.encoding.encoder import encoder_from_description
@@ -119,6 +120,8 @@ class NerLabSession:
         key = (model["model_dir"], model.get("checkpoint_sha256"), device)
         started = monotonic()
         loaded = key not in self.cache
+        if self.on_progress:
+            self.on_progress("LOADING_MODEL")
         if loaded:
             while len(self.cache) >= self.max_models:
                 _, old = self.cache.popitem(last=False)
@@ -132,11 +135,17 @@ class NerLabSession:
         )
         corpus = read_documents(documents)
         encode_start = monotonic()
+        if self.on_progress:
+            self.on_progress("ENCODING")
         rows = encoder.encode(corpus)
         if rows.empty:
             raise ValueError("No inference windows")
         encoded = monotonic() - encode_start
         infer_start = monotonic()
+        from app.services.inference_progress import prediction_trainer
+
+        if self.on_progress:
+            self.on_progress("INFERENCE", 0, len(rows), "windows")
         logits = predict_logits(
             model=weights,
             tokenizer=tokenizer,
@@ -144,7 +153,10 @@ class NerLabSession:
             batch_size=model.get("batch_size", 16),
             device=device,
             pad_to_multiple_of=8,
+            trainer_class=prediction_trainer(weights, self.on_progress, len(rows)),
         )
+        if self.on_progress:
+            self.on_progress("DECODING", len(rows), len(rows), "windows")
         infer_seconds = monotonic() - infer_start
         decode_start = monotonic()
         spans = decode_spans(

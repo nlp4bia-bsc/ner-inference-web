@@ -1,12 +1,6 @@
-import {
-  t,
-  number,
-  date,
-  localized,
-  openDialog,
-  onLocaleChange,
-} from "./auth.js";
+import { t, number, date, localized, onLocaleChange } from "./auth.js";
 import { paintQuota } from "./quota.js";
+import { confirmDeletion } from "./deletion.js";
 const base = document.querySelector('meta[name="app-prefix"]').content;
 const tbody = document.querySelector("#document-history");
 const message = document.querySelector("#management-message");
@@ -43,63 +37,23 @@ function render() {
       remove.textContent = t("Delete document");
       remove.disabled = busy;
       remove.onclick = () =>
-        openDialog(
-          t("Delete document"),
-          t(
-            "This removes the original document, its annotations and downloads. Upload history remains.",
-          ),
-          [
-            {
-              label: t("Delete"),
-              run: async (dialog) => {
-                dialog.close();
-                busy = true;
-                render();
-                message.textContent = t("Deleting…");
-                try {
-                  const session = await fetch(base + "/api/auth/session", {
-                    cache: "no-store",
-                  });
-                  if (session.status === 401) {
-                    window.dispatchEvent(new Event("temu-session-expired"));
-                    return;
-                  }
-                  if (!session.ok)
-                    throw new Error(
-                      t(
-                        "The service is temporarily unavailable. Please try again later.",
-                      ),
-                    );
-                  const identity = await session.json();
-                  const response = await fetch(
-                    base +
-                      "/api/jobs/" +
-                      row.job_id +
-                      "/documents/" +
-                      row.document_id,
-                    {
-                      method: "DELETE",
-                      headers: { "X-CSRF-Token": identity.csrf_token },
-                    },
-                  );
-                  const data = await response.json();
-                  if (!response.ok) throw new Error(t(data.detail));
-                  paintQuota(data.quota);
-                  await load();
-                  message.textContent = t(
-                    "Document content deleted. Upload history retained.",
-                  );
-                } catch (error) {
-                  message.textContent =
-                    error.message ||
-                    t("The request could not be submitted. Please try again.");
-                } finally {
-                  busy = false;
-                  render();
-                }
-              },
-            },
-          ],
+        confirmDeletion(
+          "/api/jobs/" + row.job_id + "/documents/" + row.document_id,
+          "Delete document",
+          "This removes the original document, its annotations and downloads. Upload history remains.",
+          async () => {
+            await load();
+            message.textContent = t(
+              "Document content deleted. Upload history retained.",
+            );
+          },
+          (error) => {
+            message.textContent = error;
+          },
+          (value) => {
+            busy = value;
+            render();
+          },
         );
       actions.append(link, document.createTextNode(" "), remove);
     } else {
@@ -136,6 +90,10 @@ async function load() {
   const data = await history.json();
   records = data.items;
   total = data.total;
+  if (offset > 0 && offset >= total) {
+    offset = Math.floor(Math.max(0, total - 1) / 50) * 50;
+    return load();
+  }
   paintQuota(await usage.json());
   render();
 }
@@ -155,3 +113,27 @@ filter.onchange = () => {
 };
 onLocaleChange(render);
 load().catch((error) => (message.textContent = error.message));
+
+document.querySelector("#delete-all-documents").onclick = () =>
+  confirmDeletion(
+    job ? "/api/jobs/" + encodeURIComponent(job) : "/api/my/documents",
+    "Delete all documents",
+    job
+      ? "This deletes all documents, annotations and downloads in this project and frees your quota. Upload history remains."
+      : "This deletes all retained documents and annotations across your projects and frees your quota. Upload history remains.",
+    async () => {
+      offset = 0;
+      await load();
+      message.textContent = t(
+        "Document content deleted. Upload history retained.",
+      );
+    },
+    (error) => {
+      message.textContent = error;
+    },
+    (value) => {
+      busy = value;
+      document.querySelector("#delete-all-documents").disabled = value;
+      render();
+    },
+  );

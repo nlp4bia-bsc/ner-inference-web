@@ -16,7 +16,20 @@ const titles = {
 };
 async function render(progress) {
   if (expired) return;
+  const sameState =
+    latestProgress &&
+    [
+      "status",
+      "annotated_documents",
+      "failed_documents",
+      "total_documents",
+      "expires_at",
+    ].every((key) => latestProgress[key] === progress[key]);
   latestProgress = progress;
+  if (latestData && sameState) {
+    paint(latestData, progress);
+    return;
+  }
   const response = await fetch(endpoint, { cache: "no-store" });
   if (response.status === 401)
     window.dispatchEvent(new Event("temu-session-expired"));
@@ -27,6 +40,13 @@ async function render(progress) {
   paint(data, progress);
 }
 function paint(data, progress) {
+  data = {
+    ...data,
+    status: progress.status,
+    queue_position: progress.queue_position,
+    document_count: progress.total_documents,
+  };
+
   $("heading").textContent = t(titles[data.status] || data.status);
   $("state").textContent = t(data.status);
   $("details").replaceChildren();
@@ -93,7 +113,13 @@ const copy = document.createElement("button");
 copy.className = "secondary";
 copy.textContent = t("Copy private link");
 copy.dataset.i18n = "Copy private link";
-copy.onclick = () => navigator.clipboard.writeText(location.href);
+copy.onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(location.href);
+  } catch (_) {
+    $("status-message").textContent = t("The link could not be copied.");
+  }
+};
 $("details").after(copy);
 startProgress(endpoint, { onChange: render, onExpire: expire });
 

@@ -3,8 +3,10 @@
 import argparse
 import json
 import os
+import sqlite3
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
@@ -13,6 +15,7 @@ import app
 from app.auth.origins import trusted_origin
 from app.config import Settings
 from app.services.runtime import inference_dependencies
+from app.services.worker_status import worker_status
 
 SAFE_FIELDS = (
     "app_env",
@@ -29,6 +32,21 @@ SAFE_FIELDS = (
 def origin(value):
     parsed = urlsplit(value)
     return parsed.scheme, parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80)
+
+
+def processing_status(settings):
+    path = settings.db_path.resolve()
+    result = {"database": str(path), "exists": path.is_file()}
+    if not result["exists"]:
+        return {**result, "state": "unavailable", "available": False}
+    try:
+        connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
+        try:
+            return {**result, **worker_status(SimpleNamespace(connect=lambda: connection))}
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        return {**result, "state": "unavailable", "available": False}
 
 
 def main(argv=None):
@@ -73,6 +91,7 @@ def main(argv=None):
             for key in SAFE_FIELDS
         },
         "inference_dependencies": inference_dependencies(),
+        "processing_service": processing_status(settings),
     }
     if args.expect_origin:
         result["origin_matches"] = trusted_origin(args.expect_origin, settings)

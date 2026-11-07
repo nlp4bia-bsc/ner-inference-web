@@ -10,7 +10,13 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
-Version 0.7 adds **occupied / limit** quotas across all retained jobs, immediate
+Version 0.8 adds live per-model/window progress, explicit worker availability and
+FAISS/index phases, Dashboard project deletion and bulk deletion in My documents.
+Compose starts with loopback HTTP defaults without shell exports. Native Conda
+continues to use two Python processes and a shared private `.env`; see
+[configuration and queue diagnostics](docs/DEPLOYMENT.md#08-persistent-local-configuration-and-queue-diagnostics).
+
+Version 0.7 added **occupied / limit** quotas across all retained jobs, immediate
 owner-controlled document erasure, and a permanent private upload-metadata history.
 The interface supports the 15 MultiClinSum-2 languages plus Estonian, with larger
 fonts at 1440p and 4K. A red upload notice states the user's de-identification
@@ -40,10 +46,9 @@ See [authentication and operations](docs/AUTHENTICATION_V4.md),
 [independent review](docs/SECURITY_REVIEW_V4.md) and
 [every protected route](docs/ROUTE_SECURITY_V4.md).
 
-The HTTP dependency audit is clean at the recorded run. The optional neural
-profiles retain two advisories in upstream-pinned torch2.10.0; their resolution
-requires an upstream-compatible update. Do not treat the neural production profile
-as fully hardened. Details and limitations are recorded in the security audit.
+CPU and GPU inference profiles have separate dependency locks. Current validation
+and dependency-audit results, including their limits, are recorded in
+[verification](docs/VERIFICATION.md).
 
 Inference uses [ner_lab](https://github.com/nlp4bia-bsc/ner_lab), pinned to
 `8640d4797b081a5f6b66d9b45c11269542a79a26`, for windows, original-coordinate

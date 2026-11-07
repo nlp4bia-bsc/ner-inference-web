@@ -54,6 +54,7 @@ def migrate(database):
     _migration_two(database)
     _migration_three(database)
     _migration_four(database)
+    _migration_five(database)
 
 
 def _migration_three(database):
@@ -146,3 +147,20 @@ def _migration_four(database):
                     ),
                 )
         c.execute("INSERT INTO schema_migrations VALUES (4,?)", (time.time(),))
+
+
+def _migration_five(database):
+    with database.connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        if connection.execute("SELECT 1 FROM schema_migrations WHERE version=5").fetchone():
+            return
+        connection.execute("""CREATE TABLE model_progress(
+          job_id TEXT NOT NULL,model_id TEXT NOT NULL,kind TEXT NOT NULL DEFAULT 'NER',
+          content_version INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL DEFAULT 'PENDING',
+          stage TEXT NOT NULL DEFAULT 'PENDING',completed_documents INTEGER NOT NULL DEFAULT 0,
+          failed_documents INTEGER NOT NULL DEFAULT 0,total_documents INTEGER NOT NULL,
+          batch_index INTEGER NOT NULL DEFAULT 0,batch_count INTEGER NOT NULL DEFAULT 0,
+          batch_documents INTEGER NOT NULL DEFAULT 0,completed_units INTEGER NOT NULL DEFAULT 0,
+          total_units INTEGER,unit TEXT,started_at REAL,updated_at REAL NOT NULL,
+          error_code TEXT,PRIMARY KEY(job_id,model_id))""")
+        connection.execute("INSERT INTO schema_migrations VALUES(5,?)", (time.time(),))

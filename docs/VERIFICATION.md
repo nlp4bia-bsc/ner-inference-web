@@ -1,4 +1,68 @@
-# Latest: loopback aliases and missing inference runtime (0.6.3)
+# Latest: model progress, owner project deletion and local Compose (0.8)
+
+Final full CPU/Chromium regression: **286 passed in 435.17s**, no failures or
+skips. Commands executed from the checkout root (Python 3.12, Torch 2.15.0+cpu,
+Transformers 5.22.1, FAISS CPU 1.15.1, Chromium):
+
+```sh
+OMP_NUM_THREADS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=/tmp/ner-progress-final-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=/tmp/ner-progress-final-screens \
+/tmp/ner-web-progress-env/bin/python -m pytest -q
+```
+
+The additional final native inference/normalization/supervisor set passes
+**17 cases in 25.03s**. The per-model/generation/deletion/recovery set passes
+**19 cases in 15.75s**. Two additional root/prefix browser runs with explicit
+worker-unavailable and NER/FAISS accessibility scans pass in 14.50s.
+
+Coverage includes real native Transformer batches reported before document
+publication, prediction equality with/without reporting, one forward per batch,
+native CRF trainer selection, cold FlatIP build and warm disk reuse counters,
+worker heartbeat expiry, foreign-owner denial, stale generation rejection,
+per-member restoration from publications, deleting queued and completed projects,
+bulk owner-only deletion with CSRF, retained-quota refresh and permanent upload
+history. Chromium exercises project/bulk deletion and 375/1440/3840px progress
+cards under both root and /ner. The original overlap/Unicode/centering/order/
+click-only-lines suite passes, including 4K geometry.
+
+The first full run exposed two outdated browser quota assertions (100 versus
+0 / 100), a screenshot interrupted by the Docker disk-space experiment, and a
+real sticky progress panel obscuring a viewer button. The quota assertions now
+match the retained-quota contract. Expanded panels and terminal summaries scroll
+normally; only collapsed active summaries can stick. The final full rerun above
+passes with the original accessibility rules enabled.
+
+[80 axe scans](security/v8-axe.jsonl) contain zero automatic violations, including
+the new unavailable-worker and NER/FAISS cards. 52 scans have incomplete rules,
+so these results do not certify full WCAG conformance. Ruff lint/format, Prettier
+for changed JS/CSS, `git diff --check` and Bandit medium/high checks pass (six
+low-severity Bandit findings). Wheel/sdist 0.8.0 build successfully; packaged
+progress, worker, native reporting and document UI code match the checkout.
+Neither package contains confidential Parquet/FAISS/gazetteers data.
+
+Compose configuration was evaluated with `/dev/null` as its env file and all
+interpolated runtime variables removed from the process. Both services resolve
+the expected loopback HTTP/on-demand/online defaults without manual exports;
+web uses no email delivery/verification. The web Docker target built successfully
+with unchanged HTTP dependency locks and the session CA secret. A separate
+web+CPU-worker container smoke was attempted but could not be completed: Docker
+VFS exhausted the available disk while creating the extra worker container. A
+follow-up bind-mounted HTTP smoke did not reach a healthy service and is not
+counted as passing. Temporary containers, volume, network and the new image/cache
+records were removed; existing deployments were not replaced. Full worker-image
+startup is therefore not claimed by this release check. CI now exercises Compose
+without copying an env file first, and includes the new progress browser module.
+
+The worker was validated through actual native subprocess inference with tiny
+synthetic weights. No deployment or diagnosis of the user's remote Conda host,
+clinical accuracy, full private dictionary scale or GPU throughput is claimed.
+The new runtime CLI/logs provide the interpreter, shared database path and worker
+state needed to diagnose that host without exposing document text or credentials.
+
+---
+
+# Historical: loopback aliases and missing inference runtime (0.6.3)
 
 Local development/test with non-Secure cookies accepts the explicit
 `localhost`/`127.0.0.1` alias pair on the same scheme and port. Production,

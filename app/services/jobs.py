@@ -98,6 +98,17 @@ class JobService:
             shutil.rmtree(staging, ignore_errors=True)
             self.storage.delete(job_id)
             raise
+        import logging
+
+        from app.services.worker_status import worker_status
+
+        logging.getLogger("temu.queue").info(
+            "job_queued job_id=%s documents=%s models=%s worker_state=%s",
+            job_id,
+            len(references),
+            len(selected),
+            worker_status(self.db)["state"],
+        )
         return {
             "job_id": job_id,
             "status": "QUEUED",
@@ -109,9 +120,7 @@ class JobService:
         job = require_owner(self.db.get(token))
         if job["status"] == "DELETED":
             raise ServiceError("Results have been deleted or are scheduled for deletion.", 410)
-        if job["status"] == "EXPIRED" or (
-            job["expires_at"] and job["expires_at"] <= time.time()
-        ):
+        if job["status"] == "EXPIRED" or (job["expires_at"] and job["expires_at"] <= time.time()):
             raise ServiceError("Results have expired and downloads are no longer available.", 410)
         return job
 
@@ -171,7 +180,7 @@ class JobService:
                 json_extract(payload,'$.language') AS language,
                 json_extract(payload,'$.documents[0]') AS name,
                 json_extract(payload,'$.selected_models') AS selected_models
-                FROM jobs WHERE owner_user_id=? ORDER BY seq DESC LIMIT 100 OFFSET ?""",
+                FROM jobs WHERE owner_user_id=? AND status!='DELETED' ORDER BY seq DESC LIMIT 100 OFFSET ?""",
                 (time.time(), account["id"], offset),
             ).fetchall()
         result = []

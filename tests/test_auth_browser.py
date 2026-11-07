@@ -171,7 +171,7 @@ def test_real_signup_verification_two_user_isolation_logout_and_reset(auth_serve
             )
         signup(page, base, "researcher_a@example.test")
         login(page, base, "researcher_a@example.test")
-        assert page.locator("#quota").text_content() == "100"
+        assert page.locator("#quota").text_content() == "0 / 100"
         session = page.request.get(base + "/api/auth/session").json()
         response = page.request.post(
             base + "/api/jobs",

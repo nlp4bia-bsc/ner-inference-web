@@ -4,6 +4,30 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Delete project|Eliminar proyecto|Elimina el projecte
+Delete all documents|Eliminar todos los documentos|Elimina tots els documents
+This deletes all documents, annotations and downloads in this project and frees your quota. Upload history remains.|Se eliminarán todos los documentos, anotaciones y descargas de este proyecto y se liberará tu cuota. El historial de subidas se conserva.|S'eliminaran tots els documents, anotacions i descàrregues del projecte i s'alliberarà la quota. Es conserva l'historial de càrregues.
+This deletes all retained documents and annotations across your projects and frees your quota. Upload history remains.|Se eliminarán todos los documentos y anotaciones conservados en tus proyectos y se liberará tu cuota. El historial de subidas se conserva.|S'eliminaran tots els documents i anotacions conservats als projectes i s'alliberarà la quota. Es conserva l'historial de càrregues.
+The link could not be copied.|No se ha podido copiar el enlace.|No s'ha pogut copiar l'enllaç.
+Model inference progress|Progreso de inferencia de los modelos|Progrés d'inferència dels models
+Loading model|Cargando modelo|Carregant el model
+Encoding documents|Codificando documentos|Codificant documents
+Preparing annotations|Preparando anotaciones|Preparant anotacions
+Building terminology index|Construyendo índice terminológico|Construint l'índex terminològic
+Loading terminology index|Cargando índice terminológico|Carregant l'índex terminològic
+Waiting for terminology index|Esperando el índice terminológico|Esperant l'índex terminològic
+Reading terminology|Leyendo terminología|Llegint terminologia
+Writing terminology index|Guardando índice terminológico|Desant l'índex terminològic
+Normalizing mentions|Normalizando menciones|Normalitzant mencions
+Windows|Ventanas|Finestres
+Terms|Términos|Termes
+Batch|Lote|Lot
+Pending|Pendiente|Pendent
+Ready|Preparado|Preparat
+Skipped|Omitido|Omès
+Waiting for next batch|Esperando el siguiente lote|Esperant el lot següent
+Processing service unavailable. Start the worker using the same configuration.|Servicio de procesamiento no disponible. Inicia el worker con la misma configuración.|Servei de processament no disponible. Inicia el worker amb la mateixa configuració.
+The worker is processing another project.|El worker está procesando otro proyecto.|El worker està processant un altre projecte.
 Clinical and Biomedical Text Annotation|Anotación de textos clínicos y biomédicos|Anotació de textos clínics i biomèdics
 Developed by NLP4BIA · Barcelona Supercomputing Center|Desarrollado por NLP4BIA · Barcelona Supercomputing Center|Desenvolupat per NLP4BIA · Barcelona Supercomputing Center
 Dashboard|Panel|Tauler
