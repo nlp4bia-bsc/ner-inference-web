@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Selle keele ja olemi jaoks pole terminoloogiat saadaval.",
   "No normalization encoder is configured.": "Normaliseerimiskodeerija pole seadistatud.",
   "Concept normalization is disabled.": "Mõistete normaliseerimine on keelatud.",
-  "Concept normalization is unavailable.": "Mõistete normaliseerimine pole saadaval."
+  "Concept normalization is unavailable.": "Mõistete normaliseerimine pole saadaval.",
+  "Normalization method": "Normaliseerimismeetod",
+  "Exact string matching": "Täpne tekstivaste",
+  "Levenshtein": "Levenshtein",
+  "Similarity threshold": "Sarnasuse lävend",
+  "Use bi-encoder (slower)": "Kasuta bi-encoder'it (aeglasem)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "Bi-encoder kodeerib terminoloogia ja võib esimesel kasutamisel kaua aega võtta.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Kiire otsing võrdleb sõnastiku tekste. Levenshteini kasutatakse ainult täpse vaste puudumisel.",
+  "Matching mentions": "Mainimiste vastete otsimine",
+  "Building lexical index": "Leksikaalse indeksi loomine",
+  "Term-code pairs": "Termini ja koodi paarid",
+  "Bi-encoder": "Bi-encoder"
 }

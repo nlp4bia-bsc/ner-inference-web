@@ -48,6 +48,8 @@ export function startProgress(
     LOADING_MODEL: "Loading model",
     ENCODING: "Encoding documents",
     INFERENCE: "Model inference progress",
+    BUILDING_LEXICAL_INDEX: "Building lexical index",
+    MATCHING: "Matching mentions",
     DECODING: "Preparing annotations",
     READY: "Ready",
     WAITING: "Waiting for next batch",
@@ -82,7 +84,16 @@ export function startProgress(
       ].includes(model.status);
       phase.textContent =
         (model.kind === "NORMALIZATION"
-          ? t("Concept normalization") + " · "
+          ? t("Concept normalization") +
+            " · " +
+            t(
+              {
+                exact: "Exact string matching",
+                levenshtein: "Levenshtein",
+                bi_encoder: "Bi-encoder",
+              }[model.method] || "Concept normalization",
+            ) +
+            " · "
           : "") +
         t(
           finished
@@ -104,7 +115,7 @@ export function startProgress(
         );
       if (model.total_units != null)
         parts.push(
-          `${t({ windows: "Windows", terms: "Terms", mentions: "Mentions" }[model.unit] || "Documents")}: ${number(model.completed_units)} / ${number(model.total_units)}`,
+          `${t({ windows: "Windows", terms: "Terms", mentions: "Mentions", pairs: "Term-code pairs" }[model.unit] || "Documents")}: ${number(model.completed_units)} / ${number(model.total_units)}`,
         );
       if (model.error_code)
         parts.push(

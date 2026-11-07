@@ -942,6 +942,22 @@ function normalizationDetails(a) {
   const n = a.normalization;
   section.append(make("h4", t("Concept normalization")));
   section.append(
+    make(
+      "p",
+      t("Normalization method") +
+        ": " +
+        t(
+          {
+            exact: "Exact string matching",
+            levenshtein: "Levenshtein",
+            bi_encoder: "Bi-encoder",
+          }[n.method || "bi_encoder"],
+        ),
+    ),
+  );
+  if (n.threshold != null)
+    section.append(make("p", t("Similarity threshold") + ": " + n.threshold));
+  section.append(
     make("p", `${n.code_system || "Terminology"}: ${n.code} · ${n.term}`),
   );
   for (const reference of n.references || []) {

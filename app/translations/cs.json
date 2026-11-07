@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Pro tento jazyk a entitu není dostupná terminologie.",
   "No normalization encoder is configured.": "Není nastaven kodér normalizace.",
   "Concept normalization is disabled.": "Normalizace konceptů je vypnutá.",
-  "Concept normalization is unavailable.": "Normalizace konceptů není dostupná."
+  "Concept normalization is unavailable.": "Normalizace konceptů není dostupná.",
+  "Normalization method": "Metoda normalizace",
+  "Exact string matching": "Přesná shoda textu",
+  "Levenshtein": "Levenshtein",
+  "Similarity threshold": "Práh podobnosti",
+  "Use bi-encoder (slower)": "Použít bi-encoder (pomalejší)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "Bi-encoder kóduje terminologii a při prvním použití může trvat dlouho.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Rychlé vyhledávání porovnává texty slovníku. Levenshtein se použije jen bez přesné shody.",
+  "Matching mentions": "Vyhledávání shod zmínek",
+  "Building lexical index": "Vytváření lexikálního indexu",
+  "Term-code pairs": "Dvojice termín–kód",
+  "Bi-encoder": "Bi-encoder"
 }

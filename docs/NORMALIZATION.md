@@ -42,7 +42,8 @@ Content-addressed prepared files preserve the terminology admitted with a job;
 stop/drain jobs before manually removing old prepared versions.
 
 Enable **Concept normalization** when submitting a job (API: `normalize=true`).
-Existing jobs are unchanged. Missing terminology or a failing encoder is logged
+Existing jobs are unchanged. The default is fast lexical matching; see the 0.9 section below.
+Missing terminology or a failing explicitly selected encoder is logged
 without patient text, leaves that category unnormalized, and preserves the NER
 results as partial results. Similarity is a retrieval score, not a probability
 or an automatically verified clinical decision. The inspector shows the concept,
@@ -54,7 +55,7 @@ only**: Spanish ICB-UMA/HERBERT-P (native mean pooling); other published DT4H
 CardioBERTa **parents** models (CLS pooling), prioritizing enriched, then
 only_snomed, then translations_only when published. Models load on demand through
 the normal Hugging Face cache. Native `ner_lab` TransformerFaissRetriever uses
-L2-normalized vectors, exact **FlatIP**, and **max_length=256**. Missing native
+L2-normalized vectors, exact **FlatIP**, and **max_length=256**. In bi-encoder mode, missing native
 terminology/encoder configuration selects the English terminology. This searches
 the original mention against English entries; it does not translate the mention.
 
@@ -66,7 +67,7 @@ startup/reuse also prunes. Each index records hashes of its dictionary, model
 revision and runtime contract, checks file integrity, and rebuilds if that
 contract changes. The limit/TTL may be lowered but cannot exceed 3/72.
 The three-language limit applies to FAISS indices, not downloaded HF checkpoints.
-The first job for a large dictionary may take substantial time and disk space.
+The first **explicit bi-encoder** job for a large dictionary may take substantial time and disk space.
 
 Docker mounts `./gazetteers:/gazetteers:ro`, with the private cache on the shared
 `ner-data` volume. Native deployment defaults directly to `./gazetteers` and
@@ -76,6 +77,114 @@ changing configuration; resubmit queued jobs whose terminology snapshot changed.
 For Docker, the service runs as UID 10001. Grant that UID read/search access to
 the private directory using filesystem ACLs, for example
 `setfacl -Rm u:10001:rX gazetteers`, rather than making confidential files public.
+
+
+## Fast Parquet matching and corrected language grouping (0.9)
+
+Concept normalization remains optional. When enabled, the default is
+`normalization_method=levenshtein`, `normalization_threshold=0.8`. The form also
+provides exact matching. **Use bi-encoder (slower)** is a separate, initially
+unchecked option; only checking it (API: `normalization_method=bi_encoder`)
+loads a normalization Transformer or fits/loads a FAISS index. A miss at the
+chosen lexical threshold is a valid unnormalized mention, not a failed model.
+NER results and original offsets are preserved.
+
+### Correcting the supplied DT4H archive
+
+The confirmed structure is `dt4h_gazs/parquet/{cs,en,es,it,nl,ro,sv}/` with four
+entity Parquet files in each directory. Several translated files retain Spanish
+or English ontology language metadata. Version 0.8.2 grouped by that column and
+therefore merged seven translations into four resources. For example, its
+1,524,350 procedure rows combined languages; that count was not a count of unique
+clinical concepts.
+
+The import now prefers an **unambiguous language in the relative directory/file
+path**, falling back to the canonicalized language column when absent. Explicit
+`--language` overrides both. `--language-source path` requires a path language;
+`--language-source column` deliberately restores column-driven grouping for
+other datasets. `--inspect` reports the selected policy, path language and
+canonical column languages without printing terms or codes.
+
+Stop the old worker and web process, then run in your existing Conda environment
+from the repository root:
+
+```bash
+git pull --ff-only
+python3 -m pip install rapidfuzz==3.14.6
+python3 -m scripts.import_gazetteers gazetteers/dt4h_gazs.zip --language-source path
+python3 -m scripts.check_config --expect-origin http://127.0.0.1:8000
+```
+
+The import should report **28 registered resources** in
+`cs, en, es, it, nl, ro, sv` for this archive. Restart both processes with their
+shared `.env` (no new environment exports are required):
+
+```bash
+# Terminal 1, same Conda environment/repository:
+python3 -m uvicorn app.asgi:app --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
+# Terminal 2, same Conda environment/repository:
+python3 -m app.worker
+```
+
+Submit a **new** job. A completed job is not rewritten, and an already admitted
+job whose resource snapshot changed must be resubmitted. Previously queued jobs
+without a normalization method default to lexical matching when their pinned
+terminology still matches. Old result records remain readable as bi-encoder
+results. Old prepared dictionaries/FAISS caches are not removed during import;
+do not manually delete prepared files while admitted jobs refer to them.
+
+### Matching, memory and scores
+
+Terminology stays in confidential, content-addressed **Parquet** under
+`gazetteers/.prepared/`. There is **no terminology database**. Import deduplicates
+term/code pairs, merges medication source identifiers per primary CUI, and writes
+sorted `_match_key` strings plus a key-format/Unicode version. These keys use
+Unicode NFKC, case folding and whitespace collapsing; mention text/offsets are
+never rewritten. Statistics distinguish term/code **pairs**, normalized surface
+forms and unique primary concepts. Synonyms legitimately make pairs exceed
+concepts even after languages are separated.
+
+The worker reads selected columns with PyArrow, memory mapping enabled, then
+uses binary search on sorted keys. Parquet decompression still allocates RAM;
+memory mapping is not a claim of zero-copy decompression. Older Parquets without
+compatible keys are normalized/sorted in memory. Per-job matcher instances are
+reused across document batches and released at job completion; mention lookup
+results have a bounded 4,096-query in-memory cache. No mentions/query embeddings
+are written to a normalization cache. Four entity categories can occupy RAM at
+once; large dictionaries still require memory proportional to selected data.
+
+Levenshtein is exact-first: an exact normalized form returns its matching codes
+without scanning fuzzy alternatives. Otherwise the worker searches distinct
+forms with RapidFuzz's native unit-cost edit distance, safely prunes impossible
+lengths, and ranks unique primary codes by
+`similarity = 1 - distance / max(len(query), len(term))`. The threshold is
+**inclusive**, adjustable from 0 to 1 (default 0.8). Equal scores sort by code,
+then term. Exact ambiguities remain ranked alternatives. Accents are preserved;
+this is lexical similarity, not semantic equivalence or a probability. There
+is no approximate candidate shortlist that silently drops a better match.
+Previously seen queries are reused in RAM. Many distinct unmatched mentions can
+still be slower than exact matching.
+
+Exact mode uses only normalized equality and does not use the adjustable fuzzy
+threshold. Bi-encoder mode likewise does not interpret that value as a cosine
+cutoff. Each annotation records its method, applicable threshold and score kind;
+lexical annotations have no encoder/max-length value. Lexical mode requires no
+encoder configuration and prefers the native-language dictionary, with English
+fallback only when that dictionary is unavailable. Fallback searches the
+original mention; it does not translate it.
+
+Bi-encoder opt-in keeps native `TransformerFaissRetriever.fit_faiss` and
+`get_candidates`, CPU exact FlatIP, length 256, Spanish HERBERT-P and published
+DT4H parents priorities. The private index cache still holds at most three
+languages with 72-hour idle expiry. The loaded index is reused across document
+batches when the same category remains active. Its first cold build encodes every vocabulary term/code row, so large
+synonym sets can take considerable time. It is never triggered by lexical mode.
+
+See [verification and synthetic measurements](VERIFICATION.md) for the measured
+scope and limitations. Lexical matching does not require re-installing a CPU
+Torch profile over an existing Conda GPU installation; install RapidFuzz only if
+all other inference dependencies are already present. Docker uses the updated
+CPU/GPU lock files.
 
 
 ## Importing the DT4H ZIP after updating to 0.8.1
@@ -121,7 +230,7 @@ file can fall back to a valid English resource.
 
 Restart web and worker together after updating/importing, then submit a **new**
 annotation job with normalization enabled. Completed partial jobs are not
-silently rewritten. The first use creates its index on demand; later compatible
+silently rewritten. When bi-encoder mode is explicitly selected, its first use creates an index on demand; later compatible
 jobs reuse it. No additional pip dependencies were introduced for this fix.
 
 

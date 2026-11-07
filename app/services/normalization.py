@@ -1,4 +1,4 @@
-"""ner_lab bi-encoder/FlatIP normalization and a private three-language idle-TTL cache."""
+"""Parquet lexical normalization and opt-in ner_lab/FlatIP with a private idle-TTL cache."""
 
 import fcntl
 import hashlib
@@ -147,7 +147,7 @@ class NormalizationCache:
                     from app.services.inference_progress import encoder_progress
 
                     with encoder_progress(
-                        retriever.model, on_progress, "BUILDING_INDEX", len(vocabulary), "terms"
+                        retriever.model, on_progress, "BUILDING_INDEX", len(vocabulary), "pairs"
                     ):
                         retriever.fit_faiss(
                             vocab=vocabulary, batch_size=self.s.normalization_batch_size
@@ -162,6 +162,8 @@ class NormalizationCache:
                                 "signature": signature,
                                 "dimensions": retriever.faiss_index.d,
                                 "terms": len(vocabulary),
+                                "normalized_forms": int(vocabulary["term"].nunique()),
+                                "concepts": int(vocabulary["code"].nunique()),
                                 "built_at": time.time(),
                                 "index_sha256": file_sha256(temporary / "index.faiss"),
                                 "vocabulary_sha256": file_sha256(temporary / "vocabulary.parquet"),
@@ -182,6 +184,13 @@ class NormalizationCache:
         return {
             "cache_hit": hit,
             "signature": signature,
+            "pairs": len(vocabulary),
+            "normalized_forms": stored.get("normalized_forms")
+            if hit and "normalized_forms" in stored
+            else int(vocabulary["term"].nunique()),
+            "concepts": stored.get("concepts")
+            if hit and "concepts" in stored
+            else int(vocabulary["code"].nunique()),
             "references": dict(zip(vocabulary["code"], vocabulary["references"], strict=True))
             if "references" in vocabulary.columns
             else {},
@@ -189,10 +198,21 @@ class NormalizationCache:
 
 
 class NormalizationSession:
-    def __init__(self, settings, job_root, catalog=None):
+    def __init__(self, settings, job_root, catalog=None, *, method="levenshtein", threshold=0.8):
         self.s = settings
         self.catalog = catalog or NormalizationCatalog(settings)
-        self.models = ModelCache(settings, job_root)
+        if (
+            method not in ("exact", "levenshtein", "bi_encoder")
+            or not math.isfinite(threshold)
+            or not 0 <= threshold <= 1
+        ):
+            raise ValueError("Invalid normalization method or threshold")
+        self.method, self.threshold, self.job_root = method, threshold, job_root
+        self.models = None
+        self.lexical = {}
+        self.last_completed_entities = set()
+        self.loaded_index = None
+        self.loaded_metadata = None
         self.cache = NormalizationCache(settings)
         self.encoder = None
         self.encoder_key = None
@@ -209,6 +229,8 @@ class NormalizationSession:
         from lab.nel.retrieval import TransformerFaissRetriever
 
         language = resource["resolved_language"]
+        if self.models is None:
+            self.models = ModelCache(self.s, self.job_root)
         if language not in self.prepared:
             failure = None
             for index, candidate in enumerate(resource["models"]):
@@ -262,92 +284,146 @@ class NormalizationSession:
             self.encoder_key = language
         return model, self.encoder
 
+    @staticmethod
+    def candidate(term, code, score, resource, references="[]"):
+        primary = {"code_system": resource.get("code_system") or "Terminology", "code": str(code)}
+        return {
+            "term": str(term),
+            "code": str(code),
+            "score": float(score),
+            "code_system": resource.get("code_system"),
+            "references": [primary, *[row for row in json.loads(references) if row != primary]],
+        }
+
+    def retrieve(self, resource, mentions):
+        if self.method != "bi_encoder":
+            from app.services.lexical_normalization import LexicalMatcher
+
+            key = (resource["resolved_language"], resource["entity"], resource["sha256"])
+            hit = key in self.lexical
+            if not hit:
+                self.lexical[key] = LexicalMatcher(resource, self.report)
+            matcher = self.lexical[key]
+            rows = matcher.match(
+                mentions, self.method, self.threshold, self.s.normalization_top_k, self.report
+            )
+            results = [
+                [
+                    self.candidate(
+                        row["term"], row["code"], row["score"], resource, row["references"]
+                    )
+                    for row in candidates
+                ]
+                for candidates in rows
+            ]
+            return results, {
+                "model": None,
+                "revision": None,
+                "index": "Parquet-sorted-keys",
+                "max_length": None,
+                **matcher.metadata,
+                "cache_hit": hit or matcher.metadata["cache_hit"],
+            }
+        from app.services.inference_progress import encoder_progress
+
+        model, encoder = self._encoder(resource)
+        key = (resource["resolved_language"], resource["entity"], resource["sha256"], id(encoder))
+        if key != self.loaded_index:
+            self.loaded_metadata = self.cache.load_or_build(
+                resource, model, encoder, on_progress=self.report
+            )
+            self.loaded_index = key
+            cached = self.loaded_metadata
+        else:
+            self.report("LOADING_INDEX")
+            cached = {**self.loaded_metadata, "cache_hit": True}
+        with encoder_progress(encoder.model, self.report, "NORMALIZING", len(mentions), "mentions"):
+            terms, codes, scores = encoder.get_candidates(
+                mentions, k=self.s.normalization_top_k, batch_size=self.s.normalization_batch_size
+            )
+        results = [
+            [
+                self.candidate(
+                    term, code, score, resource, cached["references"].get(str(code), "[]")
+                )
+                for term, code, score in zip(row_terms, row_codes, row_scores, strict=True)
+            ]
+            for row_terms, row_codes, row_scores in zip(terms, codes, scores, strict=True)
+        ]
+        if any(
+            not candidates or any(not math.isfinite(row["score"]) for row in candidates)
+            for candidates in results
+        ):
+            raise NormalizationUnavailable("Invalid terminology candidates")
+        return results, {
+            "model": model.get("repository") or "local-encoder",
+            "revision": cached["signature"]["revision"],
+            "index": "FlatIP",
+            "max_length": 256,
+            "cache_hit": cached["cache_hit"],
+            **{key: cached[key] for key in ("pairs", "normalized_forms", "concepts")},
+        }
+
     def normalize(self, spans, language, on_error):
+        self.last_completed_entities = set()
         for entity in CATEGORIES:
             selected = [row for row in spans if row["label"] == entity]
             if not selected:
                 continue
             self.current_entity = entity
+            for row in selected:
+                row.pop("normalization", None)
             try:
-                resource = self.catalog.resolve(language, entity)
+                resource = self.catalog.resolve(language, entity, self.method)
                 if resource is None:
                     raise NormalizationUnavailable(
                         "No terminology resource for category",
-                        self.catalog.unavailability_reason(language, entity),
+                        self.catalog.unavailability_reason(language, entity, self.method),
                     )
-                model, encoder = self._encoder(resource)
-                cached = self.cache.load_or_build(resource, model, encoder, on_progress=self.report)
                 mentions = list(dict.fromkeys(row["text"] for row in selected))
-                from app.services.inference_progress import encoder_progress
-
-                with encoder_progress(
-                    encoder.model, self.report, "NORMALIZING", len(mentions), "mentions"
-                ):
-                    terms, codes, scores = encoder.get_candidates(
-                        mentions,
-                        k=self.s.normalization_top_k,
-                        batch_size=self.s.normalization_batch_size,
-                    )
+                predictions, details = self.retrieve(resource, mentions)
                 lookup = {}
-                for text, row_terms, row_codes, row_scores in zip(
-                    mentions, terms, codes, scores, strict=True
-                ):
-                    candidates = [
-                        {
-                            "code": str(code),
-                            "term": str(term),
-                            "score": float(score),
-                            "code_system": resource.get("code_system"),
-                            "references": [
-                                {
-                                    "code_system": resource.get("code_system") or "Terminology",
-                                    "code": str(code),
-                                },
-                                *[
-                                    reference
-                                    for reference in json.loads(
-                                        cached["references"].get(str(code), "[]")
-                                    )
-                                    if reference
-                                    != {
-                                        "code_system": resource.get("code_system") or "Terminology",
-                                        "code": str(code),
-                                    }
-                                ],
-                            ],
-                        }
-                        for term, code, score in zip(row_terms, row_codes, row_scores, strict=True)
-                    ]
-                    if not candidates or any(
-                        not math.isfinite(item["score"]) for item in candidates
-                    ):
-                        raise NormalizationUnavailable("Invalid terminology candidates")
+                for text, candidates in zip(mentions, predictions, strict=True):
+                    if not candidates:
+                        continue  # A lexical miss is a valid outcome, not a model failure.
                     lookup[text] = {
                         **candidates[0],
                         "candidates": candidates,
+                        "method": self.method,
+                        "threshold": self.threshold if self.method == "levenshtein" else None,
+                        "score_kind": "cosine_similarity"
+                        if self.method == "bi_encoder"
+                        else "normalized_levenshtein"
+                        if self.method == "levenshtein"
+                        else "exact_match",
                         "language": resource["resolved_language"],
                         "requested_language": language,
                         "fallback_to_english": resource["fallback_to_english"],
-                        "model": model.get("repository") or "local-encoder",
-                        "model_revision": cached["signature"]["revision"],
+                        "model": details["model"],
+                        "model_revision": details["revision"],
                         "gazetteer_sha256": resource["sha256"],
                         "code_system": resource.get("code_system"),
-                        "index": "FlatIP",
-                        "max_length": 256,
+                        "index": details["index"],
+                        "max_length": details["max_length"],
                     }
                 for row in selected:
-                    row["normalization"] = lookup[row["text"]]
+                    if row["text"] in lookup:
+                        row["normalization"] = lookup[row["text"]]
                 self.metadata.append(
                     {
                         "entity": entity,
                         "language": resource["resolved_language"],
-                        "model": model.get("repository"),
-                        "revision": cached["signature"]["revision"],
-                        "gazetteer_sha256": resource["sha256"],
-                        "cache_hit": cached["cache_hit"],
+                        "method": self.method,
+                        "threshold": self.threshold if self.method == "levenshtein" else None,
                         "fallback_to_english": resource["fallback_to_english"],
+                        "gazetteer_sha256": resource["sha256"],
+                        "mentions": len(mentions),
+                        "matched": len(lookup),
+                        "unmatched": len(mentions) - len(lookup),
+                        **details,
                     }
                 )
+                self.last_completed_entities.add(entity)
             except JobContentChanged:
                 raise
             except Exception as exc:
@@ -356,3 +432,7 @@ class NormalizationSession:
 
     def close(self):
         self.encoder = None
+        self.loaded_index = self.loaded_metadata = None
+        for matcher in self.lexical.values():
+            matcher.close()
+        self.lexical.clear()

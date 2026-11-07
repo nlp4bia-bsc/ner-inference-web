@@ -10,6 +10,11 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.9 defaults to direct-Parquet exact/Levenshtein normalization (adjustable
+0.8 threshold), with a separate slower bi-encoder opt-in. It fixes DT4H language
+grouping using `cs/en/es/it/nl/ro/sv` directories; **reimport the ZIP** to replace
+mixed resources. See [Conda update and reimport](docs/NORMALIZATION.md#fast-parquet-matching-and-corrected-language-grouping-09).
+
 Version 0.8.2 accepts mixed ISO/UMLS language metadata and checks every archive
 file before preparing terminology.
 
@@ -27,7 +32,7 @@ Version 0.7 added **occupied / limit** quotas across all retained jobs, immediat
 owner-controlled document erasure, and a permanent private upload-metadata history.
 The interface supports the 15 MultiClinSum-2 languages plus Estonian, with larger
 fonts at 1440p and 4K. A red upload notice states the user's de-identification
-responsibility. Optional concept normalization uses native ner_lab bi-encoders,
+responsibility. Explicit bi-encoder normalization uses native ner_lab bi-encoders,
 FlatIP and length 256, with a three-language/72-hour private index cache.
 
 **Confidential gazetteers belong in `gazetteers/` inside the repository root.**

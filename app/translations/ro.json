@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Nu există terminologie pentru această limbă și entitate.",
   "No normalization encoder is configured.": "Nu este configurat niciun encoder de normalizare.",
   "Concept normalization is disabled.": "Normalizarea conceptelor este dezactivată.",
-  "Concept normalization is unavailable.": "Normalizarea conceptelor nu este disponibilă."
+  "Concept normalization is unavailable.": "Normalizarea conceptelor nu este disponibilă.",
+  "Normalization method": "Metoda de normalizare",
+  "Exact string matching": "Potrivire exactă a textului",
+  "Levenshtein": "Levenshtein",
+  "Similarity threshold": "Prag de similaritate",
+  "Use bi-encoder (slower)": "Folosește bi-encoder (mai lent)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "Bi-encoder-ul codifică terminologia și poate dura mult la prima utilizare.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Căutarea rapidă compară textele dicționarului. Levenshtein se execută doar fără potrivire exactă.",
+  "Matching mentions": "Se caută potriviri pentru mențiuni",
+  "Building lexical index": "Se construiește indexul lexical",
+  "Term-code pairs": "Perechi termen-cod",
+  "Bi-encoder": "Bi-encoder"
 }

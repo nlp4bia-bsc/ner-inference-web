@@ -1,5 +1,7 @@
 """Public request and job response contracts."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.domain.identity import EmailAddress
@@ -11,6 +13,8 @@ class Submission(BaseModel):
     language: str = Field(pattern="^[a-z]{2}$")
     entities: list[str] = Field(default_factory=list, max_length=100)
     normalize: bool = False
+    normalization_method: Literal["exact", "levenshtein", "bi_encoder"] = "levenshtein"
+    normalization_threshold: float = Field(0.8, ge=0, le=1, allow_inf_nan=False)
     models: list[str] | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("submitter_name")

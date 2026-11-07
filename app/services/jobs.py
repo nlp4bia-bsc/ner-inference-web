@@ -80,7 +80,7 @@ class JobService:
                 from app.services.normalization_catalog import NormalizationCatalog
 
                 payload["normalization_resources"] = NormalizationCatalog(self.settings).snapshot(
-                    form.language, payload["entities"]
+                    form.language, payload["entities"], method=form.normalization_method
                 )
             staging.rename(self.storage.job(job_id))
             self.db.accept(

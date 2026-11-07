@@ -63,6 +63,17 @@ def router(service):
                                 "submitter_email": {"type": "string", "format": "email"},
                                 "language": {"type": "string"},
                                 "normalize": {"type": "boolean", "default": False},
+                                "normalization_method": {
+                                    "type": "string",
+                                    "enum": ["exact", "levenshtein", "bi_encoder"],
+                                    "default": "levenshtein",
+                                },
+                                "normalization_threshold": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "default": 0.8,
+                                },
                                 "entities": {"type": "array", "items": {"type": "string"}},
                                 "models": {"type": "array", "items": {"type": "string"}},
                                 "input_mode": {
@@ -109,6 +120,8 @@ def router(service):
                     submitter_email=data.get("submitter_email", account["email"]),
                     language=data.get("language", ""),
                     normalize=data.get("normalize", "false"),
+                    normalization_method=data.get("normalization_method", "levenshtein"),
+                    normalization_threshold=data.get("normalization_threshold", "0.8"),
                     entities=data.getlist("entities"),
                     models=data.getlist("models") if "models" in data else None,
                 )

@@ -424,3 +424,13 @@ registration separately from the worker heartbeat. `--inspect` alone is not an
 import. Previously completed partial jobs require a new submission to normalize.
 My documents supports per-page selection and selection across pages, then one
 confirmed Delete action. Retained quota refreshes; lifetime upload metadata stays.
+
+
+## 0.9 lexical normalization and DT4H reimport
+
+Existing Conda deployments can install `rapidfuzz==3.14.6` without replacing
+their Torch CPU/GPU profile. Reimport the private ZIP with path-driven language
+grouping, restart both Python3 processes, and submit a new job. See the full
+[update commands and privacy details](NORMALIZATION.md#fast-parquet-matching-and-corrected-language-grouping-09).
+No terminology database or new shell exports are required. Docker installs the
+updated lock profile and retains the existing private gazetteer/cache mounts.

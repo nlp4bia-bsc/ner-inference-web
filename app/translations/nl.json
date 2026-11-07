@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Er is geen terminologie beschikbaar voor deze taal en entiteit.",
   "No normalization encoder is configured.": "Er is geen normalisatie-encoder ingesteld.",
   "Concept normalization is disabled.": "Conceptnormalisatie is uitgeschakeld.",
-  "Concept normalization is unavailable.": "Conceptnormalisatie is niet beschikbaar."
+  "Concept normalization is unavailable.": "Conceptnormalisatie is niet beschikbaar.",
+  "Normalization method": "Normalisatiemethode",
+  "Exact string matching": "Exacte tekstovereenkomst",
+  "Levenshtein": "Levenshtein",
+  "Similarity threshold": "Overeenkomstdrempel",
+  "Use bi-encoder (slower)": "Bi-encoder gebruiken (langzamer)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "De bi-encoder codeert de terminologie en kan bij het eerste gebruik veel tijd kosten.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Snel zoeken vergelijkt woordenboekteksten. Levenshtein wordt alleen zonder exacte overeenkomst gebruikt.",
+  "Matching mentions": "Vermeldingen vergelijken",
+  "Building lexical index": "Lexicale index opbouwen",
+  "Term-code pairs": "Term-codeparen",
+  "Bi-encoder": "Bi-encoder"
 }

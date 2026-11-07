@@ -1,3 +1,79 @@
+# Latest: Parquet lexical normalization and DT4H language grouping (0.9.0)
+
+Executed on 2026-11-07 with Python 3.12.14, RapidFuzz 3.14.6, PyArrow 26.0.1,
+Torch 2.15.0+cpu, Transformers 5.22.1 and FAISS CPU 1.15.1 in an isolated
+verification environment. The application remains compatible with native Conda;
+the isolated environment is only this workspace's test harness.
+
+- Server suite: **249 passed, 88 browser checks skipped**, 65.82 seconds.
+- Final lexical regression suite after five additional cases: **21 passed**,
+  10.92 seconds. The additional cases check old queued requests, inclusive 0.8,
+  threshold extremes, Unicode equality/ambiguity, legacy Parquet key building
+  and lexical exports/deletion repackaging without the current dictionary.
+- Final metadata suite with the exact confirmed ZIP directory prefix:
+  **24 passed**, 1.94 seconds.
+- New real Chromium normalization interaction checks: **2 passed** (root and
+  `/ner` prefix), 14.24 seconds, including axe with bi-encoder warning visible.
+- Full Chromium/accessibility regression suite (the CI browser file list):
+  **123 passed**, no skips, 360.28 seconds. Root and `/ner`, uploads, live model
+  progress, ownership/deletion, overlap rendering and locale/reflow checks pass.
+- Ruff lint/format pass. Bandit `-ll` reports no medium/high severity findings.
+  Wheel/sdist 0.9.0 build passed; archive inspection found no confidential
+  gazetteer/storage, Parquet, FAISS, ZIP or SQLite files.
+
+Commands (use `python3` in your active Conda environment):
+
+```bash
+python3 -m pytest -q
+python3 -m pytest -q tests/test_lexical_normalization.py
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python3 -m pytest -q tests/test_design_browser.py -k normalization
+python3 -m scripts.benchmark_normalization
+python3 -m ruff check app scripts tests
+python3 -m ruff format --check app scripts tests
+python3 -m bandit -r app scripts -ll
+python3 -m build --no-isolation
+```
+
+Coverage includes 28 synthetic files in the confirmed seven-language directory
+layout with misleading ontology language columns, metadata-only preflight and
+explicit column/path policies. Default lexical sessions reject accidental neural
+or SQLite calls in a regression guard, reuse Arrow dictionaries across batches,
+and leave valid no-match jobs completed. Matching is compared with brute-force
+normalized edit distances over 4,500 forms and duplicate primary concepts.
+Explicit bi-encoder tests exercise the real tiny Transformer, native `fit_faiss`
+and `get_candidates`, warm/cold FlatIP reuse and multiple batches. Existing
+medication source-reference, offset, private ownership and deletion suites run.
+The confidential binary ZIP was not available here; its confirmed directory
+layout and metadata were reproduced synthetically. Production terminology
+quality and clinical accuracy were not measured. Docker images were not rebuilt
+in this change; existing Compose defaults/mounts are unchanged and lock files add
+RapidFuzz. No full production-size neural index was fitted.
+
+## Synthetic lookup measurements
+
+Reproduction: `python3 -m scripts.benchmark_normalization`. This creates temporary
+synthetic Parquets, runs the production matcher and deletes synthetic data.
+[Measured JSON](benchmarks/v0.9-parquet-lexical.json) records Python/platform,
+counts, compressed size, loading, exact/fuzzy queries and cumulative process RSS.
+Four exact and three previously unseen fuzzy queries run at threshold 0.8, top 5.
+These are measurements of lexical lookup, not NER or a clinical dictionary.
+
+| Synthetic pairs/forms | Concepts | Load incl. hash | Four exact queries | Three fuzzy queries | Process peak RSS |
+|---|---|---|---|---|---|
+| 100,000 | 100,000 | 0.045 s | 0.00031 s | 0.161 s | 217 MiB |
+| 1,000,000 | 150,000 | 0.611 s | 0.00033 s | 0.946 s | 508 MiB |
+
+Compressed Parquet sizes were 1.88 and 18.74 MiB. Repeated fuzzy queries use the
+job-local LRU (0.00023 and 0.000013 s for three queries). RSS is the whole process
+high-water mark, cumulative across cases, including Arrow/string generation;
+it is not isolated matcher allocation. Measurements ran alongside browser tests
+and vary with contention and disk cache (a preceding million-row run loaded in
+0.277 s and queried in 0.608 s). Long distinct unmatched mentions can still scan
+many forms. There is no assertion that Parquet universally beats a database,
+or that these timings predict confidential corpus performance.
+
+---
+
 # Latest: mixed ISO/UMLS terminology metadata (0.8.2)
 
 Server regression: **233 passed, 86 browser-only cases skipped in 61.13s**.

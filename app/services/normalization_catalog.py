@@ -43,22 +43,26 @@ class NormalizationCatalog:
         path = settings.normalization_model_config_path
         self.models = yaml.safe_load(path.read_text())["models"] if path.is_file() else {}
 
-    def resolve(self, language, entity):
+    def resolve(self, language, entity, method="bi_encoder"):
         if not self.s.normalization_enabled or entity not in CATEGORIES:
             return None
         for selected in dict.fromkeys((language, "en")):
             row = self.resources.get((selected, entity))
-            if row and self.models.get(selected) and row["file"].is_file():
+            if (
+                row
+                and (method != "bi_encoder" or self.models.get(selected))
+                and row["file"].is_file()
+            ):
                 return {
                     **row,
                     "requested_language": language,
                     "resolved_language": selected,
                     "fallback_to_english": selected != language,
-                    "models": self.models[selected],
+                    "models": self.models.get(selected, []) if method == "bi_encoder" else [],
                 }
         return None
 
-    def unavailability_reason(self, language, entity):
+    def unavailability_reason(self, language, entity, method="bi_encoder"):
         if not self.s.normalization_enabled:
             return "NORMALIZATION_DISABLED"
         if not self.imported:
@@ -70,14 +74,16 @@ class NormalizationCatalog:
         ]
         if rows and not any(row["file"].is_file() for row in rows):
             return "TERMINOLOGY_FILE_MISSING"
-        if any(row["file"].is_file() and not self.models.get(row["language"]) for row in rows):
+        if method == "bi_encoder" and any(
+            row["file"].is_file() and not self.models.get(row["language"]) for row in rows
+        ):
             return "NORMALIZATION_ENCODER_UNCONFIGURED"
         return "TERMINOLOGY_UNAVAILABLE"
 
-    def snapshot(self, language, entities):
+    def snapshot(self, language, entities, method="bi_encoder"):
         result = []
         for entity in sorted(set(entities) & set(CATEGORIES)):
-            row = self.resolve(language, entity)
+            row = self.resolve(language, entity, method)
             result.append(
                 {
                     "entity": entity,
@@ -90,7 +96,7 @@ class NormalizationCatalog:
                                 "code_system",
                                 "resolved_language",
                                 "fallback_to_english",
-                                "models",
+                                *(("models",) if method == "bi_encoder" else ()),
                             )
                         }
                         if row
@@ -103,16 +109,18 @@ class NormalizationCatalog:
     def public(self, language):
         return {
             "enabled": self.s.normalization_enabled,
-            "available": any(self.resolve(language, entity) for entity in CATEGORIES),
+            "available": any(
+                self.resolve(language, entity, "levenshtein") for entity in CATEGORIES
+            ),
             "categories": [
                 {
                     "entity": entity,
-                    "available": bool(self.resolve(language, entity)),
+                    "available": bool(self.resolve(language, entity, "levenshtein")),
                     "error_code": None
-                    if self.resolve(language, entity)
-                    else self.unavailability_reason(language, entity),
-                    "language": self.resolve(language, entity)["resolved_language"]
-                    if self.resolve(language, entity)
+                    if self.resolve(language, entity, "levenshtein")
+                    else self.unavailability_reason(language, entity, "levenshtein"),
+                    "language": self.resolve(language, entity, "levenshtein")["resolved_language"]
+                    if self.resolve(language, entity, "levenshtein")
                     else None,
                 }
                 for entity in CATEGORIES

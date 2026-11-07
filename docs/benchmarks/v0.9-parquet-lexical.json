@@ -1,0 +1,43 @@
+{
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "note": "Synthetic lexical lookup only; cumulative process RSS, not a clinical benchmark",
+  "results": [
+    {
+      "rows": 100000,
+      "load_seconds": 0.045092,
+      "exact_queries": 4,
+      "fuzzy_queries": 3,
+      "exact_seconds": 0.000311,
+      "fuzzy_seconds": 0.16102,
+      "repeat_fuzzy_seconds": 0.000225,
+      "process_peak_rss_mib": 217.0,
+      "parquet_mib": 1.88,
+      "pairs": 100000,
+      "normalized_forms": 100000,
+      "concepts": 100000,
+      "precomputed_keys": true,
+      "cache_hit": false,
+      "key_normalization": "NFKC-casefold-whitespace",
+      "unicode": "15.0.0"
+    },
+    {
+      "rows": 1000000,
+      "load_seconds": 0.611029,
+      "exact_queries": 4,
+      "fuzzy_queries": 3,
+      "exact_seconds": 0.000327,
+      "fuzzy_seconds": 0.946413,
+      "repeat_fuzzy_seconds": 1.3e-05,
+      "process_peak_rss_mib": 507.8,
+      "parquet_mib": 18.74,
+      "pairs": 1000000,
+      "normalized_forms": 1000000,
+      "concepts": 150000,
+      "precomputed_keys": true,
+      "cache_hit": false,
+      "key_normalization": "NFKC-casefold-whitespace",
+      "unicode": "15.0.0"
+    }
+  ]
+}

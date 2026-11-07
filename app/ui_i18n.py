@@ -4,6 +4,17 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Normalization method|Método de normalización|Mètode de normalització
+Exact string matching|Coincidencia exacta de texto|Coincidència exacta de text
+Levenshtein|Levenshtein|Levenshtein
+Similarity threshold|Umbral de similitud|Llindar de similitud
+Use bi-encoder (slower)|Usar bi-encoder (más lento)|Utilitza el bi-encoder (més lent)
+Bi-encoder encodes the terminology and may take a long time on first use.|El bi-encoder codifica la terminología y puede tardar mucho en el primer uso.|El bi-encoder codifica la terminologia i pot trigar molt en el primer ús.
+Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.|La búsqueda rápida compara textos del diccionario. Levenshtein se ejecuta solo si no hay coincidencia exacta.|La cerca ràpida compara textos del diccionari. Levenshtein només s'executa si no hi ha coincidència exacta.
+Matching mentions|Buscando coincidencias de menciones|Cercant coincidències de mencions
+Building lexical index|Construyendo índice léxico|Construint l'índex lèxic
+Term-code pairs|Pares término-código|Parelles terme-codi
+Bi-encoder|Bi-encoder|Bi-encoder
 Select document|Seleccionar documento|Selecciona el document
 Select all on this page|Seleccionar todos en esta página|Selecciona tots els d'aquesta pàgina
 {count} selected|{count} seleccionados|{count} seleccionats

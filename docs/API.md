@@ -177,10 +177,14 @@ worker from republishing content; retained publications are repackaged. Deleted
 content is no longer available from viewer/text/annotation/download routes.
 
 Multipart job admission accepts `normalize=true` (default false). Resources and
-encoder priorities are snapshotted at admission. Missing resources/failed
+the chosen method are snapshotted at admission. Encoder priorities are pinned only
+for explicit `normalization_method=bi_encoder`. The default method is `levenshtein`,
+with inclusive `normalization_threshold=0.8` (finite number in [0,1]); `exact`
+uses normalized equality. The threshold applies only to Levenshtein. Lexical
+matching uses private Parquet and does not load a Transformer or FAISS. Missing resources/failed
 normalizers preserve NER and produce explicit partial-result diagnostics.
-An annotation's optional `normalization` includes top concept code/term, cosine
-similarity, ranked candidates, requested/resolved language, English fallback,
+An annotation's optional `normalization` includes top concept code/term, method, applicable threshold, score kind
+(cosine for bi-encoder, lexical similarity for matching), ranked candidates, requested/resolved language, English fallback,
 encoder/revision and dictionary hash. TSV serializes this object as JSON; BRAT
 adds N Reference records while keeping T records and original offsets unchanged.
 See [NORMALIZATION.md](NORMALIZATION.md) for private resource installation.

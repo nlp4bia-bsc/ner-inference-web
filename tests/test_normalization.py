@@ -59,7 +59,7 @@ def test_native_encoder_index_reuse_and_fallback_preserve_original_offsets(termi
         "end_span": 8,
     }
     for expected_hit in (False, True):
-        session = NormalizationSession(s, root)
+        session = NormalizationSession(s, root, method="bi_encoder")
         events = []
         session.on_progress = lambda *args: events.append(args)
         spans = session.normalize([dict(span)], "et", lambda *args: errors.append(args))
@@ -68,7 +68,7 @@ def test_native_encoder_index_reuse_and_fallback_preserve_original_offsets(termi
             assert any(event[1] == "LOADING_INDEX" for event in events)
             assert not any(event[1] == "BUILDING_INDEX" for event in events)
         else:
-            assert ("DISEASE", "BUILDING_INDEX", 2, 2, "terms") in events
+            assert ("DISEASE", "BUILDING_INDEX", 2, 2, "pairs") in events
         assert not errors
         result = spans[0]["normalization"]
         assert result["language"] == "en" and result["fallback_to_english"]
@@ -129,7 +129,12 @@ def test_requested_normalization_is_published_and_exported(terminology):
     with AccountClient(app) as client:
         response = client.post(
             "/api/jobs",
-            data={"language": "es", "entities": "DISEASE", "normalize": "true"},
+            data={
+                "language": "es",
+                "entities": "DISEASE",
+                "normalize": "true",
+                "normalization_method": "bi_encoder",
+            },
             files=[("files", ("a.txt", b"abc"))],
         )
         assert response.status_code == 202
@@ -208,7 +213,7 @@ def test_umls_primary_and_source_identifiers_survive_index_reuse_and_brat(termin
     root = tmp_path / "references-job"
     root.mkdir()
     for hit in (False, True):
-        session = NormalizationSession(terminology, root)
+        session = NormalizationSession(terminology, root, method="bi_encoder")
         errors = []
         spans = session.normalize(
             [

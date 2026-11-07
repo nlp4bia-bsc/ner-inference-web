@@ -40,35 +40,27 @@ def test_language_aliases_are_explicit_and_ambiguous_cells_are_rejected(value, e
     assert normalize_language(value) == expected
 
 
-def test_complete_28_file_zip_mixes_iso_and_umls_lat_metadata(settings, tmp_path):
+def test_28_translations_follow_folder_despite_stale_source_language(settings, tmp_path):
     pd = pytest.importorskip("pandas")
     pytest.importorskip("pyarrow")
     settings.normalization_gazetteer_dir = tmp_path / "private"
     source = tmp_path / "source"
     archive = tmp_path / "dt4h_gazs.zip"
     with zipfile.ZipFile(archive, "w") as target:
-        for language, lat in {
-            "es": "SPA",
-            "en": "ENG",
-            "cs": "CZE",
-            "nl": "DUT",
-            "it": "ITA",
-            "ro": "RUM",
-            "sv": "SWE",
-        }.items():
+        for language in ("es", "en", "cs", "nl", "it", "ro", "sv"):
             folder = source / language
             folder.mkdir(parents=True)
             for category in ("disease", "medications", "procedure", "symptom"):
                 row = {
-                    "language": [lat if category == "medications" else language],
+                    "language": ["ENG" if category == "medications" else "es"],
                     "code": ["C0001" if category == "medications" else "123"],
-                    "term": [["synthetic term", "synthetic synonym"]],
+                    "term": [[f"{language} term", f"{language} synonym"]],
                 }
                 if category == "medications":
                     row.update(SAB=["SNOMEDCT_US"], SAB_code=["111"])
                 path = folder / (category + ".parquet")
                 pd.DataFrame(row).to_parquet(path)
-                target.write(path, language + "/" + path.name)
+                target.write(path, "dt4h_gazs/parquet/" + language + "/" + path.name)
     result = import_sources(archive, settings)
     assert len(result) == 28
     assert {row["language"] for row in result} == {"es", "en", "cs", "nl", "it", "ro", "sv"}
@@ -76,6 +68,15 @@ def test_complete_28_file_zip_mixes_iso_and_umls_lat_metadata(settings, tmp_path
         assert row["rows"] == 2
         if row["entity"] == "MEDICATION":
             assert row["code_system"] == "UMLS"
+    for row in result:
+        prepared = pd.read_parquet(settings.normalization_gazetteer_dir / row["path"])
+        assert len(prepared) == 2
+        assert all(term.startswith(row["language"] + " ") for term in prepared["term"])
+    alternative = settings.model_copy(
+        update={"normalization_gazetteer_dir": tmp_path / "column-authority"}
+    )
+    merged = import_sources(archive, alternative, language_source="column")
+    assert len(merged) == 4 and {row["language"] for row in merged} == {"es", "en"}
     catalog = NormalizationCatalog(settings)
     assert catalog.resolve("es", "MEDICATION")["resolved_language"] == "es"
 
@@ -115,12 +116,12 @@ def test_preflight_reports_all_invalid_files_without_terms_or_partial_registrati
             {"language": [lang], "code": ["123"], "term": ["PRIVATE_DICTIONARY_VALUE"]}
         ).to_parquet(source / (name + ".parquet"))
     with pytest.raises(ValueError, match="No terminology has been registered") as error:
-        import_sources(source.parent, settings)
+        import_sources(source.parent, settings, language_source="column")
     assert "medications.parquet" in str(error.value) and "symptom.parquet" in str(error.value)
     assert "PRIVATE" not in str(error.value)
     assert "stage=PREPARED" not in caplog.text
     assert not (settings.normalization_gazetteer_dir / "manifest.json").exists()
-    import_sources(source.parent, settings, inspect=True)
+    import_sources(source.parent, settings, inspect=True, language_source="column")
     output = capsys.readouterr().out
     reports = [json.loads(line) for line in output.splitlines()]
     assert reports[0]["metadata"]["languages"] == ["es"]

@@ -15,6 +15,56 @@ window.addEventListener("document-quota", (event) => {
   update();
 });
 const catalog = mountCatalog({ onChange: update });
+const normalize = document.querySelector("#normalize"),
+  lexicalMethod = document.querySelector("#normalization-lexical-method"),
+  useBiEncoder = document.querySelector("#use-bi-encoder"),
+  normalizationMethod = document.querySelector("#normalization-method"),
+  normalizationThreshold = document.querySelector("#normalization-threshold");
+function normalizationOptions() {
+  const enabled = normalize.checked,
+    bi = enabled && useBiEncoder.checked;
+  document.querySelector("#normalization-options").hidden = !enabled;
+  normalizationMethod.value = bi ? "bi_encoder" : lexicalMethod.value;
+  normalizationMethod.disabled = !enabled;
+  lexicalMethod.disabled = !enabled || bi;
+  useBiEncoder.disabled = !enabled;
+  normalizationThreshold.disabled =
+    !enabled || bi || lexicalMethod.value === "exact";
+  document.querySelector("#normalization-threshold-field").hidden =
+    normalizationThreshold.disabled;
+  document.querySelector("#bi-encoder-warning").hidden = !bi;
+}
+for (const control of [
+  normalize,
+  lexicalMethod,
+  useBiEncoder,
+  normalizationThreshold,
+])
+  control.addEventListener("change", () => {
+    normalizationOptions();
+    update();
+  });
+normalizationOptions();
+function normalizationSummary() {
+  return normalize.checked
+    ? "\n" +
+        t("Concept normalization") +
+        ": " +
+        t(
+          {
+            exact: "Exact string matching",
+            levenshtein: "Levenshtein",
+            bi_encoder: "Bi-encoder",
+          }[normalizationMethod.value],
+        ) +
+        (normalizationMethod.value === "levenshtein"
+          ? " · " +
+            t("Similarity threshold") +
+            ": " +
+            normalizationThreshold.value
+          : "")
+    : "";
+}
 function selected() {
   return catalog.selected();
 }
@@ -53,7 +103,8 @@ function update() {
     (pasted ? !value.trim() : !files.files.length);
   if (pasted) {
     document.querySelector("#summary").textContent =
-      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${number(new TextEncoder().encode(value).length)} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${t("{count} model(s)", { count: number(selected().length) })}`;
+      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${number(new TextEncoder().encode(value).length)} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${t("{count} model(s)", { count: number(selected().length) })}` +
+      normalizationSummary();
     return;
   }
   const names = [...files.files].map((x) => x.name);
@@ -62,6 +113,7 @@ function update() {
   document.querySelector("#summary").textContent = names.length
     ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? t("ZIP document count is checked by the server") : t("{count} document(s)", { count: number(names.length) })}\n${t("Language")}: ${language.selectedOptions[0]?.textContent || ""} · ${t("Entities")}: ${selectedCategories().join(", ") || t("None")} · ${t("{count} model(s)", { count: number(selected().length) })}`
     : t("No documents selected.");
+  document.querySelector("#summary").textContent += normalizationSummary();
 }
 files.addEventListener("change", update);
 form.addEventListener("submit", async (event) => {

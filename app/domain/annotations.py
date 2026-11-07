@@ -24,6 +24,9 @@ class NormalizationCandidate(BaseModel):
 
 
 class ConceptNormalization(BaseModel):
+    method: str = "bi_encoder"
+    threshold: float | None = None
+    score_kind: str = "cosine_similarity"
     references: list[ConceptReference] = Field(default_factory=list)
     code: str
     term: str
@@ -32,12 +35,12 @@ class ConceptNormalization(BaseModel):
     language: str
     requested_language: str
     fallback_to_english: bool
-    model: str
+    model: str | None = None
     model_revision: str | None = None
     gazetteer_sha256: str
     code_system: str | None = None
     index: str
-    max_length: int
+    max_length: int | None = None
 
 
 class Annotation(BaseModel):

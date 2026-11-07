@@ -8,10 +8,13 @@ import re
 import shutil
 import stat
 import tempfile
+import unicodedata
 import zipfile
 from pathlib import Path, PurePosixPath
 
 from app.config import Settings
+from app.domain.normalization_references import merge_reference_values
+from app.services.lexical_normalization import KEY_FORMAT, normalized_form
 from app.services.normalization_catalog import CATEGORIES, file_sha256
 from scripts.gazetteer_metadata import (
     LANGUAGE_ALIASES,
@@ -183,14 +186,16 @@ def inferred_metadata(guess, relative):
         return None
 
 
-def classify_metadata(frame, relative, language, entity, lc, ec):
-    languages = (
-        normalize_language(language)
-        if language
-        else normalize_series(frame[lc], normalize_language)
-        if lc
-        else inferred_metadata(guess_language, relative)
-    )
+def classify_metadata(frame, relative, language, entity, lc, ec, language_source="auto"):
+    path_language = inferred_metadata(guess_language, relative)
+    if language:
+        languages = normalize_language(language)
+    elif language_source == "path" or (language_source == "auto" and path_language):
+        languages = path_language
+    elif lc:
+        languages = normalize_series(frame[lc], normalize_language)
+    else:
+        languages = path_language
     entities = (
         normalize_entity(entity, ENTITY_NAMES)
         if entity
@@ -224,6 +229,7 @@ def import_sources(
     code_system=None,
     inspect=False,
     list_pairing=None,
+    language_source="auto",
 ):
     import pandas as pd
     import pyarrow.parquet as pq
@@ -262,13 +268,32 @@ def import_sources(
                 if columns
                 else pd.DataFrame(index=range(pq.ParquetFile(path).metadata.num_rows))
             )
-            classified = classify_metadata(metadata, relative_path(path), language, entity, lc, ec)
+            classified = classify_metadata(
+                metadata, relative_path(path), language, entity, lc, ec, language_source
+            )
             summary = metadata_summary(classified)
+            path_language = inferred_metadata(guess_language, relative_path(path))
+            summary["path_language"] = path_language
+            summary["language_source"] = (
+                "explicit"
+                if language
+                else "path"
+                if language_source == "path" or (language_source == "auto" and path_language)
+                else "column"
+            )
+            summary["column_languages"] = (
+                sorted(
+                    normalize_series(metadata[lc], normalize_language).dropna().unique().tolist()
+                )
+                if lc
+                else []
+            )
             if inspect:
                 print(
                     json.dumps(
                         {
                             "file": path.name,
+                            "relative_path": str(relative_path(path)),
                             "columns": schema.names,
                             "types": {field.name: str(field.type) for field in schema},
                             "rows": pq.ParquetFile(path).metadata.num_rows,
@@ -307,7 +332,9 @@ def import_sources(
             )
             frame = pd.read_parquet(path, columns=columns, dtype_backend="pyarrow")
             frame = frame.dropna(subset=[term, code])
-            frame = classify_metadata(frame, relative_path(path), language, entity, lc, ec)
+            frame = classify_metadata(
+                frame, relative_path(path), language, entity, lc, ec, language_source
+            )
             for (lang, category), part in frame.groupby(["_language", "_entity"], sort=True):
                 prepared = prepare_pairs(part, term, code, list_pairing, *(extra or [None, None]))
                 system = code_system or ("UMLS" if category == "MEDICATION" and extra else None)
@@ -342,6 +369,15 @@ def import_sources(
             frame = deduplicate_pairs(
                 pd.concat([pd.read_parquet(path) for path in parts], ignore_index=True)
             )
+            if "references" in frame.columns:
+                references = frame.groupby("code", sort=False)["references"].agg(
+                    merge_reference_values
+                )
+                frame["references"] = frame["code"].map(references)
+            frame["_match_key"] = frame["term"].map(normalized_form)
+            frame = frame.sort_values(["_match_key", "code", "term"], kind="stable").reset_index(
+                drop=True
+            )
             target_directory = root / ".prepared" / lang
             target_directory.mkdir(parents=True, exist_ok=True)
             staged = temporary / (lang + "-" + category + ".parquet")
@@ -356,6 +392,10 @@ def import_sources(
                 "path": str(target.relative_to(root)),
                 "sha256": digest,
                 "rows": len(frame),
+                "concepts": int(frame["code"].nunique()),
+                "normalized_forms": int(frame["_match_key"].nunique()),
+                "lexical_key_format": KEY_FORMAT,
+                "lexical_key_unicode": unicodedata.unidata_version,
                 "code_system": systems[lang, category],
             }
         manifest = temporary / "manifest.json"
@@ -371,6 +411,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("--language")
+    parser.add_argument(
+        "--language-source",
+        choices=("auto", "path", "column"),
+        default="auto",
+        help="auto prefers an unambiguous path language; column may describe the untranslated source ontology",
+    )
     parser.add_argument("--entity", choices=CATEGORIES)
     parser.add_argument("--term-column")
     parser.add_argument("--code-column")

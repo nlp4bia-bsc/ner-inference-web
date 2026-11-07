@@ -96,14 +96,14 @@ class ModelProgressRepository:
             model_id, stage, completed, total, unit
         )
 
-    def start_batch(self, model_id, index, count):
+    def start_batch(self, model_id, index, count, *, stage="LOADING_MODEL"):
         check_content_version(self.db, self.job)
         with self.db.connect() as connection:
             connection.execute(
                 "UPDATE model_progress SET batch_index=?,batch_documents=?,completed_units=0,total_units=NULL,unit=NULL WHERE job_id=? AND model_id=? AND content_version=?",
                 (index, count, self.job["id"], model_id, self.job.get("content_version", 0)),
             )
-        self.update(model_id, "LOADING_MODEL")
+        self.update(model_id, stage)
 
     def complete_batch(self, model_id, count):
         check_content_version(self.db, self.job)
@@ -218,6 +218,8 @@ class ModelProgressRepository:
                     }
                 )
         for row in rows:
+            if row["kind"] == "NORMALIZATION":
+                row["method"] = json.loads(job["payload"]).get("normalization_method", "bi_encoder")
             done = row["completed_documents"] + row["failed_documents"]
             if (
                 row["stage"] in ("INFERENCE", "DECODING")

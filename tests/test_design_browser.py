@@ -401,3 +401,70 @@ def test_large_display_fonts_and_all_interface_languages(design_server):
             assert page.locator("html").get_attribute("lang") == code
             reflow(page)
         browser.close()
+
+
+def test_normalization_is_lexical_unless_bi_encoder_explicitly_checked(design_server):
+    from email import policy
+    from email.parser import BytesParser
+
+    from playwright.sync_api import expect, sync_playwright
+
+    base, _, _, _ = design_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        browser_login(page, base)
+        page.goto(base + "/annotate?lang=en")
+        page.locator("#normalization-options").wait_for(state="hidden")
+        page.locator("#normalize").check()
+        expect(page.locator("#normalization-method")).to_have_value("levenshtein")
+        expect(page.locator("#normalization-threshold")).to_have_value("0.8")
+        expect(page.locator("#use-bi-encoder")).not_to_be_checked()
+        expect(page.locator("#bi-encoder-warning")).to_be_hidden()
+        page.locator("#normalization-threshold").fill("0.87")
+        page.locator("#use-bi-encoder").check()
+        expect(page.locator("#normalization-method")).to_have_value("bi_encoder")
+        expect(page.locator("#bi-encoder-warning")).to_be_visible()
+        expect(page.locator("#normalization-threshold")).to_be_disabled()
+        reflow(page)
+        page.locator("#use-bi-encoder").uncheck()
+        page.locator("#normalization-lexical-method").select_option("exact")
+        expect(page.locator("#normalization-method")).to_have_value("exact")
+        expect(page.locator("#normalization-threshold")).to_be_disabled()
+        page.locator("#normalization-lexical-method").select_option("levenshtein")
+        page.locator("#auth-locale").select_option("es")
+        expect(page.locator("#normalization-threshold")).to_have_value("0.87")
+        expect(page.locator("#normalization-method")).to_have_value("levenshtein")
+        page.locator("#auth-locale").select_option("en")
+        page.locator('[data-category="DISEASE"] > summary').click()
+        page.locator('input[name="models"][value="es-disease"]').check()
+        page.locator("#files").set_input_files(
+            {"name": "synthetic.txt", "mimeType": "text/plain", "buffer": b"Synthetic."}
+        )
+        submitted = []
+
+        def record(route):
+            request = route.request
+            message = BytesParser(policy=policy.default).parsebytes(
+                b"Content-Type: "
+                + request.headers["content-type"].encode()
+                + b"\r\n\r\n"
+                + request.post_data_buffer
+            )
+            submitted.append(
+                {
+                    part.get_param("name", header="content-disposition"): part.get_payload(
+                        decode=True
+                    )
+                    for part in message.iter_parts()
+                }
+            )
+            route.fulfill(status=202, json={"url": base + "/jobs/synthetic"})
+
+        page.route("**/api/jobs", record)
+        page.locator("#submit").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        assert submitted[0]["normalization_method"] == b"levenshtein"
+        assert submitted[0]["normalization_threshold"] == b"0.87"
+        assert submitted[0]["normalize"] == b"true"
+        browser.close()

@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Для этого языка и сущности терминология недоступна.",
   "No normalization encoder is configured.": "Кодировщик нормализации не настроен.",
   "Concept normalization is disabled.": "Нормализация понятий отключена.",
-  "Concept normalization is unavailable.": "Нормализация понятий недоступна."
+  "Concept normalization is unavailable.": "Нормализация понятий недоступна.",
+  "Normalization method": "Метод нормализации",
+  "Exact string matching": "Точное совпадение текста",
+  "Levenshtein": "Левенштейн",
+  "Similarity threshold": "Порог сходства",
+  "Use bi-encoder (slower)": "Использовать биэнкодер (медленнее)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "Биэнкодер кодирует терминологию и при первом использовании может работать долго.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Быстрый поиск сравнивает тексты словаря. Левенштейн используется только при отсутствии точного совпадения.",
+  "Matching mentions": "Поиск совпадений упоминаний",
+  "Building lexical index": "Построение лексического индекса",
+  "Term-code pairs": "Пары термин–код",
+  "Bi-encoder": "Биэнкодер"
 }

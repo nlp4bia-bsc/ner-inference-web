@@ -67,16 +67,38 @@ def process_job(
     current_batch_size = None
     model_errors = []
     normalizer = None
-    if payload.get("normalize"):
+    if payload.get("normalize") and not payload.get("repackage_only"):
         from app.services.normalization import NormalizationSession
         from app.services.normalization_catalog import NormalizationCatalog
 
         terminology = NormalizationCatalog(s)
-        if terminology.snapshot(payload["language"], payload["entities"]) != payload.get(
-            "normalization_resources"
-        ):
+        method = payload.get("normalization_method", "levenshtein")
+        resources = terminology.snapshot(payload["language"], payload["entities"], method=method)
+        saved_resources = payload.get("normalization_resources")
+        if "normalization_method" not in payload:
+            saved_resources = [
+                {k: v for k, v in row.items() if k != "models"} for row in saved_resources or []
+            ]
+        if resources != saved_resources:
             raise ValueError("Terminology configuration changed; resubmit with current resources")
-        normalizer = NormalizationSession(s, root, terminology)
+        if "normalization_method" not in payload:
+            payload.update(
+                normalization_method=method,
+                normalization_threshold=0.8,
+                normalization_resources=resources,
+            )
+            with db.connect() as connection:
+                connection.execute(
+                    "UPDATE jobs SET payload=? WHERE id=? AND content_version=?",
+                    (json.dumps(payload), job["id"], job.get("content_version", 0)),
+                )
+        normalizer = NormalizationSession(
+            s,
+            root,
+            terminology,
+            method=method,
+            threshold=payload.get("normalization_threshold", 0.8),
+        )
         for row in payload.get("normalization_resources", []):
             reporter.ensure(
                 f"normalizer-{payload['language']}-{row['entity']}", len(rows), "NORMALIZATION", 0
@@ -188,6 +210,7 @@ def process_job(
             raise ValueError("No selected tokenizer could be loaded")
     started = time.monotonic()
     provenance = []
+    normalization_methods = set()
     seen_provenance = set()
     with db.connect() as c:
         limit = c.execute("SELECT reserved_bytes FROM jobs WHERE id=?", (job["id"],)).fetchone()[0]
@@ -205,6 +228,11 @@ def process_job(
         except (OSError, ValueError, KeyError):
             record = None
         if record:
+            normalization_methods.update(
+                span["normalization"].get("method", "bi_encoder")
+                for span in record["spans"]
+                if span.get("normalization")
+            )
             reporter.restore_document(record.get("models", []))
             for meta in record.get("models", []):
                 if meta.get("status") == "FAILED":
@@ -315,6 +343,7 @@ def process_job(
                             f"normalizer-{payload['language']}-{entity}",
                             offset // s.inference_document_batch_size + 1,
                             len(batch),
+                            stage="PENDING",
                         )
                     normalizer.normalize(
                         merged,
@@ -322,9 +351,7 @@ def process_job(
                         lambda model, exc, stage: metadata.append(model_failed(model, exc, stage)),
                     )
                     for entity in active_normalizers:
-                        if all(
-                            row.get("normalization") for row in merged if row["label"] == entity
-                        ):
+                        if entity in normalizer.last_completed_entities:
                             reporter.complete_batch(
                                 f"normalizer-{payload['language']}-{entity}", len(batch)
                             )
@@ -337,6 +364,11 @@ def process_job(
                 )
                 progress.mark(job["id"], identities, "FAILED", type(exc).__name__)
                 continue
+            normalization_methods.update(
+                span["normalization"].get("method", "bi_encoder")
+                for span in merged
+                if span.get("normalization")
+            )
             grouped = {r["filename"]: [] for r in batch}
             for span in merged:
                 grouped[span["filename"]].append(span)
@@ -403,6 +435,7 @@ def process_job(
             failed_models=len({error["model_id"] for error in model_errors}),
             model_errors=model_errors,
             models=provenance,
+            normalization=normalizer.metadata if normalizer else [],
         )
         reporter.finish()
         progress.stage(job["id"], "PREPARING_DOWNLOADS")
@@ -421,7 +454,16 @@ def process_job(
                 "requested": bool(payload.get("normalize")),
                 "resources": payload.get("normalization_resources", []),
                 "indexes": normalizer.metadata if normalizer else [],
-                "score": "Cosine similarity, not a calibrated probability",
+                "method": payload.get("normalization_method"),
+                "methods_in_results": sorted(normalization_methods),
+                "threshold": payload.get("normalization_threshold")
+                if payload.get("normalization_method") == "levenshtein"
+                else None,
+                "score": "Normalized edit similarity"
+                if payload.get("normalization_method") == "levenshtein"
+                else "Exact normalized text equality"
+                if payload.get("normalization_method") == "exact"
+                else "Cosine similarity, not a calibrated probability",
                 "english_fallback": "Original mention queried against English terminology; no automatic translation",
             },
             ner_lab_commit="8640d4797b081a5f6b66d9b45c11269542a79a26",

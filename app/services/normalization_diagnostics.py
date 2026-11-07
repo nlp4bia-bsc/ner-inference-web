@@ -7,6 +7,9 @@ def normalization_status(settings):
     root = settings.normalization_gazetteer_dir.resolve()
     result = {
         "enabled": settings.normalization_enabled,
+        "default_method": "levenshtein",
+        "default_threshold": 0.8,
+        "bi_encoder_requires_opt_in": True,
         "directory": str(root),
         "manifest_exists": False,
     }
@@ -23,10 +26,10 @@ def normalization_status(settings):
         result["spanish"] = [
             {
                 "entity": entity,
-                "available": bool(catalog.resolve("es", entity)),
+                "available": bool(catalog.resolve("es", entity, "levenshtein")),
                 "reason_code": None
-                if catalog.resolve("es", entity)
-                else catalog.unavailability_reason("es", entity),
+                if catalog.resolve("es", entity, "levenshtein")
+                else catalog.unavailability_reason("es", entity, "levenshtein"),
             }
             for entity in CATEGORIES
         ]

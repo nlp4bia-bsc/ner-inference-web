@@ -525,5 +525,16 @@
   "No terminology is available for this language and entity.": "Δεν υπάρχει διαθέσιμη ορολογία για αυτή τη γλώσσα και οντότητα.",
   "No normalization encoder is configured.": "Δεν έχει διαμορφωθεί κωδικοποιητής κανονικοποίησης.",
   "Concept normalization is disabled.": "Η κανονικοποίηση εννοιών είναι απενεργοποιημένη.",
-  "Concept normalization is unavailable.": "Η κανονικοποίηση εννοιών δεν είναι διαθέσιμη."
+  "Concept normalization is unavailable.": "Η κανονικοποίηση εννοιών δεν είναι διαθέσιμη.",
+  "Normalization method": "Μέθοδος κανονικοποίησης",
+  "Exact string matching": "Ακριβής αντιστοίχιση κειμένου",
+  "Levenshtein": "Levenshtein",
+  "Similarity threshold": "Όριο ομοιότητας",
+  "Use bi-encoder (slower)": "Χρήση bi-encoder (πιο αργό)",
+  "Bi-encoder encodes the terminology and may take a long time on first use.": "Το bi-encoder κωδικοποιεί την ορολογία και μπορεί να αργήσει κατά την πρώτη χρήση.",
+  "Fast matching uses terminology strings. Levenshtein runs only when no exact match is found.": "Η γρήγορη αναζήτηση συγκρίνει κείμενα του λεξικού. Το Levenshtein εκτελείται μόνο χωρίς ακριβή αντιστοίχιση.",
+  "Matching mentions": "Αντιστοίχιση αναφορών",
+  "Building lexical index": "Δημιουργία λεξικού ευρετηρίου",
+  "Term-code pairs": "Ζεύγη όρου-κωδικού",
+  "Bi-encoder": "Bi-encoder"
 }
