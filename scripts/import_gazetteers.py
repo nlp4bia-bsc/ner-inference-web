@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,6 +13,7 @@ from pathlib import Path, PurePosixPath
 
 from app.config import Settings
 from app.services.normalization_catalog import CATEGORIES, file_sha256
+from scripts.gazetteer_values import deduplicate_pairs, prepare_pairs
 
 ENTITY_NAMES = {
     "medication": "MEDICATION",
@@ -169,6 +171,7 @@ def import_sources(
     entity_column=None,
     code_system=None,
     inspect=False,
+    list_pairing=None,
 ):
     import pandas as pd
     import pyarrow.parquet as pq
@@ -182,7 +185,13 @@ def import_sources(
         if not paths:
             raise ValueError("No Parquet terminology files found")
         collected = {}
-        for path in paths:
+        systems = {}
+        fragments = Path(tempfile.mkdtemp(prefix=".fragments-", dir=temporary))
+        for index, path in enumerate(paths, 1):
+            if not inspect:
+                logging.getLogger("temu.import").info(
+                    "terminology_import file=%s/%s stage=READING", index, len(paths)
+                )
             schema = pq.read_schema(path)
             if inspect:
                 print(
@@ -190,6 +199,7 @@ def import_sources(
                         {
                             "file": path.name,
                             "columns": schema.names,
+                            "types": {field.name: str(field.type) for field in schema},
                             "rows": pq.ParquetFile(path).metadata.num_rows,
                         }
                     )
@@ -209,8 +219,11 @@ def import_sources(
                 ),
                 None,
             )
+            sab = lower.get("sab")
+            sab_code = lower.get("sab_code") or lower.get("code_sab")
+            extra = [sab, sab_code] if sab and sab_code and code == lower.get("code") else []
             columns = list(
-                dict.fromkeys([term, code, *([lc] if lc else []), *([ec] if ec else [])])
+                dict.fromkeys([term, code, *([lc] if lc else []), *([ec] if ec else []), *extra])
             )
             frame = pd.read_parquet(path, columns=columns, dtype_backend="pyarrow")
             frame = frame.dropna(subset=[term, code])
@@ -248,22 +261,26 @@ def import_sources(
                     raise ValueError(
                         "Unsupported terminology language/entity group; provide explicit mapping"
                     )
-                prepared = part[[term, code]].rename(columns={term: "term", code: "code"}).copy()
-                prepared["term"] = prepared["term"].astype(str).str.strip()
-                prepared["code"] = prepared["code"].astype(str).str.strip()
-                if (
-                    prepared["term"].str.startswith("[").any()
-                    or prepared["code"].str.startswith("[").any()
-                ):
+                prepared = prepare_pairs(part, term, code, list_pairing, *(extra or [None, None]))
+                system = code_system or ("UMLS" if category == "MEDICATION" and extra else None)
+                previous = systems.setdefault((lang, category), system)
+                if previous != system:
                     raise ValueError(
-                        "List-valued term/code columns need explicit flattening before import"
+                        "Conflicting code systems in one terminology group; import them separately"
                     )
-                prepared = prepared[
-                    (prepared["term"] != "") & prepared["code"].str.fullmatch(r"[A-Za-z0-9_.:/-]+")
-                ]
                 if prepared.empty:
                     raise ValueError("No valid terminology pairs in group")
-                collected.setdefault((lang, category), []).append(prepared)
+                # Spill groups to private temporary Parquet so all languages need
+                # not remain as expanded Python strings in memory at once.
+                fragment = fragments / f"fragment-{sum(len(v) for v in collected.values())}.parquet"
+                prepared.to_parquet(fragment, index=False)
+                collected.setdefault((lang, category), []).append(fragment)
+                logging.getLogger("temu.import").info(
+                    "terminology_import language=%s entity=%s stage=PREPARED pairs=%s",
+                    lang,
+                    category,
+                    len(prepared),
+                )
         if inspect:
             return []
         old = root / "manifest.json"
@@ -276,10 +293,8 @@ def import_sources(
             else {}
         )
         for (lang, category), parts in sorted(collected.items()):
-            frame = (
-                pd.concat(parts, ignore_index=True)
-                .drop_duplicates(["term", "code"])
-                .reset_index(drop=True)
+            frame = deduplicate_pairs(
+                pd.concat([pd.read_parquet(path) for path in parts], ignore_index=True)
             )
             target_directory = root / ".prepared" / lang
             target_directory.mkdir(parents=True, exist_ok=True)
@@ -295,7 +310,7 @@ def import_sources(
                 "path": str(target.relative_to(root)),
                 "sha256": digest,
                 "rows": len(frame),
-                "code_system": code_system,
+                "code_system": systems[lang, category],
             }
         manifest = temporary / "manifest.json"
         manifest.write_text(
@@ -317,12 +332,19 @@ def main(argv=None):
     parser.add_argument("--entity-column")
     parser.add_argument("--code-system")
     parser.add_argument(
+        "--list-pairing",
+        choices=("aligned", "all"),
+        help="Only needed when both term and code contain multiple values; choose their documented relationship explicitly",
+    )
+    parser.add_argument(
         "--inspect",
         action="store_true",
         help="Show only column names/counts, never terminology rows",
     )
     args = vars(parser.parse_args(argv))
     os.umask(0o077)
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
+    logging.getLogger("temu.import").setLevel(logging.INFO)
     settings = Settings()
     result = import_sources(settings=settings, **args)
     if not args["inspect"]:

@@ -514,5 +514,16 @@
   "Skipped": "Omis",
   "Waiting for next batch": "Se așteaptă următorul lot",
   "Processing service unavailable. Start the worker using the same configuration.": "Serviciul de procesare nu este disponibil. Porniți worker-ul cu aceeași configurație.",
-  "The worker is processing another project.": "Worker-ul procesează un alt proiect."
+  "The worker is processing another project.": "Worker-ul procesează un alt proiect.",
+  "Select document": "Selectează documentul",
+  "Select all on this page": "Selectează tot pe această pagină",
+  "{count} selected": "{count} selectate",
+  "Delete selected documents ({count})": "Șterge documentele selectate ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Se șterg doar documentele selectate și adnotările lor și se eliberează cota. Istoricul încărcărilor se păstrează.",
+  "Import terminology dictionaries before normalizing.": "Importați dicționarele terminologice înainte de normalizare.",
+  "The terminology file is missing.": "Fișierul terminologic lipsește.",
+  "No terminology is available for this language and entity.": "Nu există terminologie pentru această limbă și entitate.",
+  "No normalization encoder is configured.": "Nu este configurat niciun encoder de normalizare.",
+  "Concept normalization is disabled.": "Normalizarea conceptelor este dezactivată.",
+  "Concept normalization is unavailable.": "Normalizarea conceptelor nu este disponibilă."
 }

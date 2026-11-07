@@ -216,3 +216,30 @@ not included. Returns `{deleted, quota}`; deleted counts documents. Upload ledge
 metadata and lifetime totals remain. Concurrent expiry is tolerated; an error
 partway through bulk deletion leaves already completed deletions in effect and
 can be retried safely. There is no administrator bypass to clinical content.
+
+
+## Selected documents and terminology references (0.8.1)
+
+`POST /api/my/documents/delete` accepts a nonempty selection of at most 1000
+references: `{"documents":[{"job_id":"...","document_id":"..."}]}`. It requires a
+live session and CSRF proof, preflights ownership/existence of the whole selection,
+deduplicates IDs, and erases each project's selected content in one generation
+change. Unknown or foreign references yield 404 before mutation. Deletion remains
+idempotent; concurrency with expiry/purge is tolerated after preflight. Across
+projects it is not one filesystem transaction: completed deletions remain if a
+later operational error occurs. The result is `{deleted,quota}` like existing
+DELETE endpoints. No original, annotations or derived downloads are retained for
+removed documents. Other documents and permanent upload metadata remain.
+
+My documents keeps selections across pagination/refresh; a filter change clears
+them. Select all means the retained documents on the current page. The separate
+Delete all action retains its existing whole-account or project scope.
+
+Normalization candidates and results add optional `code_system`/`references`
+fields (each reference has `code_system` and `code`). Primary `code` semantics are
+unchanged. Medication UMLS CUIs and source terminology IDs remain separate.
+Older annotations without additional references remain readable. BRAT N IDs are
+unique per reference; multiple references point to one original T span.
+Normalization errors now carry a safe `reason_code` alongside the exception type;
+progress cards translate the reason. No terminology values or patient text are
+included in worker error logs.

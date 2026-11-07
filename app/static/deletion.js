@@ -8,6 +8,7 @@ export function confirmDeletion(
   onDeleted,
   onError,
   onBusy = () => {},
+  documents,
 ) {
   return openDialog(t(title), t(description), [
     {
@@ -31,15 +32,28 @@ export function confirmDeletion(
             );
           const identity = await session.json();
           const response = await fetch(base + endpoint, {
-            method: "DELETE",
-            headers: { "X-CSRF-Token": identity.csrf_token },
+            method: documents === undefined ? "DELETE" : "POST",
+            headers: {
+              "X-CSRF-Token": identity.csrf_token,
+              ...(documents !== undefined
+                ? { "Content-Type": "application/json" }
+                : {}),
+            },
+            ...(documents !== undefined
+              ? { body: JSON.stringify({ documents }) }
+              : {}),
           });
           if (response.status === 401) {
             window.dispatchEvent(new Event("temu-session-expired"));
             return;
           }
           const result = await response.json();
-          if (!response.ok) throw new Error(t(result.detail));
+          if (!response.ok)
+            throw new Error(
+              typeof result.detail === "string"
+                ? t(result.detail)
+                : t("The request could not be submitted. Please try again."),
+            );
           paintQuota(result.quota);
           await onDeleted(result);
         } catch (error) {

@@ -514,5 +514,16 @@
   "Skipped": "Пропущено",
   "Waiting for next batch": "Ожидание следующего пакета",
   "Processing service unavailable. Start the worker using the same configuration.": "Служба обработки недоступна. Запустите worker с той же конфигурацией.",
-  "The worker is processing another project.": "Worker обрабатывает другой проект."
+  "The worker is processing another project.": "Worker обрабатывает другой проект.",
+  "Select document": "Выбрать документ",
+  "Select all on this page": "Выбрать все на этой странице",
+  "{count} selected": "Выбрано: {count}",
+  "Delete selected documents ({count})": "Удалить выбранные документы ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Будут удалены только выбранные документы и их аннотации, квота освободится. История загрузок сохранится.",
+  "Import terminology dictionaries before normalizing.": "Импортируйте терминологические словари перед нормализацией.",
+  "The terminology file is missing.": "Файл терминологии отсутствует.",
+  "No terminology is available for this language and entity.": "Для этого языка и сущности терминология недоступна.",
+  "No normalization encoder is configured.": "Кодировщик нормализации не настроен.",
+  "Concept normalization is disabled.": "Нормализация понятий отключена.",
+  "Concept normalization is unavailable.": "Нормализация понятий недоступна."
 }

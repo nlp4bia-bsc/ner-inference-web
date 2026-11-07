@@ -514,5 +514,16 @@
   "Skipped": "Παραλείφθηκε",
   "Waiting for next batch": "Αναμονή για επόμενη παρτίδα",
   "Processing service unavailable. Start the worker using the same configuration.": "Η υπηρεσία επεξεργασίας δεν είναι διαθέσιμη. Εκκινήστε τον worker με την ίδια διαμόρφωση.",
-  "The worker is processing another project.": "Ο worker επεξεργάζεται άλλο έργο."
+  "The worker is processing another project.": "Ο worker επεξεργάζεται άλλο έργο.",
+  "Select document": "Επιλογή εγγράφου",
+  "Select all on this page": "Επιλογή όλων σε αυτή τη σελίδα",
+  "{count} selected": "{count} επιλεγμένα",
+  "Delete selected documents ({count})": "Διαγραφή επιλεγμένων εγγράφων ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Διαγράφονται μόνο τα επιλεγμένα έγγραφα και οι επισημειώσεις τους και ελευθερώνεται το όριό σας. Το ιστορικό μεταφορτώσεων διατηρείται.",
+  "Import terminology dictionaries before normalizing.": "Εισαγάγετε τα λεξικά ορολογίας πριν από την κανονικοποίηση.",
+  "The terminology file is missing.": "Το αρχείο ορολογίας λείπει.",
+  "No terminology is available for this language and entity.": "Δεν υπάρχει διαθέσιμη ορολογία για αυτή τη γλώσσα και οντότητα.",
+  "No normalization encoder is configured.": "Δεν έχει διαμορφωθεί κωδικοποιητής κανονικοποίησης.",
+  "Concept normalization is disabled.": "Η κανονικοποίηση εννοιών είναι απενεργοποιημένη.",
+  "Concept normalization is unavailable.": "Η κανονικοποίηση εννοιών δεν είναι διαθέσιμη."
 }

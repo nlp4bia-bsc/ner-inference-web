@@ -10,13 +10,21 @@ class AnnotationSource(BaseModel):
     score: float | None = Field(default=None, ge=0, le=1)
 
 
+class ConceptReference(BaseModel):
+    code_system: str
+    code: str
+
+
 class NormalizationCandidate(BaseModel):
+    code_system: str | None = None
+    references: list[ConceptReference] = Field(default_factory=list)
     code: str
     term: str
     score: float = Field(allow_inf_nan=False)
 
 
 class ConceptNormalization(BaseModel):
+    references: list[ConceptReference] = Field(default_factory=list)
     code: str
     term: str
     score: float = Field(allow_inf_nan=False)

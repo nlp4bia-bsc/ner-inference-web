@@ -514,5 +514,16 @@
   "Skipped": "Ignorado",
   "Waiting for next batch": "A aguardar o próximo lote",
   "Processing service unavailable. Start the worker using the same configuration.": "Serviço de processamento indisponível. Inicie o worker com a mesma configuração.",
-  "The worker is processing another project.": "O worker está a processar outro projeto."
+  "The worker is processing another project.": "O worker está a processar outro projeto.",
+  "Select document": "Selecionar documento",
+  "Select all on this page": "Selecionar todos nesta página",
+  "{count} selected": "{count} selecionados",
+  "Delete selected documents ({count})": "Eliminar documentos selecionados ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Apenas os documentos selecionados e as suas anotações serão eliminados, libertando a quota. O histórico de carregamentos é mantido.",
+  "Import terminology dictionaries before normalizing.": "Importe os dicionários terminológicos antes de normalizar.",
+  "The terminology file is missing.": "Falta o ficheiro terminológico.",
+  "No terminology is available for this language and entity.": "Não há terminologia disponível para este idioma e entidade.",
+  "No normalization encoder is configured.": "Não há encoder de normalização configurado.",
+  "Concept normalization is disabled.": "A normalização de conceitos está desativada.",
+  "Concept normalization is unavailable.": "A normalização de conceitos não está disponível."
 }

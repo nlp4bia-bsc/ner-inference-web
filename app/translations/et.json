@@ -514,5 +514,16 @@
   "Skipped": "Vahele jäetud",
   "Waiting for next batch": "Järgmise partii ootamine",
   "Processing service unavailable. Start the worker using the same configuration.": "Töötlusteenus pole saadaval. Käivitage worker sama seadistusega.",
-  "The worker is processing another project.": "Worker töötleb teist projekti."
+  "The worker is processing another project.": "Worker töötleb teist projekti.",
+  "Select document": "Vali dokument",
+  "Select all on this page": "Vali kõik sellel lehel",
+  "{count} selected": "Valitud: {count}",
+  "Delete selected documents ({count})": "Kustuta valitud dokumendid ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Kustutatakse ainult valitud dokumendid ja nende annotatsioonid ning vabastatakse maht. Üleslaadimiste ajalugu säilib.",
+  "Import terminology dictionaries before normalizing.": "Importige terminoloogiasõnastikud enne normaliseerimist.",
+  "The terminology file is missing.": "Terminoloogiafail puudub.",
+  "No terminology is available for this language and entity.": "Selle keele ja olemi jaoks pole terminoloogiat saadaval.",
+  "No normalization encoder is configured.": "Normaliseerimiskodeerija pole seadistatud.",
+  "Concept normalization is disabled.": "Mõistete normaliseerimine on keelatud.",
+  "Concept normalization is unavailable.": "Mõistete normaliseerimine pole saadaval."
 }

@@ -92,6 +92,8 @@ def process_job(
             current_batch_size if stage in ("INFERENCE", "NORMALIZATION") else None,
         )
         error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
+        if getattr(exc, "reason_code", None):
+            error["reason_code"] = exc.reason_code
         if isinstance(exc, ModuleNotFoundError):
             module = (exc.name or "").split(".", 1)[0]
             if module in INFERENCE_MODULES:
@@ -110,11 +112,12 @@ def process_job(
             for frame in traceback.extract_tb(exc.__traceback__)[-20:]
         ]
         logging.getLogger("temu.pipeline").error(
-            "model_failed job_id=%s model_id=%s stage=%s error_type=%s http_status=%s missing_module=%s frames=%s",
+            "model_failed job_id=%s model_id=%s stage=%s error_type=%s reason_code=%s http_status=%s missing_module=%s frames=%s",
             job["id"],
             model["model_id"],
             stage,
             type(exc).__name__,
+            error.get("reason_code"),
             error.get("http_status"),
             error.get("missing_module"),
             frames,

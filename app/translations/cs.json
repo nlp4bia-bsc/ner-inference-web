@@ -514,5 +514,16 @@
   "Skipped": "Přeskočeno",
   "Waiting for next batch": "Čekání na další dávku",
   "Processing service unavailable. Start the worker using the same configuration.": "Služba zpracování není dostupná. Spusťte worker se stejnou konfigurací.",
-  "The worker is processing another project.": "Worker zpracovává jiný projekt."
+  "The worker is processing another project.": "Worker zpracovává jiný projekt.",
+  "Select document": "Vybrat dokument",
+  "Select all on this page": "Vybrat vše na této stránce",
+  "{count} selected": "Vybráno: {count}",
+  "Delete selected documents ({count})": "Smazat vybrané dokumenty ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Smažou se pouze vybrané dokumenty a jejich anotace a uvolní se kvóta. Historie nahrávání zůstane.",
+  "Import terminology dictionaries before normalizing.": "Před normalizací importujte terminologické slovníky.",
+  "The terminology file is missing.": "Chybí terminologický soubor.",
+  "No terminology is available for this language and entity.": "Pro tento jazyk a entitu není dostupná terminologie.",
+  "No normalization encoder is configured.": "Není nastaven kodér normalizace.",
+  "Concept normalization is disabled.": "Normalizace konceptů je vypnutá.",
+  "Concept normalization is unavailable.": "Normalizace konceptů není dostupná."
 }

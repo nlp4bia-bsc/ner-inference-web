@@ -1,4 +1,47 @@
-# Latest: model progress, owner project deletion and local Compose (0.8)
+# Latest: DT4H list import, medication identifiers and selected deletion (0.8.1)
+
+Full CPU/Chromium regression: **295 passed in 425.14s**, without skips or failures.
+The server-only run passes 209 cases (86 browser cases opt out in that run).
+Focused document/progress browser checks pass eight cases under root and /ner,
+including cross-page selection, refresh preservation, cancellation, deletion,
+quota/lifetime counters and 375/1440/3840px reflow. Full verification command:
+
+```sh
+OMP_NUM_THREADS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js \
+AXE_REPORT=/tmp/selection-final-axe.jsonl BROWSER_TESTS=1 \
+SCREENSHOT_OUTPUT=/tmp/selection-final-screens \
+/tmp/ner-web-progress-env/bin/python -m pytest -q
+```
+
+The supplied worker log identifies the missing resource lookup before encoder or
+FAISS execution. The subsequent import trace identifies the previous refusal of
+list-valued terminology. Synthetic Parquet/ZIP fixtures reproduce the reported
+columns and scalar/list cells, both SAB_code spellings, synonyms, positional
+nulls, ambiguous multiple-code refusal and explicit pairing modes. The importer
+preserves primary UMLS CUIs and merges secondary SAB references. An actual tiny
+local bi-encoder/FlatIP test checks cold and warm index reuse, API annotation
+contracts and multiple BRAT N references without changing the original T span.
+All fixtures are synthetic; the confidential binary archive has not been read
+here and its clinical content/scale has not been validated.
+
+Selected deletion tests cover preflight denial of foreign/unknown IDs before
+mutation, CSRF, empty selections, duplicate/idempotent requests, one generation
+change per project, multiple projects, retained quota, lifetime history and
+repackaging. The CLI reports read-only terminology setup without dictionary terms.
+Progress and error provenance use enumerated normalization reasons; model error
+messages do not contain raw exception strings or clinical text.
+
+[82 axe scans](security/v8.1-axe.jsonl) have zero automatic violations;
+52 scans have incomplete rules, so this is not a full WCAG certification.
+Ruff lint/format, Prettier on changed JS/CSS, git diff --check and Bandit medium/
+high checks pass (six low-severity findings). Wheel/sdist 0.8.1 build; packaged
+updated runtime/UI code matches the checkout and contains no Parquet, FAISS or
+private gazetteer directory. No dependency changes or schema migration were
+needed. No Docker or remote Conda deployment was performed in this change.
+
+---
+
+# Historical: model progress, owner project deletion and local Compose (0.8)
 
 Final full CPU/Chromium regression: **286 passed in 435.17s**, no failures or
 skips. Commands executed from the checkout root (Python 3.12, Torch 2.15.0+cpu,

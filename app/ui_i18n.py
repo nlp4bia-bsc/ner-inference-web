@@ -4,6 +4,17 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Select document|Seleccionar documento|Selecciona el document
+Select all on this page|Seleccionar todos en esta página|Selecciona tots els d'aquesta pàgina
+{count} selected|{count} seleccionados|{count} seleccionats
+Delete selected documents ({count})|Eliminar documentos seleccionados ({count})|Elimina els documents seleccionats ({count})
+This deletes only the selected documents and their annotations and frees your quota. Upload history remains.|Se eliminarán solo los documentos seleccionados y sus anotaciones y se liberará tu cuota. El historial de subidas se conserva.|S'eliminaran només els documents seleccionats i les seves anotacions i s'alliberarà la quota. Es conserva l'historial de càrregues.
+Import terminology dictionaries before normalizing.|Importa los diccionarios terminológicos antes de normalizar.|Importa els diccionaris terminològics abans de normalitzar.
+The terminology file is missing.|Falta el archivo terminológico.|Falta el fitxer terminològic.
+No terminology is available for this language and entity.|No hay terminología disponible para este idioma y entidad.|No hi ha terminologia disponible per a aquest idioma i entitat.
+No normalization encoder is configured.|No hay ningún encoder de normalización configurado.|No hi ha cap encoder de normalització configurat.
+Concept normalization is disabled.|La normalización de conceptos está desactivada.|La normalització de conceptes està desactivada.
+Concept normalization is unavailable.|La normalización de conceptos no está disponible.|La normalització de conceptes no està disponible.
 Delete project|Eliminar proyecto|Elimina el projecte
 Delete all documents|Eliminar todos los documentos|Elimina tots els documents
 This deletes all documents, annotations and downloads in this project and frees your quota. Upload history remains.|Se eliminarán todos los documentos, anotaciones y descargas de este proyecto y se liberará tu cuota. El historial de subidas se conserva.|S'eliminaran tots els documents, anotacions i descàrregues del projecte i s'alliberarà la quota. Es conserva l'historial de càrregues.

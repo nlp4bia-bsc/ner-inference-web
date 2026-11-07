@@ -413,3 +413,14 @@ Project deletion is available on Dashboard/My jobs, while My documents retains
 individual deletion and adds bulk deletion. A project-scoped manager deletes
 that project's documents; the unfiltered manager deletes across the account.
 Confirmations state the scope. Neither action clears lifetime upload metadata.
+
+
+## 0.8.1 terminology import and selected deletion
+
+No new dependencies or database migration are required. Update the checkout,
+import the private ZIP as described in [NORMALIZATION.md](NORMALIZATION.md), and
+restart both Conda processes. The configuration diagnostic now reports terminology
+registration separately from the worker heartbeat. `--inspect` alone is not an
+import. Previously completed partial jobs require a new submission to normalize.
+My documents supports per-page selection and selection across pages, then one
+confirmed Delete action. Retained quota refreshes; lifetime upload metadata stays.

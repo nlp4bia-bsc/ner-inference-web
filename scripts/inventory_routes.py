@@ -48,10 +48,15 @@ def policy(path, method):
             "No clinical access",
             "admin/MFA tests + independent review",
         )
-    if path in ("/api/my/documents", "/api/my/document-usage", "/documents"):
+    if path in (
+        "/api/my/documents",
+        "/api/my/documents/delete",
+        "/api/my/document-usage",
+        "/documents",
+    ):
         return (
             "Session",
-            "Live owner; CSRF for DELETE",
+            "Live owner; CSRF for mutations",
             "Owner-filtered metadata and quota",
             "individual/bulk deletion + two-user history + browser",
         )

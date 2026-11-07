@@ -5,6 +5,10 @@ const base = document.querySelector('meta[name="app-prefix"]').content;
 const tbody = document.querySelector("#document-history");
 const message = document.querySelector("#management-message");
 const filter = document.querySelector("#document-filter");
+const selected = new Map();
+const selectionCount = document.querySelector("#document-selection-count"),
+  selectVisible = document.querySelector("#select-visible-documents"),
+  deleteSelected = document.querySelector("#delete-selected-documents");
 const job = new URL(location.href).searchParams.get("job");
 let offset = 0,
   total = 0,
@@ -14,6 +18,30 @@ function render() {
   tbody.replaceChildren();
   for (const row of records) {
     const tr = document.createElement("tr");
+    const selection = document.createElement("td"),
+      checkbox = document.createElement("input");
+    selection.className = "document-selection";
+    selection.dataset.label = t("Select document");
+    checkbox.type = "checkbox";
+    checkbox.dataset.selectDocument = row.id;
+    checkbox.setAttribute(
+      "aria-label",
+      t("Select document") + ": " + row.filename,
+    );
+    if (row.state !== "STORED") selected.delete(row.id);
+    checkbox.checked = selected.has(row.id);
+    checkbox.disabled = busy || row.state !== "STORED";
+    checkbox.onchange = () => {
+      checkbox.checked
+        ? selected.set(row.id, {
+            job_id: row.job_id,
+            document_id: row.document_id,
+          })
+        : selected.delete(row.id);
+      updateSelection();
+    };
+    selection.append(checkbox);
+    tr.append(selection);
     for (const [label, value] of [
       ["Document", row.filename],
       ["Uploaded", date(new Date(row.uploaded_at * 1000))],
@@ -42,6 +70,7 @@ function render() {
           "Delete document",
           "This removes the original document, its annotations and downloads. Upload history remains.",
           async () => {
+            selected.delete(row.id);
             await load();
             message.textContent = t(
               "Document content deleted. Upload history retained.",
@@ -50,10 +79,7 @@ function render() {
           (error) => {
             message.textContent = error;
           },
-          (value) => {
-            busy = value;
-            render();
-          },
+          setBusy,
         );
       actions.append(link, document.createTextNode(" "), remove);
     } else {
@@ -62,12 +88,69 @@ function render() {
     tr.append(actions);
     tbody.append(tr);
   }
+  updateSelection();
   document.querySelector("#documents-previous").disabled = offset === 0 || busy;
   document.querySelector("#documents-next").disabled =
     offset + 50 >= total || busy;
   document.querySelector("#documents-page").textContent =
     `${number(Math.min(total, offset + 1))}–${number(Math.min(total, offset + 50))} / ${number(total)}`;
 }
+function updateSelection() {
+  const eligible = records.filter((row) => row.state === "STORED");
+  const checked = eligible.filter((row) => selected.has(row.id)).length;
+  selectVisible.checked = eligible.length > 0 && checked === eligible.length;
+  selectVisible.indeterminate = checked > 0 && checked < eligible.length;
+  selectVisible.disabled = busy || !eligible.length;
+  deleteSelected.hidden = selected.size === 0;
+  deleteSelected.disabled = busy || selected.size === 0;
+  selectionCount.textContent = selected.size
+    ? t("{count} selected", { count: number(selected.size) })
+    : "";
+  document.querySelector("#delete-all-documents").disabled = busy;
+  document.querySelector("#refresh-documents").disabled = busy;
+  filter.disabled = busy;
+}
+function setBusy(value) {
+  busy = value;
+  render();
+}
+selectVisible.onchange = () => {
+  for (const row of records.filter((row) => row.state === "STORED")) {
+    selectVisible.checked
+      ? selected.set(row.id, {
+          job_id: row.job_id,
+          document_id: row.document_id,
+        })
+      : selected.delete(row.id);
+    const checkbox = tbody.querySelector(`[data-select-document="${row.id}"]`);
+    if (checkbox) checkbox.checked = selected.has(row.id);
+  }
+  updateSelection();
+};
+deleteSelected.onclick = () => {
+  const documents = [...selected.values()];
+  if (!documents.length || busy) return;
+  confirmDeletion(
+    "/api/my/documents/delete",
+    t("Delete selected documents ({count})", {
+      count: number(documents.length),
+    }),
+    "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.",
+    async () => {
+      selected.clear();
+      await load();
+      message.textContent = t(
+        "Document content deleted. Upload history retained.",
+      );
+    },
+    (error) => {
+      message.textContent = error;
+    },
+    setBusy,
+    documents,
+  );
+};
+
 async function load() {
   const [history, usage] = await Promise.all([
     fetch(
@@ -108,6 +191,7 @@ document.querySelector("#documents-next").onclick = () => {
 document.querySelector("#refresh-documents").onclick = () =>
   load().catch((error) => (message.textContent = error.message));
 filter.onchange = () => {
+  selected.clear();
   offset = 0;
   load().catch((error) => (message.textContent = error.message));
 };
@@ -122,6 +206,7 @@ document.querySelector("#delete-all-documents").onclick = () =>
       ? "This deletes all documents, annotations and downloads in this project and frees your quota. Upload history remains."
       : "This deletes all retained documents and annotations across your projects and frees your quota. Upload history remains.",
     async () => {
+      selected.clear();
       offset = 0;
       await load();
       message.textContent = t(
@@ -131,9 +216,5 @@ document.querySelector("#delete-all-documents").onclick = () =>
     (error) => {
       message.textContent = error;
     },
-    (value) => {
-      busy = value;
-      document.querySelector("#delete-all-documents").disabled = value;
-      render();
-    },
+    setBusy,
   );

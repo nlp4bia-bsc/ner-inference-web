@@ -514,5 +514,16 @@
   "Skipped": "Hoppet over",
   "Waiting for next batch": "Venter på neste batch",
   "Processing service unavailable. Start the worker using the same configuration.": "Behandlingstjenesten er utilgjengelig. Start workeren med samme konfigurasjon.",
-  "The worker is processing another project.": "Workeren behandler et annet prosjekt."
+  "The worker is processing another project.": "Workeren behandler et annet prosjekt.",
+  "Select document": "Velg dokument",
+  "Select all on this page": "Velg alle på denne siden",
+  "{count} selected": "{count} valgt",
+  "Delete selected documents ({count})": "Slett valgte dokumenter ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Bare de valgte dokumentene og merknadene deres slettes, og kvoten frigjøres. Opplastingshistorikken beholdes.",
+  "Import terminology dictionaries before normalizing.": "Importer terminologiordbøker før normalisering.",
+  "The terminology file is missing.": "Terminologifilen mangler.",
+  "No terminology is available for this language and entity.": "Ingen terminologi er tilgjengelig for dette språket og denne entiteten.",
+  "No normalization encoder is configured.": "Ingen normaliseringsencoder er konfigurert.",
+  "Concept normalization is disabled.": "Begrepsnormalisering er deaktivert.",
+  "Concept normalization is unavailable.": "Begrepsnormalisering er utilgjengelig."
 }

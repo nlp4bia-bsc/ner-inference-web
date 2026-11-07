@@ -1761,3 +1761,32 @@ html {
 .job-management-action {
   margin-top: 12px;
 }
+
+.document-selection {
+  width: 3rem;
+  text-align: center;
+}
+.document-selection input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+tr:has([data-select-document]:checked) {
+  background: var(--soft);
+}
+
+.document-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.document-select-all input {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}

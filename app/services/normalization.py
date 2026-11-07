@@ -13,13 +13,16 @@ from contextlib import contextmanager
 from importlib.metadata import version
 from pathlib import Path
 
+from app.domain.normalization_references import merge_reference_values
 from app.persistence.job_locks import JobContentChanged
 from app.services.model_cache import ModelCache
 from app.services.normalization_catalog import CATEGORIES, NormalizationCatalog, file_sha256
 
 
 class NormalizationUnavailable(ValueError):
-    pass
+    def __init__(self, message, reason_code="NORMALIZATION_UNAVAILABLE"):
+        super().__init__(message)
+        self.reason_code = reason_code
 
 
 class NormalizationCache:
@@ -124,7 +127,14 @@ class NormalizationCache:
 
                 if on_progress:
                     on_progress("READING_TERMINOLOGY")
-                vocabulary = build_vocabulary(pd.read_parquet(resource["file"]))
+                dictionary = pd.read_parquet(resource["file"])
+                vocabulary = build_vocabulary(dictionary)
+                if "references" in dictionary.columns:
+                    references = dictionary.groupby("code", sort=False)["references"].agg(
+                        merge_reference_values
+                    )
+                    vocabulary["references"] = vocabulary["code"].map(references).fillna("[]")
+                del dictionary
                 estimate = (
                     len(vocabulary) * getattr(retriever.model.config, "hidden_size", 1024) * 4
                     + resource["file"].stat().st_size
@@ -169,7 +179,13 @@ class NormalizationCache:
             import os
 
             os.utime(parent, None)
-        return {"cache_hit": hit, "signature": signature}
+        return {
+            "cache_hit": hit,
+            "signature": signature,
+            "references": dict(zip(vocabulary["code"], vocabulary["references"], strict=True))
+            if "references" in vocabulary.columns
+            else {},
+        }
 
 
 class NormalizationSession:
@@ -255,7 +271,10 @@ class NormalizationSession:
             try:
                 resource = self.catalog.resolve(language, entity)
                 if resource is None:
-                    raise NormalizationUnavailable("No terminology resource for category")
+                    raise NormalizationUnavailable(
+                        "No terminology resource for category",
+                        self.catalog.unavailability_reason(language, entity),
+                    )
                 model, encoder = self._encoder(resource)
                 cached = self.cache.load_or_build(resource, model, encoder, on_progress=self.report)
                 mentions = list(dict.fromkeys(row["text"] for row in selected))
@@ -274,7 +293,29 @@ class NormalizationSession:
                     mentions, terms, codes, scores, strict=True
                 ):
                     candidates = [
-                        {"code": str(code), "term": str(term), "score": float(score)}
+                        {
+                            "code": str(code),
+                            "term": str(term),
+                            "score": float(score),
+                            "code_system": resource.get("code_system"),
+                            "references": [
+                                {
+                                    "code_system": resource.get("code_system") or "Terminology",
+                                    "code": str(code),
+                                },
+                                *[
+                                    reference
+                                    for reference in json.loads(
+                                        cached["references"].get(str(code), "[]")
+                                    )
+                                    if reference
+                                    != {
+                                        "code_system": resource.get("code_system") or "Terminology",
+                                        "code": str(code),
+                                    }
+                                ],
+                            ],
+                        }
                         for term, code, score in zip(row_terms, row_codes, row_scores, strict=True)
                     ]
                     if not candidates or any(

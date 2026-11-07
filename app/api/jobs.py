@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 from pydantic import ValidationError
 
-from app.api.schemas import JobAccepted, JobStatus, ProgressResponse, Submission
+from app.api.schemas import DocumentSelection, JobAccepted, JobStatus, ProgressResponse, Submission
 from app.auth.origins import trusted_origin
 from app.errors import ServiceError
 
@@ -22,6 +22,12 @@ def router(service):
         from app.services.document_management import delete_all_documents
 
         return delete_all_documents(service)
+
+    @api.post("/api/my/documents/delete")
+    def delete_selected(selection: DocumentSelection):
+        from app.services.document_management import delete_selected_documents
+
+        return delete_selected_documents(service, selection.documents)
 
     @api.get("/api/my/document-usage")
     def document_usage():

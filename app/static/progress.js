@@ -106,7 +106,23 @@ export function startProgress(
         parts.push(
           `${t({ windows: "Windows", terms: "Terms", mentions: "Mentions" }[model.unit] || "Documents")}: ${number(model.completed_units)} / ${number(model.total_units)}`,
         );
-      if (model.error_code) parts.push(model.error_code);
+      if (model.error_code)
+        parts.push(
+          t(
+            {
+              TERMINOLOGY_NOT_IMPORTED:
+                "Import terminology dictionaries before normalizing.",
+              TERMINOLOGY_FILE_MISSING: "The terminology file is missing.",
+              TERMINOLOGY_UNAVAILABLE:
+                "No terminology is available for this language and entity.",
+              NORMALIZATION_ENCODER_UNCONFIGURED:
+                "No normalization encoder is configured.",
+              NORMALIZATION_DISABLED: "Concept normalization is disabled.",
+              NORMALIZATION_UNAVAILABLE:
+                "Concept normalization is unavailable.",
+            }[model.error_code] || model.error_code,
+          ),
+        );
       detail.textContent = parts.join(" · ");
       meter.max = 100;
       meter.setAttribute(

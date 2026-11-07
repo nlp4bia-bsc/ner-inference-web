@@ -514,5 +514,16 @@
   "Skipped": "Overgeslagen",
   "Waiting for next batch": "Wachten op volgende batch",
   "Processing service unavailable. Start the worker using the same configuration.": "Verwerkingsdienst niet beschikbaar. Start de worker met dezelfde configuratie.",
-  "The worker is processing another project.": "De worker verwerkt een ander project."
+  "The worker is processing another project.": "De worker verwerkt een ander project.",
+  "Select document": "Document selecteren",
+  "Select all on this page": "Alles op deze pagina selecteren",
+  "{count} selected": "{count} geselecteerd",
+  "Delete selected documents ({count})": "Geselecteerde documenten verwijderen ({count})",
+  "This deletes only the selected documents and their annotations and frees your quota. Upload history remains.": "Alleen de geselecteerde documenten en hun annotaties worden verwijderd en uw quotum wordt vrijgemaakt. De uploadgeschiedenis blijft behouden.",
+  "Import terminology dictionaries before normalizing.": "Importeer terminologiewoordenboeken vóór normalisatie.",
+  "The terminology file is missing.": "Het terminologiebestand ontbreekt.",
+  "No terminology is available for this language and entity.": "Er is geen terminologie beschikbaar voor deze taal en entiteit.",
+  "No normalization encoder is configured.": "Er is geen normalisatie-encoder ingesteld.",
+  "Concept normalization is disabled.": "Conceptnormalisatie is uitgeschakeld.",
+  "Concept normalization is unavailable.": "Conceptnormalisatie is niet beschikbaar."
 }

@@ -73,3 +73,12 @@ class ProgressResponse(BaseModel):
     provisional_statistics: dict[str, int | None]
     mentions: int
     partial_results: bool
+
+
+class DocumentReference(BaseModel):
+    job_id: str = Field(min_length=1, max_length=128)
+    document_id: str = Field(min_length=1, max_length=128)
+
+
+class DocumentSelection(BaseModel):
+    documents: list[DocumentReference] = Field(min_length=1, max_length=1000)

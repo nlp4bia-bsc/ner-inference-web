@@ -944,6 +944,13 @@ function normalizationDetails(a) {
   section.append(
     make("p", `${n.code_system || "Terminology"}: ${n.code} · ${n.term}`),
   );
+  for (const reference of n.references || []) {
+    if (
+      reference.code !== n.code ||
+      reference.code_system !== (n.code_system || "Terminology")
+    )
+      section.append(make("p", `${reference.code_system}: ${reference.code}`));
+  }
   section.append(
     make("p", `${t("Similarity")}: ${n.score.toFixed(4)} · ${n.language}`),
   );

@@ -190,3 +190,73 @@ def test_normalization_failure_provenance_survives_batch_reuse_and_deletion(sett
         execute(app, settings)
         assert app.state.db.get(identity)["status"] == "COMPLETED_WITH_ERRORS"
         assert client.get(f"/api/jobs/{identity}/documents").json()["total"] == 1
+
+
+def test_umls_primary_and_source_identifiers_survive_index_reuse_and_brat(terminology, tmp_path):
+    pd = pytest.importorskip("pandas")
+    source = tmp_path / "medications.parquet"
+    pd.DataFrame(
+        {
+            "language": ["en", "en"],
+            "code": ["C0001", "C0001"],
+            "term": [["aspirin"], ["aspirin"]],
+            "SAB": ["SNOMEDCT_US", "ATC"],
+            "SAB_code": ["111", "B01AC06"],
+        }
+    ).to_parquet(source)
+    import_sources(source, terminology)
+    root = tmp_path / "references-job"
+    root.mkdir()
+    for hit in (False, True):
+        session = NormalizationSession(terminology, root)
+        errors = []
+        spans = session.normalize(
+            [
+                {
+                    "filename": "a.txt",
+                    "label": "MEDICATION",
+                    "text": "aspirin",
+                    "start_span": 2,
+                    "end_span": 9,
+                }
+            ],
+            "es",
+            lambda *args: errors.append(args),
+        )
+        assert not errors
+        normalized = spans[0]["normalization"]
+        assert normalized["code"] == "C0001" and normalized["code_system"] == "UMLS"
+        assert normalized["references"] == [
+            {"code_system": "UMLS", "code": "C0001"},
+            {"code_system": "ATC", "code": "B01AC06"},
+            {"code_system": "SNOMEDCT_US", "code": "111"},
+        ]
+        annotation = canonical_annotations("doc", "  aspirin!", spans)[0]
+        assert len(annotation.normalization.references) == 3
+        brat = annotation_text(spans)
+        assert "T1\tMEDICATION 2 9\taspirin" in brat
+        for identifier in ("UMLS:C0001", "ATC:B01AC06", "SNOMEDCT_US:111"):
+            assert identifier in brat
+        assert len([line for line in brat.splitlines() if line.startswith("N")]) == 3
+        assert session.metadata[0]["cache_hit"] is hit
+        session.close()
+
+
+def test_missing_terminology_reports_import_reason_without_patient_text(settings, tmp_path, caplog):
+    from tests.auth_helpers import AccountClient
+    from tests.test_document_management import application, execute
+
+    settings.normalization_gazetteer_dir = tmp_path / "not-imported"
+    app = application(settings)
+    with AccountClient(app) as client:
+        result = client.post(
+            "/api/jobs",
+            data={"language": "es", "entities": "DISEASE", "normalize": "true"},
+            files=[("files", ("a.txt", b"abc"))],
+        )
+        identity = result.json()["job_id"]
+        execute(app, settings)
+        progress = client.get(f"/api/jobs/{identity}/progress").json()
+        assert progress["models"][1]["error_code"] == "TERMINOLOGY_NOT_IMPORTED"
+        assert "reason_code=TERMINOLOGY_NOT_IMPORTED" in caplog.text
+        assert "No terminology resource" not in caplog.text

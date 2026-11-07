@@ -10,6 +10,10 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.8.1 adds selected-document deletion and imports DT4H list-valued
+terminology, preserving medication UMLS/source identifiers. See
+[private import instructions](docs/NORMALIZATION.md#importing-the-dt4h-zip-after-updating-to-081).
+
 Version 0.8 adds live per-model/window progress, explicit worker availability and
 FAISS/index phases, Dashboard project deletion and bulk deletion in My documents.
 Compose starts with loopback HTTP defaults without shell exports. Native Conda

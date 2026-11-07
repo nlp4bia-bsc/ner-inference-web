@@ -29,11 +29,15 @@ python3 -m scripts.import_gazetteers gazetteers/raw/es-disease.parquet \
 ```
 
 Supported categories: MEDICATION, PROCEDURE, DISEASE, SYMPTOM. `--inspect`
-prints column names and row counts, without vocabulary values. This environment
-could retrieve Drive metadata but could not download the 81 MB archive; its real
-column names remain unverified. Use the explicit flags if automatic detection
-does not match your files. Imports reject unsafe ZIP paths/symlinks/encryption,
-normalize to term/code Parquet and atomically update the private manifest.
+prints column names, Arrow types and row counts, without vocabulary values.
+The supplied metadata confirms `code`, `language`, `term`, `semantic_tag` and
+`mainterm` in the disease/procedure/symptom tables, and medication tables with
+`code`, `language`, `term`, `SAB` and either `SAB_code` or `code_SAB`. The binary
+archive itself has not been retrieved in this execution. Use explicit flags if
+a different schema does not match. Imports reject unsafe ZIP paths/symlinks/
+encryption and atomically update the private manifest. Expanded intermediate
+groups spill to private temporary Parquet rather than retaining every language's
+expanded Python strings together. CLI progress reports file/group counts only.
 Content-addressed prepared files preserve the terminology admitted with a job;
 stop/drain jobs before manually removing old prepared versions.
 
@@ -72,3 +76,50 @@ changing configuration; resubmit queued jobs whose terminology snapshot changed.
 For Docker, the service runs as UID 10001. Grant that UID read/search access to
 the private directory using filesystem ACLs, for example
 `setfacl -Rm u:10001:rX gazetteers`, rather than making confidential files public.
+
+
+## Importing the DT4H ZIP after updating to 0.8.1
+
+The ZIP belongs exactly at `gazetteers/dt4h_gazs.zip`. Copying it there or running
+`--inspect` does not register terminology. The worker's old
+`NormalizationUnavailable` at the initial catalog lookup meant no usable imported
+resource was found; no encoder or FAISS index had run at that point.
+
+From the same Conda environment and repository root, after `git pull --ff-only`:
+
+```bash
+python3 -m scripts.import_gazetteers gazetteers/dt4h_gazs.zip
+python3 -m scripts.check_config --expect-origin http://127.0.0.1:8000
+```
+
+The import now expands a list of synonyms with one code, or one term with a list
+of codes. Arrow/Python/NumPy lists and serialized JSON/Python lists are accepted.
+Duplicates and empty entries are handled without losing positional alignment.
+If **both** term and code contain several values, the default rejects an ambiguous
+mapping. Use `--list-pairing aligned` only when positions correspond, or
+`--list-pairing all` only when every term names every code in that row. These are
+explicit data-interpretation choices, not generic ways to bypass import errors.
+Nested records still require preprocessing. No default Cartesian association is
+created for ambiguous rows.
+
+For medications, `code` remains the primary **UMLS CUI**. `SAB` identifies the
+source terminology, and `SAB_code`/`code_SAB` its identifier. The importer preserves
+these source references and infers UMLS as the medication code system when those
+columns are present. Duplicate term/CUI rows merge their source references.
+Several primary CUIs in a row with source identifiers require preprocessing so
+source IDs cannot be attached to the wrong CUI. The encoder still retrieves by
+term/primary code. Additional references survive warm FAISS reuse, appear in the
+inspector and JSON/TSV, and produce separate BRAT N records for the same T span.
+They never create duplicate mentions or change character offsets.
+
+`check_config` now has a `normalization` report: private directory, manifest,
+registered resources, file presence and reasons for unavailable categories. It
+does not import NLP, read dictionary terms or create files. Worker logs and model
+cards distinguish unimported dictionaries, missing files, missing category or
+encoder configuration, and disabled normalization. A missing native-language
+file can fall back to a valid English resource.
+
+Restart web and worker together after updating/importing, then submit a **new**
+annotation job with normalization enabled. Completed partial jobs are not
+silently rewritten. The first use creates its index on demand; later compatible
+jobs reuse it. No additional pip dependencies were introduced for this fix.

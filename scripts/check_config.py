@@ -14,6 +14,7 @@ from dotenv import dotenv_values
 import app
 from app.auth.origins import trusted_origin
 from app.config import Settings
+from app.services.normalization_diagnostics import normalization_status
 from app.services.runtime import inference_dependencies
 from app.services.worker_status import worker_status
 
@@ -92,6 +93,7 @@ def main(argv=None):
         },
         "inference_dependencies": inference_dependencies(),
         "processing_service": processing_status(settings),
+        "normalization": normalization_status(settings),
     }
     if args.expect_origin:
         result["origin_matches"] = trusted_origin(args.expect_origin, settings)

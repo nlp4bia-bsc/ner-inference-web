@@ -137,7 +137,7 @@ class ModelProgressRepository:
                    failed_documents=min(total_documents-completed_documents,failed_documents+COALESCE(?,total_documents)),
                    updated_at=? WHERE job_id=? AND model_id=? AND content_version=?""",
                 (
-                    type(error).__name__,
+                    getattr(error, "reason_code", type(error).__name__),
                     count,
                     time.time(),
                     self.job["id"],
@@ -163,7 +163,7 @@ class ModelProgressRepository:
                         int(not failed),
                         int(not failed),
                         int(failed),
-                        row.get("error_code") if failed else None,
+                        (row.get("reason_code") or row.get("error_code")) if failed else None,
                         time.time(),
                         self.job["id"],
                         identity,

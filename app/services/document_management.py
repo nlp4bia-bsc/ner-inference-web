@@ -74,7 +74,16 @@ def upload_history(database, account, offset=0, limit=50, state=None, job_id=Non
     }
 
 
-def delete_documents(service, token, document_id=None):
+def delete_documents(service, token, document_id=None, *, document_ids=None):
+    identities = (
+        {document_id}
+        if document_id is not None
+        else set(document_ids)
+        if document_ids is not None
+        else None
+    )
+    if identities == set():
+        raise ServiceError("Select at least one document.", 422)
     account = user()
     job = require_owner(service.db.get(token))
     with job_lock(service.settings, job["id"]):
@@ -99,9 +108,9 @@ def delete_documents(service, token, document_id=None):
                 )
             ]
             selected = [
-                row for row in rows if document_id is None or row["document_id"] == document_id
+                row for row in rows if identities is None or row["document_id"] in identities
             ]
-            if document_id is not None and not selected:
+            if identities is not None and {row["document_id"] for row in selected} != identities:
                 raise ServiceError("Document not found.", 404)
             selected = [row for row in selected if row["status"] != "DELETED"]
             if not selected:
@@ -193,6 +202,37 @@ def delete_all_documents(service):
     for identity in identities:
         try:
             deleted += delete_documents(service, identity)["deleted"]
+        except ServiceError as exc:
+            if exc.status not in (404, 410):
+                raise
+    return {"deleted": deleted, "quota": quota(service.db, account)}
+
+
+def delete_selected_documents(service, documents):
+    """Authorize the whole selection, then erase once per project/generation."""
+    groups = {}
+    for row in documents:
+        groups.setdefault(row.job_id, set()).add(row.document_id)
+    account = user()
+    resolved = {}
+    # No mutation if the selection contains a foreign project or unknown document.
+    for identity, selected in groups.items():
+        job = require_owner(service.db.get(identity))
+        with service.db.connect() as connection:
+            require_live(connection, account, service.settings)
+            available = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT document_id FROM documents WHERE job_id=?", (job["id"],)
+                )
+            }
+        if not selected <= available:
+            raise ServiceError("Document not found.", 404)
+        resolved.setdefault(job["id"], set()).update(selected)
+    deleted = 0
+    for identity, selected in resolved.items():
+        try:
+            deleted += delete_documents(service, identity, document_ids=selected)["deleted"]
         except ServiceError as exc:
             if exc.status not in (404, 410):
                 raise

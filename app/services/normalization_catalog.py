@@ -24,6 +24,7 @@ class NormalizationCatalog:
         root = settings.normalization_gazetteer_dir.resolve()
         self.root = root
         manifest = root / "manifest.json"
+        self.imported = manifest.is_file()
         self.resources = {}
         if manifest.is_file():
             document = json.loads(manifest.read_text())
@@ -45,19 +46,33 @@ class NormalizationCatalog:
     def resolve(self, language, entity):
         if not self.s.normalization_enabled or entity not in CATEGORIES:
             return None
-        selected = language
-        if (selected, entity) not in self.resources or not self.models.get(selected):
-            selected = "en"
-        row = self.resources.get((selected, entity))
-        if row is None or not self.models.get(selected) or not row["file"].is_file():
-            return None
-        return {
-            **row,
-            "requested_language": language,
-            "resolved_language": selected,
-            "fallback_to_english": selected != language,
-            "models": self.models[selected],
-        }
+        for selected in dict.fromkeys((language, "en")):
+            row = self.resources.get((selected, entity))
+            if row and self.models.get(selected) and row["file"].is_file():
+                return {
+                    **row,
+                    "requested_language": language,
+                    "resolved_language": selected,
+                    "fallback_to_english": selected != language,
+                    "models": self.models[selected],
+                }
+        return None
+
+    def unavailability_reason(self, language, entity):
+        if not self.s.normalization_enabled:
+            return "NORMALIZATION_DISABLED"
+        if not self.imported:
+            return "TERMINOLOGY_NOT_IMPORTED"
+        rows = [
+            self.resources[key]
+            for key in dict.fromkeys(((language, entity), ("en", entity)))
+            if key in self.resources
+        ]
+        if rows and not any(row["file"].is_file() for row in rows):
+            return "TERMINOLOGY_FILE_MISSING"
+        if any(row["file"].is_file() and not self.models.get(row["language"]) for row in rows):
+            return "NORMALIZATION_ENCODER_UNCONFIGURED"
+        return "TERMINOLOGY_UNAVAILABLE"
 
     def snapshot(self, language, entities):
         result = []
@@ -93,6 +108,9 @@ class NormalizationCatalog:
                 {
                     "entity": entity,
                     "available": bool(self.resolve(language, entity)),
+                    "error_code": None
+                    if self.resolve(language, entity)
+                    else self.unavailability_reason(language, entity),
                     "language": self.resolve(language, entity)["resolved_language"]
                     if self.resolve(language, entity)
                     else None,
