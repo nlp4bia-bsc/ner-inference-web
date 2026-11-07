@@ -123,3 +123,32 @@ Restart web and worker together after updating/importing, then submit a **new**
 annotation job with normalization enabled. Completed partial jobs are not
 silently rewritten. The first use creates its index on demand; later compatible
 jobs reuse it. No additional pip dependencies were introduced for this fix.
+
+
+## Mixed ISO/UMLS language metadata (0.8.2)
+
+Terminology language values are canonicalized before grouping. UMLS LAT and
+ISO 639-2 values such as SPA, ENG, CZE/CES, DUT/NLD, ITA, RUM/RON and SWE map to
+es, en, cs, nl, it, ro and sv. Whitespace, recognized language names, regional
+forms such as es-ES and single-language list cells are supported. Several aliases
+of one language may share a cell; several different languages remain ambiguous.
+Explicit --language/--entity overrides are canonicalized in the same way.
+
+The importer checks language/entity metadata in **all files before preparing any
+terminology group**. Unknown or ambiguous metadata remains an error, with the
+file position/name and separate invalid-language/entity row counts. Existing
+registered resources are preserved on a failed attempt. No vocabulary values are
+included in these diagnostics. `--inspect` now includes canonical language/entity
+metadata and invalid row counts, even when inference from the filename is
+ambiguous. It still does not import dictionaries.
+
+After updating, retry the original ZIP command without changing its location:
+
+```sh
+git pull --ff-only
+python3 -m scripts.import_gazetteers gazetteers/dt4h_gazs.zip
+```
+
+If metadata remains unsupported, `python3 -m scripts.import_gazetteers
+gazetteers/dt4h_gazs.zip --inspect` identifies the affected file and field without
+printing terminology. No new dependencies are required.

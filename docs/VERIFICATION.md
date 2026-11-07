@@ -1,4 +1,32 @@
-# Latest: DT4H list import, medication identifiers and selected deletion (0.8.1)
+# Latest: mixed ISO/UMLS terminology metadata (0.8.2)
+
+Server regression: **233 passed, 86 browser-only cases skipped in 61.13s**.
+Targeted metadata/list/native-normalization checks: **35 passed in 7.50s**.
+
+```sh
+OMP_NUM_THREADS=1 /tmp/ner-web-progress-env/bin/python -m pytest -q
+OMP_NUM_THREADS=1 /tmp/ner-web-progress-env/bin/python -m pytest -q \
+  tests/test_gazetteer_metadata.py tests/test_gazetteer_lists.py tests/test_normalization.py
+```
+
+A synthetic 28-file ZIP covers all four categories in es/en/cs/nl/it/ro/sv,
+mixing ISO two-letter languages and UMLS LAT codes in medication dictionaries.
+Additional cases cover ISO 639-2 aliases, regional/name forms, Arrow single-
+language list cells, explicit overrides and ambiguous/unknown metadata. The full
+archive metadata check runs before preparation and reports every invalid file
+without printing dictionary values or registering partial terminology. Inspection
+still works when the filename alone cannot identify its language/category.
+
+Ruff lint/format, git diff --check and Bandit checks on the changed importer and
+metadata helper pass, with no Bandit findings. No browser-facing behavior or
+inference dependencies changed; browser cases were not rerun for this CLI fix.
+The actual private ZIP/remote Conda deployment has not been executed here. The
+reported exception does not reveal its raw language values; support for standard
+UMLS/ISO metadata and improved inspection are verified with synthetic fixtures.
+
+---
+
+# Historical: DT4H list import, medication identifiers and selected deletion (0.8.1)
 
 Full CPU/Chromium regression: **295 passed in 425.14s**, without skips or failures.
 The server-only run passes 209 cases (86 browser cases opt out in that run).

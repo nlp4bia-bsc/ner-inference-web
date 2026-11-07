@@ -13,6 +13,13 @@ from pathlib import Path, PurePosixPath
 
 from app.config import Settings
 from app.services.normalization_catalog import CATEGORIES, file_sha256
+from scripts.gazetteer_metadata import (
+    LANGUAGE_ALIASES,
+    LANGUAGE_NAMES,
+    normalize_entity,
+    normalize_language,
+    normalize_series,
+)
 from scripts.gazetteer_values import deduplicate_pairs, prepare_pairs
 
 ENTITY_NAMES = {
@@ -37,17 +44,6 @@ ENTITY_NAMES = {
     "symptoms": "SYMPTOM",
     "sintoma": "SYMPTOM",
     "symptemist": "SYMPTOM",
-}
-LANGUAGE_NAMES = {
-    "spanish": "es",
-    "english": "en",
-    "catalan": "ca",
-    "czech": "cs",
-    "dutch": "nl",
-    "romanian": "ro",
-    "swedish": "sv",
-    "italian": "it",
-    "greek": "el",
 }
 TERM_COLUMNS = (
     "term",
@@ -88,9 +84,10 @@ def named_column(columns, requested, alternatives):
 def guess_language(path):
     tokens = re.split(r"[^a-z]+", str(path).lower())
     matches = {
-        LANGUAGE_NAMES.get(token, token)
+        LANGUAGE_NAMES.get(token, LANGUAGE_ALIASES.get(token, token))
         for token in tokens
         if token in LANGUAGE_NAMES
+        or token in LANGUAGE_ALIASES
         or token
         in {
             "es",
@@ -160,6 +157,61 @@ def source_files(source, temporary):
     return sorted(temporary.rglob("*.parquet"))
 
 
+def metadata_columns(schema, language_column=None, entity_column=None):
+    lower = {name.lower(): name for name in schema.names}
+    language = language_column or next(
+        (lower[key] for key in ("language", "lang", "lat") if key in lower), None
+    )
+    entity = entity_column or next(
+        (
+            lower[key]
+            for key in ("entity", "entity_type", "category", "semantic_group")
+            if key in lower
+        ),
+        None,
+    )
+    for selected in (language, entity):
+        if selected and selected not in schema.names:
+            raise ValueError("Explicit metadata column not found")
+    return language, entity
+
+
+def inferred_metadata(guess, relative):
+    try:
+        return guess(relative)
+    except ValueError:
+        return None
+
+
+def classify_metadata(frame, relative, language, entity, lc, ec):
+    languages = (
+        normalize_language(language)
+        if language
+        else normalize_series(frame[lc], normalize_language)
+        if lc
+        else inferred_metadata(guess_language, relative)
+    )
+    entities = (
+        normalize_entity(entity, ENTITY_NAMES)
+        if entity
+        else normalize_series(frame[ec], lambda value: normalize_entity(value, ENTITY_NAMES))
+        if ec
+        else inferred_metadata(guess_entity, relative)
+    )
+    return frame.assign(_language=languages, _entity=entities)
+
+
+def metadata_summary(frame):
+    invalid_language = frame["_language"].isna()
+    invalid_entity = ~frame["_entity"].isin(CATEGORIES)
+    return {
+        "languages": sorted(frame["_language"].dropna().unique().tolist()),
+        "entities": sorted(frame.loc[~invalid_entity, "_entity"].unique().tolist()),
+        "invalid_language_rows": int(invalid_language.sum()),
+        "invalid_entity_rows": int(invalid_entity.sum()),
+    }
+
+
 def import_sources(
     source,
     settings,
@@ -184,15 +236,34 @@ def import_sources(
         paths = source_files(Path(source).resolve(), temporary)
         if not paths:
             raise ValueError("No Parquet terminology files found")
-        collected = {}
-        systems = {}
-        fragments = Path(tempfile.mkdtemp(prefix=".fragments-", dir=temporary))
+
+        def relative_path(path):
+            return (
+                path.relative_to(temporary)
+                if path.is_relative_to(temporary)
+                else path.relative_to(Path(source).resolve())
+                if Path(source).is_dir()
+                else path.name
+            )
+
+        plans = []
+        errors = []
         for index, path in enumerate(paths, 1):
             if not inspect:
                 logging.getLogger("temu.import").info(
-                    "terminology_import file=%s/%s stage=READING", index, len(paths)
+                    "terminology_import file=%s/%s stage=CHECKING_METADATA", index, len(paths)
                 )
             schema = pq.read_schema(path)
+            lc, ec = metadata_columns(schema, language_column, entity_column)
+            # Preflight metadata alone for every file; vocabulary values are never printed.
+            columns = list(dict.fromkeys(column for column in (lc, ec) if column))
+            metadata = (
+                pd.read_parquet(path, columns=columns, dtype_backend="pyarrow")
+                if columns
+                else pd.DataFrame(index=range(pq.ParquetFile(path).metadata.num_rows))
+            )
+            classified = classify_metadata(metadata, relative_path(path), language, entity, lc, ec)
+            summary = metadata_summary(classified)
             if inspect:
                 print(
                     json.dumps(
@@ -201,24 +272,33 @@ def import_sources(
                             "columns": schema.names,
                             "types": {field.name: str(field.type) for field in schema},
                             "rows": pq.ParquetFile(path).metadata.num_rows,
+                            "metadata": summary,
                         }
                     )
                 )
-                continue
+            elif summary["invalid_language_rows"] or summary["invalid_entity_rows"]:
+                errors.append(
+                    f"file={index}/{len(paths)} name={path.name} invalid_language_rows={summary['invalid_language_rows']} invalid_entity_rows={summary['invalid_entity_rows']}"
+                )
+            plans.append((path, schema, lc, ec))
+        if inspect:
+            return []
+        if errors:
+            raise ValueError(
+                "Unsupported terminology metadata: "
+                + "; ".join(errors)
+                + ". Run --inspect for canonical language/entity metadata; use explicit --language/--entity only when the file's meaning is known. No terminology has been registered."
+            )
+        collected = {}
+        systems = {}
+        fragments = Path(tempfile.mkdtemp(prefix=".fragments-", dir=temporary))
+        for index, (path, schema, lc, ec) in enumerate(plans, 1):
+            logging.getLogger("temu.import").info(
+                "terminology_import file=%s/%s stage=READING", index, len(paths)
+            )
             term = named_column(schema.names, term_column, TERM_COLUMNS)
             code = named_column(schema.names, code_column, CODE_COLUMNS)
             lower = {name.lower(): name for name in schema.names}
-            lc = language_column or next(
-                (lower[key] for key in ("language", "lang") if key in lower), None
-            )
-            ec = entity_column or next(
-                (
-                    lower[key]
-                    for key in ("entity", "entity_type", "category", "semantic_group")
-                    if key in lower
-                ),
-                None,
-            )
             sab = lower.get("sab")
             sab_code = lower.get("sab_code") or lower.get("code_sab")
             extra = [sab, sab_code] if sab and sab_code and code == lower.get("code") else []
@@ -227,40 +307,8 @@ def import_sources(
             )
             frame = pd.read_parquet(path, columns=columns, dtype_backend="pyarrow")
             frame = frame.dropna(subset=[term, code])
-            frame["_language"] = (
-                str(language)
-                if language
-                else frame[lc].astype(str).str.lower()
-                if lc
-                else guess_language(
-                    path.relative_to(temporary)
-                    if path.is_relative_to(temporary)
-                    else path.relative_to(Path(source).resolve())
-                    if Path(source).is_dir()
-                    else path.name
-                )
-            )
-            if entity:
-                frame["_entity"] = entity
-            elif ec:
-                frame["_entity"] = (
-                    frame[ec]
-                    .astype(str)
-                    .map(lambda value: ENTITY_NAMES.get(value.lower(), value.upper()))
-                )
-            else:
-                frame["_entity"] = guess_entity(
-                    path.relative_to(temporary)
-                    if path.is_relative_to(temporary)
-                    else path.relative_to(Path(source).resolve())
-                    if Path(source).is_dir()
-                    else path.name
-                )
+            frame = classify_metadata(frame, relative_path(path), language, entity, lc, ec)
             for (lang, category), part in frame.groupby(["_language", "_entity"], sort=True):
-                if not re.fullmatch(r"[a-z]{2}", lang) or category not in CATEGORIES:
-                    raise ValueError(
-                        "Unsupported terminology language/entity group; provide explicit mapping"
-                    )
                 prepared = prepare_pairs(part, term, code, list_pairing, *(extra or [None, None]))
                 system = code_system or ("UMLS" if category == "MEDICATION" and extra else None)
                 previous = systems.setdefault((lang, category), system)
@@ -281,8 +329,6 @@ def import_sources(
                     category,
                     len(prepared),
                 )
-        if inspect:
-            return []
         old = root / "manifest.json"
         registered = (
             {
