@@ -82,15 +82,17 @@ def router(service):
         label: str | None = None,
         q: Annotated[str, Query(max_length=200)] = "",
     ):
+        revision, snapshot = repository.annotation_snapshot(token, document_id)
         rows = [
             r
-            for r in repository.annotations(token, document_id)
+            for r in snapshot
             if r["end"] > start
             and (end is None or r["start"] < end)
             and (label is None or r["label"] == label)
             and q.casefold() in r["text"].casefold()
         ]
         return {
+            "revision": revision,
             "items": rows[offset : offset + limit],
             "total": len(rows),
             "offset": offset,
@@ -123,7 +125,7 @@ def router(service):
 
     @api.get("/{document_id}/download/{format}")
     def download_document(token: str, document_id: str, format: str):
-        from fastapi.responses import FileResponse
+        from fastapi.responses import FileResponse, Response
 
         from app.errors import ServiceError
 
@@ -138,6 +140,12 @@ def router(service):
                 )
         else:
             raise ServiceError("Unsupported document download.", 404)
+        if format == "ann" and not path.is_file():
+            return Response(
+                "",
+                media_type="text/plain",
+                headers={"Content-Disposition": 'attachment; filename="annotations.ann"'},
+            )
         from pathlib import PurePosixPath
 
         name = PurePosixPath(record["filename"]).with_suffix("." + format).name

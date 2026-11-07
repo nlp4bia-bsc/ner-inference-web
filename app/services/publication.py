@@ -1,8 +1,9 @@
-"""Atomic, immutable all-model document publication and verified restart reuse."""
+"""Atomic document snapshots, phase checkpoints and verified restart reuse."""
 
 import hashlib
 import json
 import shutil
+import uuid
 from collections import Counter
 from pathlib import Path
 
@@ -21,7 +22,9 @@ def read_publication(root: Path, row: dict, snapshot: list):
     return record
 
 
-def publish(root, row, raw, spans, stats, snapshot, provenance, budget=None):
+def publish(
+    root, row, raw, spans, stats, snapshot, provenance, budget=None, *, complete=True, state=None
+):
     from app.services.exports.brat import annotation_text
 
     parent = root / "published"
@@ -32,6 +35,9 @@ def publish(root, row, raw, spans, stats, snapshot, provenance, budget=None):
     temp.mkdir()
     canonical = canonical_annotations(row["document_id"], raw.decode("utf-8"), spans)
     record = {
+        "revision": uuid.uuid4().hex,
+        "complete": complete,
+        "state": state,
         "filename": row["filename"],
         "snapshot": snapshot,
         "spans": spans,
@@ -43,12 +49,19 @@ def publish(root, row, raw, spans, stats, snapshot, provenance, budget=None):
     serialized = json.dumps(record, ensure_ascii=False, allow_nan=False)
     ann = annotation_text(spans)
     if budget:
+        from app.storage import directory_bytes
+
+        budget.used = directory_bytes(root)
         budget.write_text(temp / "artifact.json", serialized)
         budget.write_text(temp / "document.ann", ann)
     else:
         (temp / "artifact.json").write_text(serialized, encoding="utf-8")
         (temp / "document.ann").write_text(ann, encoding="utf-8")
     if destination.exists():
-        shutil.rmtree(destination)
-    temp.rename(destination)
+        # Readers always see one complete JSON snapshot, even during replacement.
+        for name in ("document.ann", "artifact.json"):
+            (temp / name).replace(destination / name)
+        temp.rmdir()
+    else:
+        temp.rename(destination)
     return len(canonical), dict(Counter(a.label for a in canonical))

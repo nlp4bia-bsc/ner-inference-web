@@ -198,6 +198,8 @@ export function startProgress(
                         "Processing failed · published documents, if any, are partial results",
                       )
                     : t("Processing your documents");
+    if (data.partial_results && !terminal.includes(data.status))
+      description.textContent += " · " + t("Partial results ready");
     bar.value = percentage;
     const unavailable =
       ["QUEUED", "PROCESSING"].includes(data.status) &&
@@ -310,7 +312,7 @@ export function startProgress(
             id = endpoint.split("/").pop(),
             viewer = prefix + "/jobs/" + id + "/viewer";
           const actions = [];
-          if (data.annotated_documents > 0)
+          if (data.total_documents > 0)
             actions.push({
               label: t("Explore annotations"),
               run: (dialog) => {

@@ -43,6 +43,13 @@ class ProgressRepository:
             )
             self.refresh(c, job_id)
 
+    def preview(self, job_id, identity, count, labels, stats):
+        with self.db.connect() as c:
+            c.execute(
+                "UPDATE documents SET status='PROCESSING',annotation_count=?,entities_by_label=?,statistics=?,updated_at=?,error_code=NULL WHERE job_id=? AND document_id=? AND status!='DELETED'",
+                (count, json.dumps(labels), json.dumps(stats), time.time(), job_id, identity),
+            )
+
     @staticmethod
     def refresh(c, job_id):
         c.execute(
@@ -55,7 +62,7 @@ class ProgressRepository:
         counts = Counter(r["status"] for r in rows)
         total = max(0, job["document_count"] - counts["DELETED"])
         annotated = counts["ANNOTATED"] if rows else job["processed_documents"]
-        published = [json.loads(r["statistics"]) for r in rows if r["status"] == "ANNOTATED"]
+        published = [json.loads(r["statistics"]) for r in rows if r["statistics"] != "{}"]
         provisional = {
             key: sum(r[key] for r in published if r.get(key) is not None)
             if any(r.get(key) is not None for r in published)
@@ -79,10 +86,11 @@ class ProgressRepository:
             if ner
             else 0,
             "provisional_statistics": provisional,
-            "mentions": sum(r["annotation_count"] for r in rows if r["status"] == "ANNOTATED")
+            "mentions": sum(r["annotation_count"] for r in rows if r["status"] != "DELETED")
             if rows
             else saved.get("annotations", 0),
-            "partial_results": annotated > 0 and job["status"] != "COMPLETED",
+            "publication_revision": max((r["updated_at"] for r in rows), default=0),
+            "partial_results": bool(published) and job["status"] != "COMPLETED",
             "status": job["status"],
             "stage": job.get("stage") or job["status"],
             "total_documents": total,

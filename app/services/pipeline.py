@@ -14,13 +14,13 @@ from app.persistence.job_locks import JobContentChanged, check_content_version, 
 from app.persistence.progress import ProgressRepository
 from app.services.hub_inference import HubSession
 from app.services.incremental_export import package_publications
-from app.services.inference import NerLabSession, merge_predictions
+from app.services.inference import NerLabSession
 from app.services.model_cache import ModelCache
 from app.services.publication import publish, read_publication
 from app.services.registry import Registry, model_snapshot, statistics_reference
 from app.services.runtime import INFERENCE_MODULES
 from app.services.statistics import StreamingStatistics, statistics
-from app.storage import LocalStorage, StorageBudget, directory_bytes
+from app.storage import LocalStorage, StorageBudget
 
 
 def process_job(
@@ -64,7 +64,6 @@ def process_job(
 
     reporter = ModelProgressRepository(db, job)
     reporter.initialize(models, len(rows), s.inference_document_batch_size)
-    current_batch_size = None
     model_errors = []
     normalizer = None
     if payload.get("normalize") and not payload.get("repackage_only"):
@@ -107,11 +106,11 @@ def process_job(
             f"normalizer-{payload['language']}-{entity}", stage, completed, total, unit
         )
 
-    def model_failed(model, exc, stage):
+    def model_failed(model, exc, stage, count=None):
         reporter.fail(
             model["model_id"],
             exc,
-            current_batch_size if stage in ("INFERENCE", "NORMALIZATION") else None,
+            count if stage in ("INFERENCE", "NORMALIZATION") else None,
         )
         error = {"model_id": model["model_id"], "error_code": type(exc).__name__, "stage": stage}
         if getattr(exc, "reason_code", None):
@@ -228,11 +227,6 @@ def process_job(
         except (OSError, ValueError, KeyError):
             record = None
         if record:
-            normalization_methods.update(
-                span["normalization"].get("method", "bi_encoder")
-                for span in record["spans"]
-                if span.get("normalization")
-            )
             reporter.restore_document(record.get("models", []))
             for meta in record.get("models", []):
                 if meta.get("status") == "FAILED":
@@ -243,6 +237,12 @@ def process_job(
                 if key not in seen_provenance:
                     provenance.append(meta)
                     seen_provenance.add(key)
+            normalization_methods.update(
+                span["normalization"].get("method", "bi_encoder")
+                for span in record["spans"]
+                if span.get("normalization")
+            )
+        if record and record.get("complete", True):
             progress.publish(
                 job["id"],
                 row["document_id"],
@@ -251,165 +251,91 @@ def process_job(
                 record["statistics"],
             )
             if accumulator:
-                accumulator.add(
-                    row["filename"],
-                    original,
-                    record["spans"],
-                )
-        elif row["status"] != "FAILED" and not payload.get("repackage_only"):
-            with job_lock(s, job["id"]):
-                check_content_version(db, job)
-                shutil.rmtree(
-                    root / "published" / (row["document_id"] + ".building"), ignore_errors=True
-                )
-                shutil.rmtree(root / "published" / row["document_id"], ignore_errors=True)
-            if row["status"] != "PENDING":
-                with db.connect() as c:
-                    c.execute(
-                        "UPDATE documents SET status='PENDING' WHERE job_id=? AND document_id=? AND status!='DELETED'",
-                        (job["id"], row["document_id"]),
+                accumulator.add(row["filename"], original, record["spans"])
+        elif not payload.get("repackage_only") and (record or row["status"] != "FAILED"):
+            if record is not None:
+                with job_lock(s, job["id"]):
+                    check_content_version(db, job)
+                    progress.preview(
+                        job["id"],
+                        row["document_id"],
+                        len(record["spans"]),
+                        dict(Counter(span["label"] for span in record["spans"])),
+                        record["statistics"],
                     )
-                    progress.refresh(c, job["id"])
+            if record is None:
+                with job_lock(s, job["id"]):
+                    check_content_version(db, job)
+                    shutil.rmtree(root / "published" / row["document_id"], ignore_errors=True)
+                    with db.connect() as c:
+                        c.execute(
+                            "UPDATE documents SET status='PENDING',annotation_count=0,entities_by_label='{}',statistics='{}' WHERE job_id=? AND document_id=? AND status!='DELETED'",
+                            (job["id"], row["document_id"]),
+                        )
+                        progress.refresh(c, job["id"])
             pending.append(row)
     shutil.rmtree(root / "building", ignore_errors=True)
     budget = StorageBudget(root, limit, int(s.min_free_disk_mb * 1024**2))
-    try:
-        for offset in range(0, len(pending), s.inference_document_batch_size):
-            batch = pending[offset : offset + s.inference_document_batch_size]
-            current_batch_size = len(batch)
-            identities = [r["document_id"] for r in batch]
-            progress.mark(job["id"], identities, "PROCESSING")
-            with job_lock(s, job["id"]):
-                check_content_version(db, job)
-                raw = {r["filename"]: (root / "input" / r["filename"]).read_bytes() for r in batch}
-            texts = {name: data.decode("utf-8") for name, data in raw.items()}
-            try:
-                predictions = []
-                metadata = [
-                    {**error, "status": "FAILED"}
-                    for error in model_errors
-                    if error["stage"] == "PREPARING_MODELS"
-                ]
-                ordered = (
-                    models
-                    if any(m.get("requires") for m in models)
-                    or (offset // s.inference_document_batch_size) % 2 == 0
-                    else list(reversed(models))
-                )
-                for i, model in enumerate(ordered):
-                    reporter.start_batch(
-                        model["model_id"], offset // s.inference_document_batch_size + 1, len(batch)
-                    )
-                    if hasattr(engine, "on_progress"):
-                        engine.on_progress = reporter.callback(model["model_id"])
-                    try:
-                        if model.get("task", "ner") != "ner" or model.get("requires"):
-                            # Never feed an annotation-dependent classifier raw text alone.
-                            if not hasattr(engine, "classify"):
-                                raise ValueError("No adapter for the selected dependent task")
-                            upstream = {m["model_id"]: spans for m, spans in predictions}
-                            inputs = {key: upstream[key] for key in model["requires"]}
-                            spans, meta = engine.classify(model, texts, inputs, s.device)
-                        else:
-                            spans, meta = engine.predict(
-                                model, texts, root / "building" / f"model-{i}", s.device
-                            )
-                        resolved = {
-                            **model,
-                            "label_mapping": meta.get("label_mapping", model["label_mapping"]),
-                        }
-                        merge_predictions(
-                            texts, [(resolved, spans)]
-                        )  # Reject only this model's malformed output.
-                        reporter.complete_batch(model["model_id"], len(batch))
-                        predictions.append((resolved, spans))
-                        metadata.append(meta)
-                    except JobContentChanged:
-                        raise
-                    except Exception as exc:
-                        metadata.append(model_failed(model, exc, "INFERENCE"))
-                if not predictions:
-                    raise ValueError("No model completed this batch")
-                merged = merge_predictions(texts, predictions)
-                if normalizer:
-                    progress.stage(job["id"], "NORMALIZATION")
-                    active_normalizers = {
-                        row["label"]
-                        for row in merged
-                        if row["label"] in ("DISEASE", "SYMPTOM", "PROCEDURE", "MEDICATION")
-                    }
-                    for entity in active_normalizers:
-                        reporter.start_batch(
-                            f"normalizer-{payload['language']}-{entity}",
-                            offset // s.inference_document_batch_size + 1,
-                            len(batch),
-                            stage="PENDING",
-                        )
-                    normalizer.normalize(
-                        merged,
-                        payload["language"],
-                        lambda model, exc, stage: metadata.append(model_failed(model, exc, stage)),
-                    )
-                    for entity in active_normalizers:
-                        if entity in normalizer.last_completed_entities:
-                            reporter.complete_batch(
-                                f"normalizer-{payload['language']}-{entity}", len(batch)
-                            )
-                    progress.stage(job["id"], "INFERENCE")
-            except JobContentChanged:
-                raise
-            except Exception as exc:
-                logging.getLogger("temu.pipeline").error(
-                    "microbatch_failed job_id=%s error_type=%s", job["id"], type(exc).__name__
-                )
-                progress.mark(job["id"], identities, "FAILED", type(exc).__name__)
-                continue
-            normalization_methods.update(
-                span["normalization"].get("method", "bi_encoder")
-                for span in merged
-                if span.get("normalization")
+
+    def finalize(row, raw, record):
+        members = (record.get("state") or {}).get("members", {})
+        if not any("spans" in outcome for outcome in members.values()):
+            progress.mark(job["id"], [row["document_id"]], "FAILED", "NoModelsCompleted")
+            return
+        text, spans = raw.decode("utf-8"), record["spans"]
+        if accumulator:
+            per_doc = accumulator.add(row["filename"], text, spans)
+            per_doc["tokenizer_reference"] = Path(reference).name
+            per_doc["tokenizer_sha256"] = reference_digest
+        else:
+            _, statistics_rows = stats_fn(
+                {row["filename"]: text}, spans, payload["language"], reference
             )
-            grouped = {r["filename"]: [] for r in batch}
-            for span in merged:
-                grouped[span["filename"]].append(span)
-            if accumulator:
-                per_doc = [
-                    accumulator.add(r["filename"], texts[r["filename"]], grouped[r["filename"]])
-                    for r in batch
-                ]
-            else:
-                _, per_doc = stats_fn(texts, merged, payload["language"], reference)
-            if accumulator:
-                for record in per_doc:
-                    record["tokenizer_reference"] = Path(reference).name
-                    record["tokenizer_sha256"] = reference_digest
-            stats_by_name = {r["filename"]: r for r in per_doc}
-            for row in batch:
-                with job_lock(s, job["id"]):
-                    check_content_version(db, job)
-                    count, labels = publish(
-                        root,
-                        row,
-                        raw[row["filename"]],
-                        grouped[row["filename"]],
-                        stats_by_name[row["filename"]],
-                        snapshot,
-                        metadata,
-                        budget=budget,
-                    )
-                    progress.publish(
-                        job["id"], row["document_id"], count, labels, stats_by_name[row["filename"]]
-                    )
-            provenance.extend(metadata)
-            shutil.rmtree(root / "building", ignore_errors=True)
-            used = directory_bytes(root)
-            with db.connect() as c:
-                c.execute("UPDATE jobs SET storage_bytes=? WHERE id=?", (used, job["id"]))
-                cap = c.execute(
-                    "SELECT reserved_bytes FROM jobs WHERE id=?", (job["id"],)
-                ).fetchone()[0]
-            if used > cap:
-                raise RuntimeError("Job exceeded its storage reservation")
+            per_doc = statistics_rows[0]
+        metadata = [
+            *record["models"],
+            *[
+                {**error, "status": "FAILED"}
+                for error in model_errors
+                if error["stage"] == "PREPARING_MODELS"
+            ],
+        ]
+        with job_lock(s, job["id"]):
+            check_content_version(db, job)
+            count, labels = publish(
+                root, row, raw, spans, per_doc, snapshot, metadata, budget=budget
+            )
+            progress.publish(job["id"], row["document_id"], count, labels, per_doc)
+        normalization_methods.update(
+            span["normalization"].get("method", "bi_encoder")
+            for span in spans
+            if span.get("normalization")
+        )
+        for meta in metadata:
+            key = json.dumps(meta, sort_keys=True)
+            if key not in seen_provenance:
+                provenance.append(meta)
+                seen_provenance.add(key)
+
+    try:
+        from app.services.phased_processing import DocumentPhases
+
+        phases = DocumentPhases(
+            job=job,
+            settings=s,
+            db=db,
+            root=root,
+            rows=pending,
+            snapshot=snapshot,
+            progress=progress,
+            reporter=reporter,
+            budget=budget,
+            engine=engine,
+            normalizer=normalizer,
+            failed=model_failed,
+            finalize=finalize,
+        )
+        phases.run(models, payload)
         rows = [row for row in progress.rows(job["id"]) if row["status"] != "DELETED"]
         successful = [r for r in rows if r["status"] == "ANNOTATED"]
         if not successful:

@@ -1,70 +1,102 @@
-# V3 incremental inference and recovery
+# Phased inference and recovery (0.10)
 
-Each accepted source becomes a source-neutral reference: document_id, original
-relative path, source_type (PASTED_TEXT/TXT_UPLOAD/ZIP_ENTRY), content_reference,
-size_bytes and PENDING status. Original bytes remain in private input files.
-SQLite holds document states and metadata, never clinical text or logits.
+Each accepted source has a document reference, original relative path, source
+type, byte size and PENDING status. Original UTF-8 bytes remain private files.
+Owners can open/read/download their documents immediately after admission,
+including while QUEUED, PROCESSING or FAILED. An annotation request returns an
+empty list before the first prediction. Login, ownership, deletion and expiry
+checks apply to every read; a private link alone grants no access.
 
-The existing lifetime-exclusive supervisor still runs one job child at a time.
-INFERENCE_DOCUMENT_BATCH_SIZE defaults to 32. A microbatch loads only its own input
-bytes/texts. Every selected model runs over that complete microbatch using its
-saved encoding.json. Only after all models finish, predictions round-trip against
-the original text and the merge is validated can a document become ANNOTATED.
-An inference/offset error fails the affected microbatch, not earlier publications;
-subsequent microbatches are attempted. There is no partly modeled document.
+## Corpus-wide phases
 
-A job-scoped bounded NerLabSession composes the exact upstream load_model,
-encoder_from_description, read_documents, predict_logits and decode_spans pieces.
-No segmentation, window generation, logits decoding or offset reconstruction is
-reimplemented. The cache key includes checkpoint path/digest/device; its default
-capacity is two checkpoints. Model traversal order alternates between microbatches
-so the last loaded models can be reused when not all checkpoints fit. Results are
-independent of model traversal order and merged deterministically. For model sets
-larger than the cache, some reloads remain unavoidable; tune capacity only after
-measuring RAM/VRAM. The cache is cleared at job end and the child process exits.
+The lifetime-exclusive supervisor runs one job child at a time. The single
+`process_job` orchestration delegates document work to `DocumentPhases`:
 
-This is a version-pinned adapter over lower-level upstream modules, not a claim of
-a new official ner_lab session API. tests/test_real_session.py compares its actual
-spans/scores with public predict_entities and verifies a warm call avoids loading.
-A future upstream public InferenceSession would remove this adapter maintenance
-burden. Callable/custom encodings remain subject to existing preflight rejection.
+1. Readable originals are available as soon as upload/admission finishes.
+2. Run the first selected NER model over the whole retained corpus, in bounded
+   `INFERENCE_DOCUMENT_BATCH_SIZE` microbatches (default 32). Validate offsets,
+   merge that member with prior members and publish each completed batch.
+3. Run the next NER member over the corpus, adding its predictions. Preserve
+   deterministic deduplication, source provenance, overlapping labels and original
+   Unicode code-point offsets. Dependent classifiers receive their saved upstream
+   predictions; a failed dependency cannot masquerade as an empty success.
+4. Release resident NER models. If normalization was requested, process DISEASE,
+   then MEDICATION, PROCEDURE and SYMPTOM when selected. Complete one category over
+   all documents before starting the next. Publish every normalization batch;
+   disease concepts are readable while medication/symptom processing is pending.
+5. Finalize document statistics and ANNOTATED state, then stream final BRAT/TSV/
+   statistics/manifest exports from those same verified publications.
 
-Native TextMeasurements/AnnotationMeasurements and one reference tokenizer collect
-statistics without a full-corpus mapping. Per-document statistics publish with the
-document. Final vocabulary/MATTR/quantile statistics come from the native running
-measurements, not averages of per-batch percentages. Their equality to the public
-aggregate functions is tested. Reference tokenizer path/digest is snapshotted at
-admission and checked on execution/retry; incompatible statistics are not mixed.
-No statistical work is repeated on normal viewer requests.
+Model failures preserve other members. No-match lexical results are valid.
+A document with no successful NER member is FAILED; its original remains
+readable. A preview has PROCESSING status and can already contain mentions or
+normalized concepts. `annotated_documents` and `progress_percent` still count
+**finished documents**, not partial previews or elapsed time. NER cards show
+member progress independently. Provisional mention counts include previews, and
+active progress explicitly announces available partial results.
 
-Publication order:
+The existing NerLabSession/HubSession and upstream encoders, logits decoding and
+BIO reconstruction remain in use. Each model processes successive batches without
+alternating model order, avoiding revisiting every model for each corpus batch.
+No entire corpus text/logit tensor is retained in RAM. Intermediate per-document
+raw member spans are stored privately on disk for merging/dependent tasks and
+restart recovery; this adds disk writes compared with final-only publication.
+Final records discard the temporary member checkpoint state. This change makes
+no numerical performance or clinical-accuracy claim.
 
-1. Persist PROCESSING for the current document batch.
-2. Run all models, merge and validate original-coordinate spans.
-3. Compute native document statistics.
-4. Write artifact.json + ANN in a private .building directory.
-5. Atomically rename that document directory into published/{document_id}.
-6. Commit ANNOTATED and counts/statistics to SQLite.
-7. Serve it through the token/expiry-guarded document APIs immediately.
+## Atomic snapshots and live viewer
 
-A crash before rename leaves an invisible incomplete directory. A crash after
-rename but before SQLite commit leaves a complete artifact; restart verifies its
-checkpoint/options snapshot, input SHA-256 and exact surfaces, then registers it
-idempotently. Published documents are not counted twice. Missing/corrupt artifacts
-are reprocessed; changed model/tokenizer snapshots fail safely rather than reuse
-incompatible annotations. Interrupted PROCESSING rows return to PENDING, while
-verified ANNOTATED rows survive controlled retries. MAX_ATTEMPTS remains bounded.
+`published/<document_id>/artifact.json` contains the merged canonical annotations,
+input hash, model snapshot, provenance and a random publication revision. While
+incomplete, `complete=false` and `state` contain member outcomes and completed
+normalization categories. Legacy records without `complete` remain final records.
+The first publication renames a private building directory into place. Later
+publications replace individual files atomically; artifact readers always see a
+complete JSON snapshot. ANN and JSON are each atomic; separate HTTP requests can
+observe adjacent valid revisions. Original text is never duplicated or changed.
 
-After document processing the stage becomes PREPARING_DOWNLOADS. Packaging streams
-original files and the very same published ANN/span records into BRAT/TSV/JSON/ZIP,
-without rebuilding a corpus mapping. COMPLETED means every document and required
-artifact succeeded. COMPLETED_WITH_ERRORS means validated subset exports exist;
-attachments are named *_partial and the manifest lists failed documents. FAILED
-means no final batch export is offered; already published valid documents remain
-available individually and explicitly partial until terminal expiry. Annotation
-progress excludes failed documents and is not elapsed-time progress.
+`documents.updated_at` and progress `publication_revision` notify the viewer even
+when annotation counts stay constant, as during normalization. The viewer opens
+pending documents, polls live publications, retains document/chunk position and
+filters, and updates a selected mention's normalization. Annotation pagination
+returns a revision; if the revision changes between pages the viewer restarts
+that read instead of mixing pages from different snapshots. An empty ANN download
+is available before any annotations exist. Full-corpus downloads appear after
+packaging; individual documents and partial ANN snapshots are available earlier.
 
-A 72-hour deadline is created at terminal completion, never while queued or
-processing. Previous links/deadlines are preserved. Cleanup removes the entire job
-root, including originals, publications, incomplete artifacts, final exports and
-viewer caches. Partial states never bypass capability or expiry checks.
+## Recovery, failure and deletion
+
+A crash before atomic replacement leaves the previous snapshot readable. A crash
+between file replacement and the DB count update leaves a valid durable snapshot.
+Recovery verifies input SHA-256, exact surfaces and the pinned model/options
+snapshot, restores per-member counts and skips already completed member/document
+or normalization-category/document work. Fully published documents are not
+counted twice. Missing/corrupt artifacts are reprocessed. Changed model,
+statistics-tokenizer or terminology snapshots fail rather than mixing contracts.
+`MAX_ATTEMPTS` remains bounded. Finished FAISS indexes are reusable; an interrupted
+cold index build itself still restarts from scratch through native ner_lab.
+
+The worker logs `job_interrupted` with a sanitized reason, child exit code and
+configured `timeout_seconds`. A timeout records `JobTimeout` on unfinished model
+cards; already completed member cards retain their completed state. The configured
+`JOB_TIMEOUT_SECONDS` remains a whole-child deadline, including first-use index
+building and shutdown. Raising it is an explicit deployment choice, not a hidden
+change. The attached historical log ended with a generic `success=False`; it did
+not identify a cause, so timeout remains a plausible explanation, not a diagnosis.
+
+FAILED jobs retain readable partial snapshots until their terminal retention
+expires. No complete corpus export is advertised for a failed job. Previously
+failed pre-0.10 jobs with no publications cannot reconstruct NER predictions
+from progress logs; they need a new submission. They can still expose retained
+originals. Restart/drain both web and worker when upgrading.
+
+Publication and deletion share a filesystem lock plus the job content-version
+guard. Deletion immediately removes originals, snapshots/checkpoints, annotations
+and downloads; stale inference cannot republish deleted content. Repackaging
+surviving final documents reuses annotations and requires no current dictionary.
+My documents selection/deletion is unchanged by this release.
+
+A 72-hour availability deadline starts at terminal completion, not while queued
+or processing. Cleanup removes originals, publications, intermediate files,
+exports and viewer caches. Native TextMeasurements/AnnotationMeasurements retain
+canonical aggregate statistics; no statistical inference runs on viewer requests.

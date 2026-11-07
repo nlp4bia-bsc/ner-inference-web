@@ -69,7 +69,7 @@ class Predictor:
         ], {"model_id": model["model_id"]}
 
 
-def test_live_document_publication_after_all_models(settings):
+def test_live_document_publication_after_each_model(settings):
     app, accepted, job, s = setup_job(settings, multi=True)
     base = "/api/jobs/" + accepted["token"]
     with TestClient(app) as client:
@@ -77,9 +77,10 @@ def test_live_document_publication_after_all_models(settings):
         def observe(model, documents):
             state = client.get(base + "/progress").json()
             number = int(next(iter(documents)).split(".")[0])
-            assert state["annotated_documents"] == number
-            assert state["processing_documents"] == 1
-            if number:
+            final_model = model["model_id"] == "es-symptom"
+            assert state["annotated_documents"] == (number if final_model else 0)
+            assert state["processing_documents"] == (3 - number if final_model else number + 1)
+            if final_model and number:
                 rows = client.get(base + "/documents").json()["items"]
                 assert rows[0]["status"] == "ANNOTATED"
                 identity = rows[0]["document_id"]
@@ -98,7 +99,7 @@ def test_live_document_publication_after_all_models(settings):
 
         engine = Predictor(observe)
         summary = process_job(job, s, engine, controlled_stats, lambda _: app.state.registry)
-        assert len(engine.calls) == 6
+        assert [model for model, _ in engine.calls] == ["es-disease"] * 3 + ["es-symptom"] * 3
         app.state.db.finish(job["id"], summary)
         assert client.get(base + "/progress").json()["progress_percent"] == 100
         assert client.get(base + "/download/brat").status_code == 200
@@ -156,7 +157,7 @@ def test_partial_failures_are_explicit_and_retained(settings):
         failed = next(
             r for r in client.get(base + "/documents").json()["items"] if r["status"] == "FAILED"
         )
-        assert client.get(base + "/documents/" + failed["document_id"]).status_code == 409
+        assert client.get(base + "/documents/" + failed["document_id"]).status_code == 200
 
 
 def test_atomic_publication_survives_interruption_before_db_commit(settings):

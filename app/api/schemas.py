@@ -61,6 +61,7 @@ class ProgressResponse(BaseModel):
     models: list[dict] = Field(default_factory=list)
     worker: dict = Field(default_factory=dict)
     inference_percent: float = 0
+    publication_revision: float = 0
 
     status: str
     stage: str

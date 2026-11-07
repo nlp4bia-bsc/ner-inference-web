@@ -10,6 +10,11 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.10 makes originals readable from admission, publishes NER results after
+each model batch and normalization after each category batch, and preserves
+partial snapshots on interruption. The viewer updates without reloading. See
+[phases, live results and recovery](docs/INCREMENTAL_PROCESSING.md).
+
 Version 0.9 defaults to direct-Parquet exact/Levenshtein normalization (adjustable
 0.8 threshold), with a separate slower bi-encoder opt-in. It fixes DT4H language
 grouping using `cs/en/es/it/nl/ro/sv` directories; **reimport the ZIP** to replace

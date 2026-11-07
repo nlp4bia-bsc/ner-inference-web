@@ -34,7 +34,7 @@ def test_large_result_does_not_block_supervisor(settings):
     assert not (storage.job(job["id"]) / "worker-summary.json").exists()
 
 
-def test_timeout_covers_child_shutdown(settings):
+def test_timeout_covers_child_shutdown(settings, caplog):
     settings = settings.model_copy(update={"job_timeout_seconds": 1})
     storage, db = LocalStorage(settings.storage_root), Database(settings)
     enqueue(db)
@@ -43,6 +43,7 @@ def test_timeout_covers_child_shutdown(settings):
     started = time.monotonic()
     ok, summary = execute(job, settings, db, storage, target=stuck_after_result)
     assert not ok and summary is None
+    assert "reason=JobTimeout" in caplog.text
     assert time.monotonic() - started < 10
     assert not (storage.job(job["id"]) / "worker-summary.json").exists()
 

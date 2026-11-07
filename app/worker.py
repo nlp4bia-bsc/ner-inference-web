@@ -88,11 +88,13 @@ def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, 
     process.start()
     deadline = time.monotonic() + settings.job_timeout_seconds
     timed_out = False
+    content_changed = False
     try:
         while process.is_alive():
             try:
                 check_content_version(db, job)
             except JobContentChanged:
+                content_changed = True
                 break
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -110,6 +112,24 @@ def execute(job: dict, settings: Settings, db: Database, storage: LocalStorage, 
         process.join()
     try:
         if timed_out or process.exitcode != 0 or not path.is_file():
+            reason = (
+                "JobTimeout"
+                if timed_out
+                else "ContentChanged"
+                if content_changed
+                else "WorkerInterrupted"
+            )
+            log.error(
+                "job_interrupted job_id=%s reason=%s exit_code=%s timeout_seconds=%s",
+                job["id"],
+                reason,
+                process.exitcode,
+                settings.job_timeout_seconds,
+            )
+            if not content_changed:
+                from app.persistence.model_progress import ModelProgressRepository
+
+                ModelProgressRepository.interrupt(db, job, reason)
             return False, None
         summary = json.loads(path.read_text(encoding="utf-8"))
         return (True, summary) if isinstance(summary, dict) else (False, None)
@@ -162,6 +182,7 @@ def run():
             if not ok:
                 from app.persistence.model_progress import ModelProgressRepository
 
+                # execute records timeout/exit details; do not overwrite that reason.
                 ModelProgressRepository.interrupt(db, job, "WorkerInterrupted")
                 with job_lock(s, job["id"]):
                     shutil.rmtree(storage.job(job["id"]) / "building", ignore_errors=True)

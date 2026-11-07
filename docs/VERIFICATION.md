@@ -1,3 +1,54 @@
+# Latest: durable document/model/category phases (0.10.0)
+
+Executed 2026-11-07 in the existing CPU verification environment (Python 3.12.14,
+Torch 2.15.0+cpu, Transformers 5.22.1, FAISS CPU 1.15.1, Chromium). No production
+confidential dictionary, remote Conda installation or clinical inference workload
+was available. My documents selection/deletion was intentionally left unchanged.
+
+- Final server suite: **258 passed, 90 browser cases skipped**, 78.30 seconds.
+- Full CI Chromium/accessibility file list: **125 passed**, no skips,
+  393.89 seconds. Includes root and `/ner` deployments, all existing overlap,
+  document deletion/ownership, locales/reflow and native browser interactions.
+- Dedicated progress/live-viewer browser checks: **4 passed**, 22.48 seconds.
+  The added tests open a raw document, add NER, then change normalization without
+  changing mention counts. They verify automatic refresh, selected concept
+  inspection, preserved text search and no browser exceptions.
+- Final phase/recovery/incremental/deletion target set: **17 passed**, 6.30 seconds.
+- Ruff lint/format pass; Bandit `-ll` reports no medium/high findings. Wheel/sdist
+  0.10.0 builds pass, contain the phase module and exclude private gazetteer,
+  storage, Parquet, FAISS, ZIP and SQLite data. Docker images were not rebuilt;
+  this release adds no dependencies or Compose configuration changes.
+
+```bash
+python3 -m pytest -q
+python3 -m pytest -q tests/test_phased_processing.py tests/test_incremental.py tests/test_document_management.py
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python3 -m pytest -q tests/test_model_progress_browser.py
+python3 -m ruff check app scripts tests
+python3 -m ruff format --check app scripts tests
+python3 -m bandit -r app scripts -ll
+python3 -m build --no-isolation
+```
+
+The complete browser run used the unchanged CI browser file list, with the two
+new live-viewer cases included. Synthetic callbacks assert all corpus batches of
+one NER member run before the next; DISEASE normalization is published in every
+document before SYMPTOM starts. Fault injection covers interruption during the
+next category, completed-member preservation, terminal-failure preview reads,
+restart without repeating NER and a crash after atomic preview replacement but
+before DB counts. The spawned supervisor timeout test asserts `reason=JobTimeout`.
+Existing native NER/CRF/FAISS, statistics equality, offset, private ownership,
+repackaging and stale-worker deletion checks remain passing.
+
+The supplied historical log ended in `success=False` without a cause. It supports
+investigating a timeout but does not prove one; no claim is made that this remote
+failure was reproduced. New sanitized logs identify configured timeout, child
+exit status and interruption reason. Old jobs without saved publications cannot
+reconstruct annotations from progress logs. Phase checkpoints preserve completed
+member/category work; partial FAISS embedding builds are not resumable. There are
+no new clinical accuracy, production throughput or memory benchmark claims.
+
+---
+
 # Latest: Parquet lexical normalization and DT4H language grouping (0.9.0)
 
 Executed on 2026-11-07 with Python 3.12.14, RapidFuzz 3.14.6, PyArrow 26.0.1,

@@ -434,3 +434,21 @@ grouping, restart both Python3 processes, and submit a new job. See the full
 [update commands and privacy details](NORMALIZATION.md#fast-parquet-matching-and-corrected-language-grouping-09).
 No terminology database or new shell exports are required. Docker installs the
 updated lock profile and retains the existing private gazetteer/cache mounts.
+
+
+## 0.10 phased publications and timeout diagnosis
+
+Stop/drain the old worker, update the checkout and restart both Conda Python3
+processes (or rebuild/restart both Compose services). No new dependencies or
+manual database migration are required. New jobs publish model/category previews;
+old failed jobs without saved annotations need a new submission. Existing final
+publications remain readable. My documents deletion controls are unchanged.
+
+`JOB_TIMEOUT_SECONDS` remains 7200 by default, covering the entire child lifetime,
+including cold bi-encoder/FAISS builds. A timeout now logs `reason=JobTimeout`,
+`timeout_seconds` and the child exit code, and records the timeout on unfinished
+model cards. Completed NER/normalization snapshots remain individually readable.
+To allow a longer intentional bi-encoder job, set a suitable whole-job deadline
+in the shared private `.env` and restart the worker. Fast lexical normalization
+remains the default when normalization is enabled. Do not infer a timeout solely
+from an old `WorkerInterrupted` or `success=False` message.

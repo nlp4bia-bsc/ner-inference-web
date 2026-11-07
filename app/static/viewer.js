@@ -22,7 +22,8 @@ let records = [],
   expiresAt = Infinity,
   expired = false,
   documentStatistics = null,
-  availabilityDeadline = null;
+  availabilityDeadline = null,
+  documentRevision = null;
 const make = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text !== undefined) e.textContent = text;
@@ -143,7 +144,7 @@ async function documents() {
       ),
     );
     button.dataset.document = row.document_id;
-    button.disabled = !["ANNOTATED", "COMPLETED"].includes(row.status);
+    button.disabled = false;
     button.querySelector("small").textContent =
       `${t(row.status)} · ${t("{count} mentions", { count: number(row.annotation_count) })}`;
     button.onclick = safely(() => openDocument(row.document_id));
@@ -156,18 +157,25 @@ async function documents() {
   $("docs-next").disabled = docOffset + 50 >= docTotal;
   buildTree();
   $("document-list").scrollTop = scroll;
-  const available = records.find((r) =>
-    ["ANNOTATED", "COMPLETED"].includes(r.status),
-  );
+  const available = records[0];
+  const active = records.find((r) => r.document_id === identity);
   if (!identity && available) await openDocument(available.document_id);
+  else if (active && active.updated_at !== documentRevision)
+    await openDocument(identity, chunk?.start || 0, true);
 }
-async function openDocument(id, start = 0) {
+async function openDocument(id, start = 0, live = false) {
+  const previousLabels = new Set(annotations.map((row) => row.label)),
+    previousEnabled = new Set(enabled),
+    previousModel = $("model-filter").value;
+  documentRevision = records.find((row) => row.document_id === id)?.updated_at;
   const current = ++generation;
   identity = id;
-  selected = null;
-  revealedTowerId = null;
-  mentionOffset = 0;
-  $("text-search").value = "";
+  if (!live) {
+    selected = null;
+    revealedTowerId = null;
+    mentionOffset = 0;
+    $("text-search").value = "";
+  }
   $("region-annotations").replaceChildren();
   $("annotation-details").replaceChildren(
     make(
@@ -181,12 +189,15 @@ async function openDocument(id, start = 0) {
   if (current !== generation) return;
   const rows = [];
   let offset = 0,
-    total;
+    total,
+    revision;
   do {
     const page = await api(
       `/documents/${id}/annotations?start=${text.start}&end=${text.end}&offset=${offset}&limit=500`,
     );
     if (current !== generation) return;
+    if (offset === 0) revision = page.revision;
+    else if (page.revision !== revision) return openDocument(id, start, true);
     rows.push(...page.items);
     total = page.total;
     offset += page.items.length;
@@ -196,7 +207,14 @@ async function openDocument(id, start = 0) {
   chunk = text;
   documentStatistics = stats.statistics;
   annotations = rows;
-  enabled = new Set(rows.map((x) => x.label));
+  enabled = new Set(
+    rows
+      .map((x) => x.label)
+      .filter(
+        (label) =>
+          !live || !previousLabels.has(label) || previousEnabled.has(label),
+      ),
+  );
   const modelSelect = $("model-filter");
   modelSelect.replaceChildren(new Option(t("All models"), ""));
   for (const model of new Set(
@@ -208,7 +226,12 @@ async function openDocument(id, start = 0) {
   ))
     modelSelect.append(new Option(model, model));
 
-  $("entity-search").value = "";
+  if (
+    live &&
+    [...modelSelect.options].some((option) => option.value === previousModel)
+  )
+    modelSelect.value = previousModel;
+  if (!live) $("entity-search").value = "";
   $("filename").textContent = text.filename;
   $("individual-txt").href = endpoint + "/documents/" + id + "/download/txt";
   $("individual-ann").href = endpoint + "/documents/" + id + "/download/ann";
@@ -232,7 +255,7 @@ async function openDocument(id, start = 0) {
     )
     .join(" · ");
   $("legend").replaceChildren();
-  for (const label of [...enabled].sort()) {
+  for (const label of [...new Set(rows.map((row) => row.label))].sort()) {
     const container = make("label", undefined, "entity-toggle " + color(label)),
       input = make("input"),
       name = make(
@@ -240,7 +263,7 @@ async function openDocument(id, start = 0) {
         `${label} · ${rows.filter((x) => x.label === label).length}`,
       );
     input.type = "checkbox";
-    input.checked = true;
+    input.checked = enabled.has(label);
     input.onchange = () => {
       input.checked ? enabled.add(label) : enabled.delete(label);
       mentionOffset = 0;
@@ -255,6 +278,8 @@ async function openDocument(id, start = 0) {
       button.classList.toggle("active", button.dataset.document === id),
     );
   render();
+  if (live && selected && rows.some((row) => row.id === selected))
+    select(selected, false);
   $("viewer-status").textContent = t(
     "Read-only exploration · select a highlighted region or an annotation.",
   );
@@ -732,6 +757,7 @@ startProgress(endpoint, {
     $("metrics-scope").textContent = t(scopeKey);
     availabilityDeadline = snapshot.expires_at;
     const key = [
+      snapshot.publication_revision,
       snapshot.annotated_documents,
       snapshot.failed_documents,
       snapshot.processing_documents,

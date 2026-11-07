@@ -71,7 +71,7 @@ function paint(data, progress) {
           "Some documents failed. Downloads contain only validated annotated documents and an explicit partial manifest.",
         )
       : "");
-  const available = progress.annotated_documents > 0;
+  const available = progress.total_documents > 0;
   $("downloads").hidden = !available;
   $("explore").href = localized(base + "/jobs/" + token + "/viewer");
   $("brat").hidden = !data.downloads_available;

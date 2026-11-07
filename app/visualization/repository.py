@@ -115,6 +115,7 @@ class DocumentRepository:
                     "status": r["status"],
                     "statistics": json.loads(r["statistics"]),
                     "error_code": r["error_code"],
+                    "updated_at": r["updated_at"],
                 }
                 for r in sorted(rows, key=lambda r: order.get(r["filename"], 0))
             ]
@@ -125,17 +126,20 @@ class DocumentRepository:
         record = next((row for row in self.index(token) if row["document_id"] == identity), None)
         if record is None:
             raise ServiceError("Document not found.", 404)
-        if record["status"] not in ("ANNOTATED", "COMPLETED"):
-            raise ServiceError("This document is not annotated yet.", 409)
         return root, record
 
     def text(self, token: str, identity: str) -> tuple[dict, str]:
         root, record = self.document(token, identity)
         return record, (root / "input" / record["filename"]).read_bytes().decode("utf-8")
 
-    def annotations(self, token: str, identity: str) -> list[dict]:
+    def annotation_snapshot(self, token: str, identity: str):
         root, _ = self.document(token, identity)
         published = root / "published" / identity / "artifact.json"
         if published.is_file():
-            return json.loads(published.read_text(encoding="utf-8"))["annotations"]
-        return json.loads((root / "viewer" / (identity + ".json")).read_text(encoding="utf-8"))
+            record = json.loads(published.read_text(encoding="utf-8"))
+            return record.get("revision"), record["annotations"]
+        legacy = root / "viewer" / (identity + ".json")
+        return None, json.loads(legacy.read_text(encoding="utf-8")) if legacy.is_file() else []
+
+    def annotations(self, token: str, identity: str) -> list[dict]:
+        return self.annotation_snapshot(token, identity)[1]

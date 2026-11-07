@@ -247,3 +247,21 @@ unique per reference; multiple references point to one original T span.
 Normalization errors now carry a safe `reason_code` alongside the exception type;
 progress cards translate the reason. No terminology values or patient text are
 included in worker error logs.
+
+
+## Live document phases (0.10)
+
+Document text/statistics/annotation routes now accept retained PENDING, PROCESSING
+and FAILED documents as well as final ones, under the same owner/expiry checks.
+Before the first model publication, annotations and ANN downloads are empty.
+Individual text and annotation snapshots are available throughout processing;
+final corpus downloads still require completed packaging.
+
+Document list rows include `updated_at`; progress includes numeric
+`publication_revision` even when mention counts do not change. Annotation pages
+include nullable `revision` (legacy records may have none). Clients that page
+annotations must restart when revisions differ. `mentions` and
+`partial_results` include live previews, while `annotated_documents` counts only
+finished documents. This intentionally changes the old 409 response for
+unannotated retained documents to a readable text/empty-annotation response.
+See [phase and checkpoint contracts](INCREMENTAL_PROCESSING.md).

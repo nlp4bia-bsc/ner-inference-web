@@ -14,6 +14,7 @@ class Document(BaseModel):
     source_type: str | None = None
     relative_path: str | None = None
     error_code: str | None = None
+    updated_at: float | None = None
 
 
 class DocumentPage(BaseModel):
@@ -33,6 +34,7 @@ class TextChunk(BaseModel):
 
 
 class AnnotationPage(BaseModel):
+    revision: str | None = None
     items: list[Annotation]
     total: int
     offset: int

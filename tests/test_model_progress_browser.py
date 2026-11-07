@@ -149,3 +149,93 @@ def test_live_models_liveness_and_index_stages(design_server):
             )
         assert not errors
         browser.close()
+
+
+def test_viewer_opens_raw_then_updates_ner_and_normalization_without_reload(design_server):
+    import copy
+
+    from playwright.sync_api import expect, sync_playwright
+
+    base, _, job, _ = design_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        browser_login(page, base)
+        api = base + "/api/jobs/" + job["job_id"]
+        documents = page.request.get(api + "/documents").json()
+        document = next(row for row in documents["items"] if row["annotation_count"])
+        doc_api = api + "/documents/" + document["document_id"]
+        text = page.request.get(doc_api).json()["text"]
+        annotations = page.request.get(doc_api + "/annotations").json()["items"]
+        progress = page.request.get(api + "/progress").json()
+        progress.update(
+            status="PROCESSING",
+            stage="INFERENCE",
+            expires_at=None,
+            annotated_documents=0,
+            partial_results=True,
+            publication_revision=1,
+        )
+        state = {"phase": 0}
+
+        def progress_response(route):
+            route.fulfill(json={**progress, "publication_revision": state["phase"] + 1})
+
+        def documents_response(route):
+            row = {
+                **document,
+                "status": "PROCESSING",
+                "updated_at": state["phase"] + 1,
+                "annotation_count": len(annotations) if state["phase"] else 0,
+            }
+            route.fulfill(json={"items": [row], "total": 1, "offset": 0, "limit": 50})
+
+        def annotations_response(route):
+            rows = copy.deepcopy(annotations) if state["phase"] else []
+            if state["phase"] == 2:
+                for row in rows:
+                    row["normalization"] = {
+                        "code": "SYNTHETIC-123",
+                        "term": "Synthetic concept",
+                        "score": 1,
+                        "language": "en",
+                        "requested_language": "en",
+                        "fallback_to_english": False,
+                        "method": "exact",
+                        "model": None,
+                        "max_length": None,
+                        "candidates": [],
+                        "references": [],
+                        "gazetteer_sha256": "synthetic",
+                    }
+            route.fulfill(
+                json={
+                    "items": rows,
+                    "total": len(rows),
+                    "offset": 0,
+                    "limit": 500,
+                    "revision": str(state["phase"]),
+                }
+            )
+
+        page.route("**/api/jobs/*/progress", progress_response)
+        page.route("**/api/jobs/*/documents?*", documents_response)
+        page.route("**/api/jobs/*/documents/*/annotations?*", annotations_response)
+        page.goto(base + "/jobs/" + job["job_id"] + "/viewer?lang=en")
+        expect(page.locator("#annotated-text")).to_have_text(text)
+        expect(page.locator("#document-list button").first).to_be_enabled()
+        expect(page.locator("#annotation-list button")).to_have_count(0)
+        state["phase"] = 1
+        expect(page.locator("#annotation-list button")).to_have_count(
+            len(annotations), timeout=10000
+        )
+        page.locator("#text-search").fill("Severe")
+        page.locator("#annotation-list button").first.click()
+        state["phase"] = 2
+        expect(page.locator("#annotation-details")).to_contain_text("SYNTHETIC-123", timeout=10000)
+        expect(page.locator("#text-search")).to_have_value("Severe")
+        expect(page.locator("#annotated-text")).to_have_text(text)
+        assert not errors
+        browser.close()
