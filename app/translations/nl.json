@@ -537,5 +537,8 @@
   "Building lexical index": "Lexicale index opbouwen",
   "Term-code pairs": "Term-codeparen",
   "Bi-encoder": "Bi-encoder",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Labels worden alleen gestapeld waar annotaties overlappen. Selecteer een label om de lijnen te tonen; selecteer het opnieuw om ze te verbergen."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Labels worden alleen gestapeld waar annotaties overlappen. Selecteer een label om de lijnen te tonen; selecteer het opnieuw om ze te verbergen.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Vergelijkingsmodus",
+  "Find similar terms when no exact match is available.": "Zoek vergelijkbare termen wanneer er geen exacte overeenkomst beschikbaar is."
 }

@@ -537,5 +537,8 @@
   "Building lexical index": "Leksikaalse indeksi loomine",
   "Term-code pairs": "Termini ja koodi paarid",
   "Bi-encoder": "Bi-encoder",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Märgendid paigutatakse üksteise kohale ainult kattuvate annotatsioonide korral. Vali märgend selle joonte näitamiseks; uuesti valides peidad need."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Märgendid paigutatakse üksteise kohale ainult kattuvate annotatsioonide korral. Vali märgend selle joonte näitamiseks; uuesti valides peidad need.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Vastendamise viis",
+  "Find similar terms when no exact match is available.": "Leia sarnased terminid, kui täpset vastet pole."
 }

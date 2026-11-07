@@ -537,5 +537,8 @@
   "Building lexical index": "Vytváření lexikálního indexu",
   "Term-code pairs": "Dvojice termín–kód",
   "Bi-encoder": "Bi-encoder",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Štítky se skládají nad sebe pouze při překryvu anotací. Výběrem štítku zobrazíte jeho čáry; opětovným výběrem je skryjete."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Štítky se skládají nad sebe pouze při překryvu anotací. Výběrem štítku zobrazíte jeho čáry; opětovným výběrem je skryjete.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Režim porovnávání",
+  "Find similar terms when no exact match is available.": "Najde podobné termíny, pokud není k dispozici přesná shoda."
 }

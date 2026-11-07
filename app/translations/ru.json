@@ -537,5 +537,8 @@
   "Building lexical index": "Построение лексического индекса",
   "Term-code pairs": "Пары термин–код",
   "Bi-encoder": "Биэнкодер",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Метки располагаются друг над другом только при перекрытии аннотаций. Выберите метку, чтобы показать её линии; выберите повторно, чтобы скрыть их."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Метки располагаются друг над другом только при перекрытии аннотаций. Выберите метку, чтобы показать её линии; выберите повторно, чтобы скрыть их.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Режим сопоставления",
+  "Find similar terms when no exact match is available.": "Поиск похожих терминов, если точное совпадение отсутствует."
 }

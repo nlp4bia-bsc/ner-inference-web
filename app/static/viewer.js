@@ -970,15 +970,13 @@ function normalizationDetails(a) {
   section.append(
     make(
       "p",
-      t("Normalization method") +
-        ": " +
-        t(
-          {
-            exact: "Exact string matching",
-            levenshtein: "Levenshtein",
-            bi_encoder: "Bi-encoder",
-          }[n.method || "bi_encoder"],
-        ),
+      t(
+        {
+          exact: "Exact string matching",
+          levenshtein: "Fuzzy match",
+          bi_encoder: "Bi-encoder",
+        }[n.method || "bi_encoder"],
+      ),
     ),
   );
   if (n.threshold != null)

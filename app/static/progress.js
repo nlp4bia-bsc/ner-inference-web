@@ -89,7 +89,7 @@ export function startProgress(
             t(
               {
                 exact: "Exact string matching",
-                levenshtein: "Levenshtein",
+                levenshtein: "Fuzzy match",
                 bi_encoder: "Bi-encoder",
               }[model.method] || "Concept normalization",
             ) +

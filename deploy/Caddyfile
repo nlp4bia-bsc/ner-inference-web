@@ -1,0 +1,20 @@
+{
+    # Certificate files are provisioned by the host administrator.
+    # Do not bind public port 80 or attempt ACME challenges on port 443.
+    auto_https off
+    servers {
+        protocols h1 h2
+    }
+}
+
+https://{$PUBLIC_DOMAIN} {
+    tls /etc/caddy/tls/fullchain.pem /etc/caddy/tls/privkey.pem
+    request_body {
+        max_size 51MiB
+    }
+    reverse_proxy web:8000 {
+        # Set the transport facts ourselves; do not trust client-supplied values.
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

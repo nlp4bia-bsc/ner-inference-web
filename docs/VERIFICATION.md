@@ -1,3 +1,69 @@
+# Latest: Fuzzy match, inspector columns and public Docker deployment (0.10.2)
+
+Executed 2026-11-07:
+
+- Server suite: **260 passed, 114 browser cases skipped**, 96.39 seconds.
+- Full CI Chromium/accessibility file list: **149 passed**, no skips,
+  455.86 seconds. Form/summary, model progress and inspector show Fuzzy match and
+  their visible text excludes the algorithm name; the submitted API method remains
+  unchanged. Inspector text geometry checks labels and values across all sixteen
+  UI languages at 320, 390, 1440, 1920 and 3840 pixels, for root and `/ner`.
+- Focused form/inspector checks before the final expanded matrix: **4 passed**,
+  19.03 seconds, including axe. Full final results above include the expanded
+  geometry and progress/inspector naming checks.
+- Ruff lint/format pass. The matching implementation, offsets and persisted
+  normalization method/threshold contracts are unchanged.
+- Compose v2.40.3 validates base CPU, GPU, public CPU and public GPU configurations.
+  `COMPOSE_FILE` loaded from a private sample env selects the right services and
+  build profile. Both services share the external origin
+  `https://temu.bsc.es:18443`; the public profile uses production/Secure cookies,
+  preserves the internal shared data volume and publishes TLS on 18443.
+  The application has no host HTTP port, avoiding a collision with an existing
+  service on 8000; Compose 2.24.4+ resets the base port mapping. The private proxy
+  supplies trusted client/scheme headers, without trusting incoming header values. GPU is
+  optional and inactive by default. No NVIDIA hardware was available for testing.
+- Real Caddy **2.11.9** ran the checked-in configuration against a synthetic local
+  HTTP backend in disposable Docker containers. A temporary test CA and server
+  certificate for the domain were used; curl verified that CA without disabling
+  certificate validation. HTTPS returned 200, preserved Host including its public
+  port and forwarded the HTTPS scheme. Test containers/network/certificates were
+  removed. This was a local synthetic proxy check, not a deployment to BSC or a
+  validation of an institutional certificate.
+- The current application also ran in the native CPU verification runtime behind
+  that real Docker proxy. Health, registration, login and authenticated session
+  returned 200; Secure cookies were stored. An authenticated test-only transport
+  probe confirmed HTTPS scheme and ignored spoofed client forwarding headers.
+  The probe is not part of the application. A cached-image app smoke attempt hit
+  the workspace VFS disk bound; application containers were not claimed as tested.
+  All disposable containers, networks and temporary certificates were removed.
+- Internal Docker service `web` is excluded from the proxy's outbound HTTP proxy,
+  preserving other inherited proxy exclusions. This resolves the local Cloud
+  test's initial upstream 403 without changing external network policy or turning
+  off TLS verification.
+
+The public quickstart uses CPU, a persistent `.env` and mounted private
+certificates/Parquet files. The bundled proxy reuses an existing server certificate; port 80 need not be free. Future NVIDIA activation uses the optional overlay; CUDA 13.2
+requires a compatible host driver and Container Toolkit. The existing machine certificate can be reused; the guide locates and checks its
+hostname coverage. Neither host port 80 nor 443 is published by the Docker profile.
+The actual final host, DNS/firewall and production certificate have not been configured in this session.
+The Docker web/worker application images were not rebuilt here; Python package
+builds and the existing CPU/native inference regression suite cover this release.
+
+```bash
+python3 -m pytest -q
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python3 -m pytest -q tests/test_design_browser.py tests/test_model_progress_browser.py
+python3 -m ruff check app scripts tests
+python3 -m ruff format --check app scripts tests
+docker compose --env-file /dev/null config --quiet
+docker compose --env-file /dev/null -f docker-compose.yml -f docker-compose.public.yml config --quiet
+docker compose --env-file /dev/null -f docker-compose.yml -f docker-compose.public.yml -f docker-compose.gpu.yml config --quiet
+```
+
+See the [public Docker quickstart](DOCKER_QUICKSTART.md) for the exact setup,
+private import permissions and optional complete Conda storage migration.
+
+---
+
 # Latest: unfinished HTML viewer and actual-overlap towers (0.10.1)
 
 The pasted-text regression reproduced the reported 409 before the fix: **2 failed**

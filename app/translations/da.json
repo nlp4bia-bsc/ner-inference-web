@@ -537,5 +537,8 @@
   "Building lexical index": "Opbygger leksikalsk indeks",
   "Term-code pairs": "Term-kode-par",
   "Bi-encoder": "Bi-encoder",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etiketter stables kun, hvor annoteringer overlapper. Vælg en etiket for at vise dens linjer; vælg igen for at skjule dem."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etiketter stables kun, hvor annoteringer overlapper. Vælg en etiket for at vise dens linjer; vælg igen for at skjule dem.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Matchtype",
+  "Find similar terms when no exact match is available.": "Find lignende termer, når der ikke findes et præcist match."
 }

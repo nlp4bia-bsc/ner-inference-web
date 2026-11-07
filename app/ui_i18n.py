@@ -4,6 +4,9 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Fuzzy match|Fuzzy match|Fuzzy match
+Matching mode|Tipo de búsqueda|Tipus de cerca
+Find similar terms when no exact match is available.|Busca términos similares cuando no hay una coincidencia exacta.|Cerca termes similars quan no hi ha cap coincidència exacta.
 Normalization method|Método de normalización|Mètode de normalització
 Exact string matching|Coincidencia exacta de texto|Coincidència exacta de text
 Levenshtein|Levenshtein|Levenshtein

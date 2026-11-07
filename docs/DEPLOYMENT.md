@@ -1,5 +1,9 @@
 # Deployment on a single Linux host
 
+For the step-by-step Docker setup for https://temu.bsc.es:18443 (CPU/NVIDIA GPU, private Parquet import,
+port forwarding, HTTPS and optional Conda data migration), see
+[Docker quickstart](DOCKER_QUICKSTART.md).
+
 Registration defaults to `REQUIRE_EMAIL_VERIFICATION=false` since0.5.4 and works
 with `MAIL_BACKEND=none`; passwords have a four-character minimum. Accounts still
 need a unique normalized email. `SUPPORT_EMAIL=fernando.gallego@bsc.es` is the
@@ -156,7 +160,8 @@ default (`INSTALL_NLP=true`, `NLP_PROFILE=cpu`). No model weights are downloaded
 during image build or application startup. `requirements-cpu.lock` selects Torch
 2.15.0+cpu without CUDA runtime packages; the GPU profile is opt-in.
 Allow sufficient build disk/network capacity. Production model initialization and
-GPU drivers must be validated on BSC; the Compose file does not request GPUs.
+GPU drivers must be validated on BSC; the base Compose file does not request GPUs. The optional GPU overlay in the
+[Docker quickstart](DOCKER_QUICKSTART.md) supplies the device grant and GPU build profile.
 To use GPU hardware add the site's supported NVIDIA runtime/device grant and size
 memory; DEVICE=cuda alone does not grant a GPU.
 

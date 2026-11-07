@@ -53,7 +53,7 @@ function normalizationSummary() {
         t(
           {
             exact: "Exact string matching",
-            levenshtein: "Levenshtein",
+            levenshtein: "Fuzzy match",
             bi_encoder: "Bi-encoder",
           }[normalizationMethod.value],
         ) +

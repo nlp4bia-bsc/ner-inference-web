@@ -1,0 +1,17 @@
+# NVIDIA driver + NVIDIA Container Toolkit are required on the Docker host.
+# Use this overlay for every Compose command in a GPU deployment.
+services:
+  worker:
+    build:
+      args:
+        INSTALL_NLP: "true"
+        NLP_PROFILE: gpu
+    environment:
+      DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

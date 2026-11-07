@@ -10,6 +10,10 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.10.2 uses **Fuzzy match** in the interface and fixes inspector field
+spacing across languages and screen sizes. See the [Docker quickstart](docs/DOCKER_QUICKSTART.md)
+for a complete web/worker deployment, private terminology import and optional NVIDIA GPU overlay.
+
 Version 0.10.1 fixes unfinished-job access to the actual HTML viewer and makes
 tower height depend solely on simultaneous annotation overlap. Disjoint labels
 share one level; wide captions receive horizontal spacing.

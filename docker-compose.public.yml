@@ -1,0 +1,40 @@
+# Public HTTPS entrypoint; application and worker share the same external origin.
+x-public-environment: &public-environment
+  APP_ENV: production
+  COOKIE_SECURE: "true"
+  PUBLIC_BASE_URL: https://${PUBLIC_DOMAIN:-temu.bsc.es}:${PUBLIC_HTTPS_PORT:-18443}${APP_PREFIX:-}
+
+services:
+  web:
+    environment: *public-environment
+    # The proxy is the only public ingress. No host HTTP port is reserved.
+    ports: !reset []
+    command: ["uvicorn", "app.asgi:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--proxy-headers", "--forwarded-allow-ips=*"]
+  worker:
+    build:
+      args:
+        INSTALL_NLP: "true"
+        NLP_PROFILE: cpu
+    environment:
+      <<: *public-environment
+      DEVICE: cpu
+  proxy:
+    image: caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-temu.bsc.es}
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1},web"
+      no_proxy: "${NO_PROXY:-localhost,127.0.0.1},web"
+    ports:
+      - "${PUBLIC_HTTPS_PORT:-18443}:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certificates:/etc/caddy/tls:ro
+      - proxy-data:/data
+      - proxy-config:/config
+    depends_on: [web]
+    restart: unless-stopped
+    init: true
+
+volumes:
+  proxy-data:
+  proxy-config:

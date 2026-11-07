@@ -418,6 +418,10 @@ def test_normalization_is_lexical_unless_bi_encoder_explicitly_checked(design_se
         page.locator("#normalization-options").wait_for(state="hidden")
         page.locator("#normalize").check()
         expect(page.locator("#normalization-method")).to_have_value("levenshtein")
+        expect(page.locator("#normalization-lexical-method option:checked")).to_have_text(
+            "Fuzzy match"
+        )
+        assert "levenshtein" not in page.locator("body").inner_text().lower()
         expect(page.locator("#normalization-threshold")).to_have_value("0.8")
         expect(page.locator("#use-bi-encoder")).not_to_be_checked()
         expect(page.locator("#bi-encoder-warning")).to_be_hidden()
@@ -462,9 +466,46 @@ def test_normalization_is_lexical_unless_bi_encoder_explicitly_checked(design_se
             route.fulfill(status=202, json={"url": base + "/jobs/synthetic"})
 
         page.route("**/api/jobs", record)
+        expect(page.locator("#summary")).to_contain_text("Fuzzy match")
+        assert "levenshtein" not in page.locator("body").inner_text().lower()
         page.locator("#submit").click()
         expect(page.get_by_role("dialog")).to_be_visible()
         assert submitted[0]["normalization_method"] == b"levenshtein"
         assert submitted[0]["normalization_threshold"] == b"0.87"
         assert submitted[0]["normalize"] == b"true"
+        browser.close()
+
+
+def test_inspector_labels_and_values_do_not_overlap_in_any_locale(design_server):
+    from playwright.sync_api import expect, sync_playwright
+
+    from app.locales import LOCALES
+
+    base, _, job, _ = design_server
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        browser_login(page, base)
+        page.goto(base + "/jobs/" + job["job_id"] + "/viewer?lang=es")
+        page.locator("#annotation-list button").first.click()
+        expect(
+            page.locator("#annotation-details dt").filter(has_text="Solapamientos")
+        ).to_be_visible()
+        reflow(page)
+        for width in (320, 390, 1440, 1920, 3840):
+            page.set_viewport_size({"width": width, "height": 1000})
+            for code in LOCALES:
+                page.select_option("#auth-locale", code)
+                issues = page.locator("#annotation-details").evaluate("""panel => {
+                  const list=panel.querySelector('dl');
+                  const rects=node=>{const range=document.createRange();range.selectNodeContents(node);return [...range.getClientRects()].filter(r=>r.width&&r.height);};
+                  const intersect=(a,b)=>a.left<b.right-.1&&a.right>b.left+.1&&a.top<b.bottom-.1&&a.bottom>b.top+.1;
+                  return [...list.querySelectorAll('dt')].flatMap(label=>{
+                    const value=label.nextElementSibling;
+                    const overlap=rects(label).some(a=>rects(value).some(b=>intersect(a,b)));
+                    return overlap||label.scrollWidth>label.clientWidth+1||value.scrollWidth>value.clientWidth+1
+                      ? [{label:label.textContent,value:value.textContent,overlap}] : [];
+                  });
+                }""")
+                assert not issues, (width, code, issues)
         browser.close()

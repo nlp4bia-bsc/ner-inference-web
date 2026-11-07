@@ -537,5 +537,8 @@
   "Building lexical index": "Lexikalischer Index wird erstellt",
   "Term-code pairs": "Begriff-Code-Paare",
   "Bi-encoder": "Bi-Encoder",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Labels werden nur bei überlappenden Annotationen gestapelt. Wählen Sie ein Label, um seine Linien anzuzeigen; erneutes Auswählen blendet sie aus."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Labels werden nur bei überlappenden Annotationen gestapelt. Wählen Sie ein Label, um seine Linien anzuzeigen; erneutes Auswählen blendet sie aus.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Abgleichmodus",
+  "Find similar terms when no exact match is available.": "Ähnliche Begriffe finden, wenn keine genaue Übereinstimmung verfügbar ist."
 }

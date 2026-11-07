@@ -639,9 +639,18 @@ fieldset {
   font-size: 0.875rem;
 }
 .annotations-panel dl {
-  grid-template-columns: 85px minmax(0, 1fr);
+  grid-template-columns: fit-content(48%) minmax(0, 1fr);
+  align-items: start;
   font-size: 0.75rem;
-  gap: 9px;
+  gap: 9px 0.875rem;
+}
+#annotation-details {
+  min-width: 0;
+}
+.annotations-panel dt,
+.annotations-panel dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .annotations-panel button {
   font-size: 0.75rem;

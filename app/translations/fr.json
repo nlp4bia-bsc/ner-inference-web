@@ -537,5 +537,8 @@
   "Building lexical index": "Construction de l'index lexical",
   "Term-code pairs": "Paires terme-code",
   "Bi-encoder": "Bi-encodeur",
-  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Les étiquettes s’empilent uniquement lorsque les annotations se chevauchent. Sélectionnez une étiquette pour afficher ses lignes ; sélectionnez-la à nouveau pour les masquer."
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Les étiquettes s’empilent uniquement lorsque les annotations se chevauchent. Sélectionnez une étiquette pour afficher ses lignes ; sélectionnez-la à nouveau pour les masquer.",
+  "Fuzzy match": "Fuzzy match",
+  "Matching mode": "Mode de correspondance",
+  "Find similar terms when no exact match is available.": "Rechercher des termes similaires lorsqu’aucune correspondance exacte n’est disponible."
 }

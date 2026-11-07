@@ -261,3 +261,12 @@ python3 -m scripts.import_gazetteers gazetteers/dt4h_gazs.zip
 If metadata remains unsupported, `python3 -m scripts.import_gazetteers
 gazetteers/dt4h_gazs.zip --inspect` identifies the affected file and field without
 printing terminology. No new dependencies are required.
+
+
+## Nombre visible desde 0.10.2
+
+La interfaz denomina la búsqueda aproximada **Fuzzy match** en el formulario,
+resumen, progreso e inspector, sin nombrar el algoritmo. El nombre interno
+`levenshtein` y el contrato de API/resultados se conservan para que los trabajos
+admitidos y las integraciones sigan siendo compatibles. El umbral sigue siendo
+ajustable y la implementación de la búsqueda no cambia.

@@ -117,6 +117,20 @@ def test_live_models_liveness_and_index_stages(design_server):
             "Terms: 5 / 20"
         )
         scan("NER and FAISS")
+        normalizer.update(
+            method="levenshtein",
+            stage="MATCHING",
+            unit="mentions",
+            total_units=2,
+            completed_units=1,
+        )
+        expect(page.locator('[data-model-id="synthetic-normalizer"]')).to_contain_text(
+            "Fuzzy match"
+        )
+        expect(page.locator('[data-model-id="synthetic-normalizer"]')).to_contain_text(
+            "Matching mentions"
+        )
+        assert "levenshtein" not in page.locator("body").inner_text().lower()
         # Responsive cards never force horizontal scrolling on phones or 4k.
         for width in (375, 1440, 3840):
             page.set_viewport_size({"width": width, "height": 1000})
@@ -203,7 +217,8 @@ def test_viewer_opens_raw_then_updates_ner_and_normalization_without_reload(desi
                         "language": "en",
                         "requested_language": "en",
                         "fallback_to_english": False,
-                        "method": "exact",
+                        "method": "levenshtein",
+                        "threshold": 0.8,
                         "model": None,
                         "max_length": None,
                         "candidates": [],
@@ -235,6 +250,8 @@ def test_viewer_opens_raw_then_updates_ner_and_normalization_without_reload(desi
         page.locator("#annotation-list button").first.click()
         state["phase"] = 2
         expect(page.locator("#annotation-details")).to_contain_text("SYNTHETIC-123", timeout=10000)
+        expect(page.locator("#annotation-details")).to_contain_text("Fuzzy match")
+        assert "levenshtein" not in page.locator("body").inner_text().lower()
         expect(page.locator("#text-search")).to_have_value("Severe")
         expect(page.locator("#annotated-text")).to_have_text(text)
         assert not errors
