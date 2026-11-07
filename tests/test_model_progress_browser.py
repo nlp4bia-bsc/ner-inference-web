@@ -239,3 +239,53 @@ def test_viewer_opens_raw_then_updates_ner_and_normalization_without_reload(desi
         expect(page.locator("#annotated-text")).to_have_text(text)
         assert not errors
         browser.close()
+
+
+def test_real_html_viewer_and_dashboard_allow_zero_finished_documents(design_server):
+    import sqlite3
+
+    from playwright.sync_api import expect, sync_playwright
+
+    base, root, job, _ = design_server
+    identity = job["job_id"]
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        browser_login(page, base)
+        with sqlite3.connect(root / "jobs.sqlite3") as connection:
+            original = connection.execute(
+                "SELECT status,stage,processed_documents FROM jobs WHERE id=?", (identity,)
+            ).fetchone()
+            documents = connection.execute(
+                "SELECT document_id,status FROM documents WHERE job_id=?", (identity,)
+            ).fetchall()
+            connection.execute(
+                "UPDATE jobs SET status='PROCESSING',stage='INFERENCE',processed_documents=0 WHERE id=?",
+                (identity,),
+            )
+            connection.execute(
+                "UPDATE documents SET status='PROCESSING' WHERE job_id=?", (identity,)
+            )
+        try:
+            progress = page.request.get(base + "/api/jobs/" + identity + "/progress").json()
+            assert progress["annotated_documents"] == 0 and progress["partial_results"]
+            page.goto(base + "/?lang=en")
+            link = page.locator(f'a[href$="/jobs/{identity}/viewer?lang=en"]')
+            expect(link).to_be_visible()
+            link.click()
+            expect(page.locator("#annotated-text")).not_to_be_empty()
+            expect(page.locator("#annotation-list button").first).to_be_visible()
+            response = page.goto(base + "/api/jobs/" + identity + "/viewer?lang=en")
+            assert response.status == 200
+            expect(page.locator("#annotated-text")).not_to_be_empty()
+        finally:
+            browser.close()
+            with sqlite3.connect(root / "jobs.sqlite3") as connection:
+                connection.execute(
+                    "UPDATE jobs SET status=?,stage=?,processed_documents=? WHERE id=?",
+                    (*original, identity),
+                )
+                connection.executemany(
+                    "UPDATE documents SET status=? WHERE job_id=? AND document_id=?",
+                    [(status, identity, document) for document, status in documents],
+                )

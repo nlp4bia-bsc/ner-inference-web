@@ -100,3 +100,13 @@ A 72-hour availability deadline starts at terminal completion, not while queued
 or processing. Cleanup removes originals, publications, intermediate files,
 exports and viewer caches. Native TextMeasurements/AnnotationMeasurements retain
 canonical aggregate statistics; no statistical inference runs on viewer requests.
+
+
+## 0.10.1 HTML entrypoint correction
+
+The 0.10 API/JavaScript changes did not remove an old HTML page gate on
+`annotated_documents > 0`. Both viewer HTML aliases now require only the same
+retained owner-accessible job as the document APIs. Dashboard viewer links follow
+that rule too. This fixes first-document previews without waiting for all models
+or normalization. No saved annotations or job resubmission is required to apply
+this HTML access fix; update/restart the web process and reopen the link.

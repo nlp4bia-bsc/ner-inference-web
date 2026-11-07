@@ -536,5 +536,6 @@
   "Matching mentions": "Finder match til omtaler",
   "Building lexical index": "Opbygger leksikalsk indeks",
   "Term-code pairs": "Term-kode-par",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etiketter stables kun, hvor annoteringer overlapper. Vælg en etiket for at vise dens linjer; vælg igen for at skjule dem."
 }

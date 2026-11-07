@@ -1,5 +1,40 @@
 /** Read-only span towers over one copy of the source. All offsets are code points. */
-import { color } from "./spans.js";
+import { color, lanes } from "./spans.js";
+/** Minimal interval coloring per overlap component; touching spans share a lane. */
+export function overlapLanes(rows) {
+  const result = new Map();
+  const sorted = [...rows].sort(
+    (a, b) => a.start - b.start || b.end - a.end || a.id.localeCompare(b.id),
+  );
+  let component = [],
+    end = -Infinity;
+  function flush() {
+    if (!component.length) return;
+    const colors = lanes(component),
+      sizes = new Map();
+    for (const row of component) {
+      const lane = colors.get(row.id);
+      sizes.set(lane, Math.max(sizes.get(lane) || 0, row.end - row.start));
+    }
+    // Prefer short mentions near the source without increasing overlap depth.
+    const ordered = [...sizes.keys()].sort(
+      (a, b) => sizes.get(a) - sizes.get(b) || b - a,
+    );
+    for (const row of component)
+      result.set(row.id, ordered.indexOf(colors.get(row.id)));
+    component = [];
+  }
+  for (const row of sorted) {
+    if (row.start >= end) {
+      flush();
+      end = -Infinity;
+    }
+    component.push(row);
+    end = Math.max(end, row.end);
+  }
+  flush();
+  return result;
+}
 export function layoutLines(text, width, measure) {
   const lines = [];
   let line = "",
@@ -47,6 +82,7 @@ export function drawTowers(
   selected,
   revealed = null,
 ) {
+  const scroll = { left: host.scrollLeft, top: host.scrollTop };
   const scale =
     parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
   const width = Math.max(180, (host.clientWidth - 24) / scale),
@@ -74,6 +110,7 @@ export function drawTowers(
   };
   const content = create("g", {});
   svg.append(content);
+  host.replaceChildren(svg);
   let y = 0,
     minX = 0,
     maxX = width;
@@ -97,40 +134,11 @@ export function drawTowers(
       // Draw whole graphemes while retaining the exact scientific offsets in a.
       const from = bounds.findLast((x) => x <= Math.max(left, a.start) - left),
         to = bounds.find((x) => x >= Math.min(right, a.end) - left);
-      const x1 = 8 + measure(points.slice(0, from).join("")),
-        x2 = 8 + measure(points.slice(0, to).join(""));
       const label = !labelled.has(a.id),
         caption = `${a.label} · ${a.id}`,
         labelWidth = Math.max(50, measureCaption(caption) + 16);
-      parts.push({ a, x1, x2, label, caption, labelWidth });
+      parts.push({ a, from, to, label, caption, labelWidth });
     }
-    parts.sort(
-      (a, b) =>
-        a.a.end - a.a.start - (b.a.end - b.a.start) ||
-        a.x1 - b.x1 ||
-        a.a.id.localeCompare(b.a.id),
-    );
-    const placed = [];
-    let laneCount = 0;
-    for (const p of parts) {
-      p.center = (p.x1 + p.x2) / 2;
-      p.labelX = p.center - p.labelWidth / 2;
-      const lo = Math.min(p.x1, p.label ? p.labelX : p.x1),
-        hi = Math.max(p.x2, p.label ? p.labelX + p.labelWidth : p.x2);
-      // Increasing span length gives every intersecting larger span a higher row.
-      p.lane = placed.reduce(
-        (lane, other) =>
-          lo < other.hi + 8 && hi + 8 > other.lo
-            ? Math.max(lane, other.lane + 1)
-            : lane,
-        0,
-      );
-      placed.push({ lo, hi, lane: p.lane });
-      laneCount = Math.max(laneCount, p.lane + 1);
-      minX = Math.min(minX, lo - 4);
-      maxX = Math.max(maxX, hi + 4);
-    }
-    const textY = y + laneCount * 40 + 28;
     const lineGroup = create("g", {
       class: "tower-line",
       "data-start": left,
@@ -138,24 +146,94 @@ export function drawTowers(
     });
     content.append(lineGroup);
     const brackets = create("g", { "aria-hidden": "true" });
-    // Put every connector behind all tags, including tags in lower lanes.
     lineGroup.append(brackets);
-    // Only these nodes hold source text; labels and brackets are separate controls.
-    const source = create(
-      "text",
-      {
-        x: 8,
-        y: textY,
-        class: "tower-source",
-        "data-start": left,
-        "data-end": right,
-        "xml:space": "preserve",
-      },
-      line.text.replace(/[\r\n]+$/, ""),
-    );
-    const ending = line.text.match(/[\r\n]+$/)?.[0];
-    if (ending) source.append(create("tspan", { display: "none" }, ending));
+    const source = create("text", {
+      x: 8,
+      y: 0,
+      class: "tower-source",
+      "data-start": left,
+      "data-end": right,
+      "xml:space": "preserve",
+    });
     lineGroup.append(source);
+    const gaps = new Map(),
+      visible = line.text.replace(/[\r\n]+$/, ""),
+      ending = line.text.slice(visible.length),
+      glyphs = Array.from(visible);
+    function sourceSpacing() {
+      source.replaceChildren();
+      const cuts = [
+        0,
+        ...[...gaps.keys()]
+          .filter((n) => n > 0 && n < glyphs.length)
+          .sort((a, b) => a - b),
+        glyphs.length,
+      ];
+      for (let i = 0; i < cuts.length - 1; i++) {
+        const value = glyphs.slice(cuts[i], cuts[i + 1]).join("");
+        source.append(
+          gaps.has(cuts[i])
+            ? create("tspan", { dx: gaps.get(cuts[i]) }, value)
+            : document.createTextNode(value),
+        );
+      }
+      if (ending) source.append(create("tspan", { display: "none" }, ending));
+      const count = source.getNumberOfChars();
+      function position(offset, last) {
+        const n = points
+          .slice(0, offset)
+          .join("")
+          .replace(/[\r\n]/g, "").length;
+        if (!count || (last && !n)) return 8;
+        if (last || n >= count)
+          return source.getEndPositionOfChar(Math.min(n, count) - 1).x;
+        return source.getStartPositionOfChar(n).x;
+      }
+      for (const p of parts) {
+        p.x1 = position(p.from, false);
+        p.x2 = position(p.to, true);
+        p.center = (p.x1 + p.x2) / 2;
+        p.labelX = p.center - p.labelWidth / 2;
+      }
+    }
+    const assignments = overlapLanes(parts.map((p) => p.a));
+    for (const p of parts) p.lane = assignments.get(p.a.id);
+    const laneCount = parts.reduce(
+      (count, p) => Math.max(count, p.lane + 1),
+      0,
+    );
+    sourceSpacing();
+    // Caption width never creates vertical levels. Make room horizontally between
+    // disjoint mentions with SVG offsets, keeping source text and labels intact.
+    for (let lane = 0; lane < laneCount; lane++) {
+      const tags = parts
+        .filter((p) => p.label && p.lane === lane)
+        .sort((a, b) => a.a.start - b.a.start);
+      for (let i = 1; i < tags.length; i++) {
+        const before = tags[i - 1],
+          after = tags[i];
+        const deficit = before.labelX + before.labelWidth + 8 - after.labelX;
+        if (
+          deficit > 0 &&
+          after.from >= before.to &&
+          after.from < glyphs.length
+        ) {
+          gaps.set(after.from, (gaps.get(after.from) || 0) + deficit);
+          sourceSpacing();
+        }
+      }
+    }
+    for (const p of parts) {
+      minX = Math.min(minX, p.x1 - 4, p.label ? p.labelX - 4 : p.x1);
+      maxX = Math.max(
+        maxX,
+        p.x2 + 4,
+        p.label ? p.labelX + p.labelWidth + 4 : p.x2,
+      );
+    }
+    maxX = Math.max(maxX, source.getBBox().x + source.getBBox().width + 8);
+    const textY = y + laneCount * 40 + 28;
+    source.setAttribute("y", textY);
     for (const p of parts) {
       const top = textY - 56 - p.lane * 40,
         railY = top + 30;
@@ -233,5 +311,6 @@ export function drawTowers(
   svg.setAttribute("width", totalWidth * scale);
   svg.setAttribute("height", y * scale);
   svg.setAttribute("viewBox", `0 0 ${totalWidth} ${y}`);
-  host.replaceChildren(svg);
+  host.scrollLeft = scroll.left;
+  host.scrollTop = scroll.top;
 }

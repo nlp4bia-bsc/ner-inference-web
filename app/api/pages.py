@@ -47,10 +47,6 @@ def router(service, templates):
     @api.get("/api/jobs/{token}/viewer", response_class=HTMLResponse, include_in_schema=False)
     def viewer(request: Request, token: str):
         service.available(token)
-        if not service.status(token)["progress"]["annotated_documents"]:
-            from app.errors import ServiceError
-
-            raise ServiceError("No annotated documents are available yet.", 409)
         return templates.TemplateResponse(
             request=request, name="viewer.html", context={"prefix": service.settings.app_prefix}
         )

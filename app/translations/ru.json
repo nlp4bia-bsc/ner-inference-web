@@ -536,5 +536,6 @@
   "Matching mentions": "Поиск совпадений упоминаний",
   "Building lexical index": "Построение лексического индекса",
   "Term-code pairs": "Пары термин–код",
-  "Bi-encoder": "Биэнкодер"
+  "Bi-encoder": "Биэнкодер",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Метки располагаются друг над другом только при перекрытии аннотаций. Выберите метку, чтобы показать её линии; выберите повторно, чтобы скрыть их."
 }

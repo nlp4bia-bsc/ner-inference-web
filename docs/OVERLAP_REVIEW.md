@@ -1,10 +1,46 @@
-# Annotation reader review · 0.5.3
+# Annotation reader review · 0.10.1
 
 The reader offers inline highlights and BRAT-inspired entity towers over the same
 original source and canonical annotations. Nested, crossing and equal-range
 mentions remain distinct. Inference, consolidation and export rules are unchanged.
 
 ## Findings and corrections
+
+### Actual overlap depth and unfinished viewer access (0.10.1)
+
+The old tower allocator treated overlapping caption boxes as overlapping entities
+and monotonically stacked later labels. That produced a staircase even for a
+sequence of independent symptoms or medications. Lanes now use actual source
+intervals and the minimum simultaneous overlap depth, independently per connected
+component. A one-level caption collision adds horizontal SVG spacing, preserving
+full labels, font size, entity centering and unchanged source text/offsets.
+
+Four viewport sizes check independent clinical symptoms/medications, one-character
+mentions with wide captions, two/three nested spans plus separate mentions, crossing
+chains, dense overlaps and Unicode. A deterministic 100-case interval-graph check
+confirms minimum coloring and no overlapping intervals in the same lane. Actual
+SVG start/end coordinates validate brackets after horizontal spacing. Selected-only
+marks, one label per mention, root font scaling, locale/color consistency and
+keyboard focus remain covered.
+
+The HTML viewer also retained a legacy completed-document guard: APIs exposed
+previews but `/jobs/{id}/viewer` and its API-prefixed alias returned 409 when no
+document was final. That guard is removed while login/ownership/expiry remain.
+Dashboard viewer links are now available for retained unfinished jobs. Regression
+checks reproduce a single pasted note after DISEASE and before SYMPTOM, with zero
+finished documents, in both root and `/ner` deployments. A real browser test also
+opens the actual HTML page with that backend state, without mocking the page gate.
+
+Synthetic captures (no confidential source data):
+
+![Independent symptoms and medications share one level per line](previews/overlaps/depth-one-1440.png)
+
+![Three nested mentions use three levels; separate mentions return to the base](previews/overlaps/depth-three-1440.png)
+
+The previous findings below are retained as historical design context. Their
+caption-width lane allocation and blanket length-order descriptions are superseded
+by the minimum-depth policy above.
+
 
 ### Reveal only the activated entity's marks (0.5.3)
 

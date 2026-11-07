@@ -536,5 +536,6 @@
   "Matching mentions": "Matchar omnämnanden",
   "Building lexical index": "Bygger lexikalt index",
   "Term-code pairs": "Term-kodpar",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etiketter staplas bara där annoteringar överlappar. Välj en etikett för att visa dess linjer; välj den igen för att dölja dem."
 }

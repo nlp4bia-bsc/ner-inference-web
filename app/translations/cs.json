@@ -536,5 +536,6 @@
   "Matching mentions": "Vyhledávání shod zmínek",
   "Building lexical index": "Vytváření lexikálního indexu",
   "Term-code pairs": "Dvojice termín–kód",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Štítky se skládají nad sebe pouze při překryvu anotací. Výběrem štítku zobrazíte jeho čáry; opětovným výběrem je skryjete."
 }

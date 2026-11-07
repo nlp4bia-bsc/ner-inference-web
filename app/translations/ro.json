@@ -536,5 +536,6 @@
   "Matching mentions": "Se caută potriviri pentru mențiuni",
   "Building lexical index": "Se construiește indexul lexical",
   "Term-code pairs": "Perechi termen-cod",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etichetele se stivuiesc doar unde adnotările se suprapun. Selectați o etichetă pentru a afișa liniile; selectați-o din nou pentru a le ascunde."
 }

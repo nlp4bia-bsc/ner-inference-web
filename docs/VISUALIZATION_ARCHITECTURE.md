@@ -86,7 +86,7 @@ v2 final-index/backfill path remains for valid old jobs.
 
 `spans.js` owns exact sweep segments, grapheme-preserving display segments and the
 shared canonical color map. `viewer.js` draws the inline DOM and selection/details.
-`towers.js` wraps the same original fragment, allocates collision lanes and draws
+`towers.js` wraps the same original fragment, allocates lanes from actual interval overlap (caption width only adds horizontal spacing) and draws
 one SVG tag per annotation with continuation brackets. All three modules are local
 and use safe text nodes, never document HTML. They consume the existing private
 annotation APIs and introduce no schema, inference or export changes. Expiry and

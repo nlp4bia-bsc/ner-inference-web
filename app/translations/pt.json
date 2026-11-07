@@ -536,5 +536,6 @@
   "Matching mentions": "A procurar correspondências das menções",
   "Building lexical index": "A construir índice lexical",
   "Term-code pairs": "Pares termo-código",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "As etiquetas só se empilham onde as anotações se sobrepõem. Selecione uma etiqueta para mostrar as linhas; selecione-a novamente para as ocultar."
 }

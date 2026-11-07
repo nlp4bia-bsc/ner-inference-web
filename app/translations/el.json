@@ -536,5 +536,6 @@
   "Matching mentions": "Αντιστοίχιση αναφορών",
   "Building lexical index": "Δημιουργία λεξικού ευρετηρίου",
   "Term-code pairs": "Ζεύγη όρου-κωδικού",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Οι ετικέτες στοιβάζονται μόνο όπου επικαλύπτονται οι επισημειώσεις. Επιλέξτε μια ετικέτα για να δείτε τις γραμμές της· επιλέξτε την ξανά για να τις κρύψετε."
 }

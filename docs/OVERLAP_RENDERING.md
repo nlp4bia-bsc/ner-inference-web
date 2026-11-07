@@ -42,14 +42,26 @@ to the exact fragment, including CRLF. Each annotation has one labeled, keyboard
 selectable chip, even across words/lines. Continuation brackets retain its ID and
 exact original offsets. Full surfaces/ranges/provenance are available in accessible
 names, tooltips and the inspector. Each source line owns an independent tower
-block. Spans are placed in ascending original range length: shorter intersecting
-mentions remain nearest the source and larger mentions stack above them. The
-allocator reserves both the range and its centered label, using 40px lanes.
+block. Vertical lanes are now determined only by actual half-open span overlap.
+Greedy interval coloring gives the minimum simultaneous depth within each overlap
+component; separate components reuse lane zero. Three disjoint mentions use one
+level, a pair uses two, a triple uses three. Label width never increases depth.
+Length-based lane ordering prefers shorter mentions near the source when compatible
+with this minimum coloring. For crossing chains, minimum overlap depth takes
+precedence: enforcing every longer mention above every shorter one can require
+more rows than the maximum actual overlap. Exact nesting/identical-boundary cases
+retain the smaller-below/larger-above order exercised by the geometry fixtures.
+Crowded labels on one lane receive horizontal space using SVG offsets between
+source fragments. These offsets add no source characters or repeated text, and
+they do not change scientific ranges, saved text or exports. Range positions use
+actual SVG character coordinates, including horizontal gaps. Tags remain centered
+on their entity; the source and label fonts are not squeezed. The reader scrolls
+horizontally when the required width exceeds its viewport.
 Labels are centered on `(visibleStartX + visibleEndX) / 2`, including spans near
 line edges. Short range caps stay within their own lane; no vertical connector
 passes through another label or through the text. Line blocks have separate
 vertical space, so towers never enter the preceding source line.
-Captions remain at 12px without SVG scaling or text compression. When a centered
+Captions remain at 12 source units, with the normal responsive root scale and no text compression. When a centered
 edge label extends beyond the source column, measured gutters expand the SVG
 and the reader scrolls horizontally instead of shifting or shrinking that label.
 SVG prefix geometry converts code points explicitly; split graphemes get whole

@@ -1,3 +1,59 @@
+# Latest: unfinished HTML viewer and actual-overlap towers (0.10.1)
+
+The pasted-text regression reproduced the reported 409 before the fix: **2 failed**
+(root and `/ner`), both with `No annotated documents are available yet.` The test
+captures HTML responses after DISEASE and before SYMPTOM while finished-document
+count remains zero. Both HTML aliases and the Dashboard link now work, including
+before the first annotation. Login, ownership, expiry and deletion checks remain.
+
+Executed 2026-11-07 in the existing CPU/Chromium verification environment:
+
+- Server suite: **260 passed, 112 browser cases skipped**, 95.10 seconds.
+- Complete CI browser regression list: **147 passed**, no skips, 445.26 seconds.
+  Includes all existing browser, ownership/revocation, document management,
+  live progress and viewer checks, with the new cases below included.
+- Actual backend unfinished-page browser regression: **2 passed**, 10.78 seconds,
+  using both base prefixes and without mocking the HTML page or backend counts.
+- Expanded overlap geometry suite: **32 passed**, 94.09 seconds, plus **4 clinical
+  disjoint cases passed**, 13.09 seconds. A final clinical/scroll check passes all
+  **4 cases**, 18.24 seconds. All use Chromium; axe runs where configured.
+- Four viewport widths: 320, 390, 1440 and 3840. Geometry checks cover 1/2/3-level
+  examples, short crowded labels, independent clinical symptoms/medications,
+  crossing chains, dense overlaps, Unicode/graphemes and line wrapping. A seeded
+  100-graph property check validates minimum simultaneous overlap depth and
+  conflict-free lanes. No minimum height is inferred from caption widths.
+- Checks verify source reconstruction, exact glyph-coordinate range endpoints,
+  centered readable tags, no collisions, no font compression, one caption per
+  entity, selected-only range marks, keyboard focus, scroll preservation,
+  responsive font scale and language-independent colors. The hint is translated
+  in all sixteen UI languages.
+- Ruff lint/format and Bandit `-ll` pass. Wheel/sdist 0.10.1 builds pass and exclude
+  confidential dictionary/storage/Parquet/FAISS/ZIP/SQLite data. No dependencies,
+  database migrations or inference changes are introduced. Docker was not rebuilt.
+
+Commands:
+
+```bash
+python3 -m pytest -q
+python3 -m pytest -q tests/test_live_viewer_access.py
+BROWSER_TESTS=1 python3 -m pytest -q tests/test_model_progress_browser.py -k real_html
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 python3 -m pytest -q tests/test_overlap_readability.py
+python3 -m ruff check app scripts tests
+python3 -m ruff format --check app scripts tests
+python3 -m bandit -r app scripts -ll
+python3 -m build --no-isolation
+```
+
+The old tests exercised APIs and a viewer backed by an already completed fixture;
+they did not exercise the actual HTML route with zero finished documents. The new
+server/browser regressions close that gap. Synthetic captures and design details:
+[overlap review](OVERLAP_REVIEW.md). Source text, saved annotations and exports
+are unchanged by visual spacing. For crossing chains, minimum actual depth takes
+precedence over imposing a global short-to-long order that could require extra
+rows. No clinical accuracy or production performance claim is made.
+
+---
+
 # Latest: durable document/model/category phases (0.10.0)
 
 Executed 2026-11-07 in the existing CPU verification environment (Python 3.12.14,

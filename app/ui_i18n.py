@@ -326,6 +326,7 @@ Your jobs are visible only to your account.|Tus trabajos solo son visibles para 
 Reading mode|Modo de lectura|Mode de lectura
 Inline highlights|Resaltados inline|Ressaltats inline
 Entity towers|Torres de entidades|Torres d’entitats
+Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.|Las etiquetas se apilan solo cuando las anotaciones se solapan. Pulsa una etiqueta para mostrar sus líneas; vuelve a pulsarla para ocultarlas.|Les etiquetes s’apilen només quan les anotacions se solapen. Prem una etiqueta per mostrar-ne les línies; torna-la a prémer per amagar-les.
 Select a label to show its span lines. Select it again to hide them. Smaller mentions appear closest to the text.|Pulsa una etiqueta para mostrar las líneas de su entidad. Púlsala de nuevo para ocultarlas. Las menciones más cortas aparecen más cerca del texto.|Prem una etiqueta per mostrar les línies de la seva entitat. Prem-la de nou per amagar-les. Les mencions més curtes apareixen més a prop del text.
 Smaller mentions appear closest to the text. Scroll horizontally to see labels at the edges.|Las menciones más cortas aparecen más cerca del texto. Desplázate horizontalmente para ver las etiquetas de los extremos.|Les mencions més curtes apareixen més a prop del text. Desplaça’t horitzontalment per veure les etiquetes dels extrems.
 Offsets use [start, end): end is exclusive.|Los offsets usan [inicio, fin): el final es exclusivo.|Els offsets usen [inici, final): el final és exclusiu.

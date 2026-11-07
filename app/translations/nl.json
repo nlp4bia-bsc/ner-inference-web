@@ -536,5 +536,6 @@
   "Matching mentions": "Vermeldingen vergelijken",
   "Building lexical index": "Lexicale index opbouwen",
   "Term-code pairs": "Term-codeparen",
-  "Bi-encoder": "Bi-encoder"
+  "Bi-encoder": "Bi-encoder",
+  "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Labels worden alleen gestapeld waar annotaties overlappen. Selecteer een label om de lijnen te tonen; selecteer het opnieuw om ze te verbergen."
 }

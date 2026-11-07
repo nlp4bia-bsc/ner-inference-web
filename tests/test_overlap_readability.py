@@ -21,7 +21,52 @@ WORD = "adenocarcinoma was observed."
 DENSE = "Severe chronic kidney disease was reported in a synthetic document."
 UNICODE = "Cafe\u0301, 漢字 and 👩\u200d🔬.\r\nSynthetic text."
 CLINICAL = "Enfermedad renal crónica avanzada. Trasplante renal con rechazo agudo."
+DISJOINT_CLINICAL = "Artralgias, tos irritativa, afonía, cefalea, astenia y náuseas.\nTratada con amoxicilina y paracetamol."
 CASES = [
+    (
+        "clinical-disjoint",
+        DISJOINT_CLINICAL,
+        [
+            (label, DISJOINT_CLINICAL.index(term), DISJOINT_CLINICAL.index(term) + len(term))
+            for label, term in [
+                *[
+                    ("SYMPTOM", term)
+                    for term in (
+                        "Artralgias",
+                        "tos irritativa",
+                        "afonía",
+                        "cefalea",
+                        "astenia",
+                        "náuseas",
+                    )
+                ],
+                ("MEDICATION", "amoxicilina"),
+                ("MEDICATION", "paracetamol"),
+            ]
+        ],
+    ),
+    ("separate-short", "a b c", [("DISEASE", 0, 1), ("SYMPTOM", 2, 3), ("PROCEDURE", 4, 5)]),
+    (
+        "pair-plus-separated",
+        "abcdef g h",
+        [("DISEASE", 0, 6), ("SYMPTOM", 1, 4), ("MEDICATION", 7, 8), ("PROCEDURE", 9, 10)],
+    ),
+    (
+        "triple-plus-separated",
+        "abcdef g h",
+        [
+            ("DISEASE", 0, 6),
+            ("SYMPTOM", 1, 5),
+            ("PROCEDURE", 2, 4),
+            ("MEDICATION", 7, 8),
+            ("PROCEDURE", 9, 10),
+        ],
+    ),
+    (
+        "crossing-chain",
+        "abcdefghij k",
+        [("DISEASE", 0, 3), ("SYMPTOM", 2, 6), ("PROCEDURE", 5, 10), ("MEDICATION", 11, 12)],
+    ),
     ("inside-word", WORD, [("DISEASE", 0, 14), ("SYMPTOM", 0, 5), ("PROCEDURE", 5, 14)]),
     (
         "clinical-synthetic",
@@ -213,9 +258,9 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             const bounds=[0];for(const g of new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text))bounds.push(bounds.at(-1)+Array.from(g.segment).length);
             const from=bounds.findLast(x=>x<=Math.max(left,Number(path.dataset.start))-left);
             const to=bounds.find(x=>x>=Math.min(Number(line.dataset.end),Number(path.dataset.end))-left);
-            const position=n=>{const size=points.slice(0,n).join('').replace(/[\\r\\n]/g,'').length;return 8+(size?line.getSubStringLength(0,size):0);};
+            const position=(n,last=false)=>{const size=points.slice(0,n).join('').replace(/[\\r\\n]/g,'').length,count=line.getNumberOfChars();if(!count||(last&&!size))return 8;if(last||size>=count)return line.getEndPositionOfChar(Math.min(size,count)-1).x;return line.getStartPositionOfChar(size).x;};
             const first=path.getPointAtLength(0),last=path.getPointAtLength(path.getTotalLength());
-            return {start:Math.abs(first.x-position(from)),end:Math.abs(last.x-Math.max(position(from)+1,position(to)))};
+            return {start:Math.abs(first.x-position(from)),end:Math.abs(last.x-Math.max(position(from)+1,position(to,true)))};
           });
           const paths=[...document.querySelectorAll('.tower-bracket')];
           const lineBoxes=[...document.querySelectorAll('.tower-line')].map(n=>n.getBoundingClientRect());
@@ -229,11 +274,22 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
           });
           const orderErrors=[...document.querySelectorAll('.tower-line')].flatMap(line=>{
             const spans=[...line.querySelectorAll('.tower-bracket')];
-            return spans.flatMap(a=>spans.filter(b=>Number(a.dataset.end)-Number(a.dataset.start)<Number(b.dataset.end)-Number(b.dataset.start) && Number(a.dataset.start)<Number(b.dataset.end) && Number(a.dataset.end)>Number(b.dataset.start) && a.getBoundingClientRect().y<=b.getBoundingClientRect().y));
+            return spans.flatMap(a=>spans.filter(b=>Number(a.dataset.end)-Number(a.dataset.start)<Number(b.dataset.end)-Number(b.dataset.start) && Number(b.dataset.start)<=Number(a.dataset.start) && Number(b.dataset.end)>=Number(a.dataset.end) && a.getBoundingClientRect().y<=b.getBoundingClientRect().y));
           }).length;
           return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,errors,centers,orderErrors};
         }"""
         geometry = page.evaluate(geometry_script)
+        depth_errors = page.evaluate("""() => [...document.querySelectorAll('.tower-line')].flatMap(line=>{
+          const paths=[...line.querySelectorAll('.tower-bracket')];
+          if(!paths.length)return [];
+          const spans=paths.map(p=>({start:Math.max(Number(line.dataset.start),Number(p.dataset.start)),end:Math.min(Number(line.dataset.end),Number(p.dataset.end)),lane:Number(p.dataset.lane)}));
+          const events=spans.flatMap(p=>[[p.start,1],[p.end,-1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+          let active=0,peak=0;for(const [offset,delta] of events){active+=delta;peak=Math.max(peak,active);}
+          const lanes=Math.max(...spans.map(p=>p.lane))+1;
+          const conflicts=spans.some((a,i)=>spans.slice(i+1).some(b=>a.start<b.end&&a.end>b.start&&a.lane===b.lane));
+          return lanes===peak&&!conflicts?[]:[{lanes,peak,conflicts}];
+        })""")
+        assert not depth_errors, depth_errors
         assert geometry["collisions"] == 0
         assert not geometry["textCollisions"]
         assert not geometry["lineCollisions"]
@@ -294,14 +350,38 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             ), resized
             assert page.evaluate("document.activeElement.dataset.annotation") == focused
             assert page.evaluate(visible_lines_script) == [focused]
+        if name == "clinical-disjoint" and width == 1440:
+            previous_scroll = page.evaluate("""() => {
+              const host=document.querySelector('#tower-view');
+              host.scrollLeft=(host.scrollWidth-host.clientWidth)/2;
+              const box=host.getBoundingClientRect();
+              [...host.querySelectorAll('.tower-annotation')].find(node=>{
+                const tag=node.getBoundingClientRect();return tag.left>=box.left&&tag.right<=box.right;
+              }).focus({preventScroll:true});
+              return host.scrollLeft;
+            }""")
+            page.keyboard.press("Enter")
+            assert (
+                abs(page.locator("#tower-view").evaluate("node=>node.scrollLeft") - previous_scroll)
+                < 1
+            )
         if name == "inside-word" and width == 390:
             page.locator('.tower-annotation[data-annotation="T3"]').focus()
             page.keyboard.press("Space")
             contracts = page.evaluate("""async () => {
               const {color,ENTITY_COLORS}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','spans.js'));
-              const {layoutLines}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','towers.js'));
+              const {layoutLines,overlapLanes}=await import(document.querySelector('script[src$="viewer.js"]').src.replace('viewer.js','towers.js'));
               const samples=['a  b\\r\\n\\nCafe\\u0301 👩‍🔬漢字','a'.repeat(100),'','last character.'];
-              return {categories:Object.keys(ENTITY_COLORS), colors:Object.values(ENTITY_COLORS), same:color('DISEASE')===color('ENFERMEDAD')&&color('disease')===color('MALALTIA')&&color('MEDICATION')===color('DRUG'), unknown:color('NEW_LABEL'),
+              let seed=7123;
+              const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+              const minimalDepth=Array.from({length:100},()=>{
+                const rows=Array.from({length:30},(_,i)=>{const start=Math.floor(random()*100);return {id:String(i),start,end:start+1+Math.floor(random()*20)};});
+                const assigned=overlapLanes(rows);
+                const events=rows.flatMap(r=>[[r.start,1],[r.end,-1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+                let active=0,peak=0;for(const [offset,delta] of events){active+=delta;peak=Math.max(peak,active);}
+                return Math.max(...assigned.values())+1===peak && rows.every((a,i)=>rows.slice(i+1).every(b=>a.start>=b.end||a.end<=b.start||assigned.get(a.id)!==assigned.get(b.id)));
+              }).every(Boolean);
+              return {minimalDepth, categories:Object.keys(ENTITY_COLORS), colors:Object.values(ENTITY_COLORS), same:color('DISEASE')===color('ENFERMEDAD')&&color('disease')===color('MALALTIA')&&color('MEDICATION')===color('DRUG'), unknown:color('NEW_LABEL'),
                 roundtrips:samples.every(s=>[1,4,12].every(w=>{
                   const lines=layoutLines(s,w,x=>Array.from(x).length);
                   return lines.map(l=>l.text).join('')===s&&lines.every((l,i)=>l.end-l.start===Array.from(l.text).length&&l.start===(i?lines[i-1].end:0));
@@ -315,7 +395,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                 key for language in catalog["languages"].values() for key in language["entities"]
             }
             assert set(contracts["categories"]) == categories
-            assert contracts["same"] and contracts["roundtrips"]
+            assert contracts["same"] and contracts["roundtrips"] and contracts["minimalDepth"]
             assert contracts["unknown"].startswith("entity-custom-")
             raw_labels = {}
             for model in catalog["models"].values():
@@ -393,5 +473,8 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         page.locator('[data-reader-mode="inline"]').click()
         page.select_option("#auth-locale", "es")
         assert page.locator("#annotated-text").text_content() == text
-        assert "Anotaciones solapadas:" in page.locator("#overlap-summary").text_content()
+        if any(a[1] < b[2] and a[2] > b[1] for i, a in enumerate(ranges) for b in ranges[i + 1 :]):
+            assert "Anotaciones solapadas:" in page.locator("#overlap-summary").text_content()
+        else:
+            assert page.locator("#overlap-summary").is_hidden()
         browser.close()
