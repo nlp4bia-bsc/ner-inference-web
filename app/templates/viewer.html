@@ -99,7 +99,7 @@
         </div>
         <div class="model-filter-control"><label for="model-filter">{{ copy('Filter by model') }}</label><select id="model-filter"><option value="">{{ u('All models') }}</option></select></div><div class="legend" id="legend" role="group" aria-label="{{ u('Entity type filters') }}" data-i18n-aria-label="Entity type filters"></div>
         <p id="inline-hint" class="hint reader-hint">{{ copy("A double underline marks text with multiple annotations. Select a highlight to inspect their exact offsets.") }}</p>
-        <p id="tower-hint" class="hint reader-hint" hidden>{{ copy("Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.") }}</p>
+        <p id="tower-hint" class="hint reader-hint" hidden>{{ copy("Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.") }}</p>
         <p id="overlap-summary" class="hint reader-hint" aria-live="polite" hidden></p>
         <div class="reader-modes" role="group" aria-label="{{ u('Reading mode') }}" data-i18n-aria-label="Reading mode"><button type="button" class="secondary" data-reader-mode="inline" aria-pressed="true">{{ copy('Inline highlights') }}</button><button type="button" class="secondary" data-reader-mode="towers" aria-pressed="false">{{ copy('Entity towers') }}</button></div>
         <div id="tower-view" class="tower-view" role="group" aria-label="{{ u('Original annotated document') }}" data-i18n-aria-label="Original annotated document" hidden></div>

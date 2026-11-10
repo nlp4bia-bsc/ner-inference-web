@@ -1221,12 +1221,15 @@ fieldset {
 .tower-bracket {
   stroke: var(--entity-color);
   stroke-width: 1.5;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
 }
-.tower-bracket.revealed {
-  opacity: 1;
+.tower-bracket.selected {
   stroke-width: 2.5;
+}
+.tower-coverage-band {
+  fill: var(--entity-color);
+  pointer-events: none;
 }
 .tower-tag {
   fill: var(--entity-color);

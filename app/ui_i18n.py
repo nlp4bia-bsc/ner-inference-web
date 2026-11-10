@@ -4,6 +4,7 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.|Las llaves de colores y las bandas de solapamiento están siempre visibles. Pulsa una etiqueta para consultar su anotación.|Les claus de colors i les bandes de solapament són sempre visibles. Prem una etiqueta per consultar-ne l’anotació.
 Job name|Nombre del trabajo|Nom del treball
 Specify language|Especifica el idioma|Especifica la llengua
 For Other, only multilingual models are available; the specified language is recorded but not used yet.|Para Other, solo están disponibles los modelos multilingües; el idioma indicado se guarda, pero todavía no se utiliza.|Per a Other, només estan disponibles els models multilingües; la llengua indicada es desa, però encara no s’utilitza.

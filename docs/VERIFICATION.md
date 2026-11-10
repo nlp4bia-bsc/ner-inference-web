@@ -1,4 +1,36 @@
-# Latest: Named jobs, Other language and persistent tower colors (0.10.3)
+# Latest: Persistent span brackets and overlap color bands (0.10.4)
+
+Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q`: **272 passed, 115 browser cases
+  skipped**, 99.56 seconds in the final run.
+- `BROWSER_TESTS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js
+  SCREENSHOT_OUTPUT=work/persistent-span-previews /tmp/ner-ui-env/bin/python -m
+  pytest -q tests/test_overlap_readability.py`: **36 passed**, 138.88 seconds.
+  Checks cover permanent bracket visibility, minimum overlap depth, unchanged
+  source text/offsets, label centering, wrapped spans, nested/crossing overlaps,
+  Unicode, keyboard selection, resize/scroll and accessibility at 320, 390, 1440
+  and 3840 pixels. The shared band is checked against hand-specified intervals;
+  its rectangles must not collide with source glyphs, captions or brackets.
+- Viewer, form and live model-progress regressions plus repeated pair/triple
+  overlap cases: **31 passed, 28 deselected**, 92.24 seconds, using
+  `tests/test_viewer_browser.py tests/test_ui_v3.py tests/test_model_progress_browser.py
+  tests/test_overlap_readability.py -k 'not test_overlaps_do_not_insert_text_or_change_character_layout
+  or pair-plus-separated or triple-plus-separated'` with browser/axe enabled.
+  Eight overlap cases are repeated in this group; this is not a second full matrix.
+- Reviewed synthetic screenshots, including nested clinical-label spans at
+  1440 pixels. All colored brackets remain visible before/after selection, and
+  shared bands show multiple category colors over their exact common portions.
+  Hint text is translated in all sixteen interface languages.
+- An initial parallel run encountered a concurrent-admission 403 assertion and
+  two color assertions during SVG redraw. The final full server/matrix runs above
+  pass. Color checks now query and measure the active SVG in one browser evaluation
+  instead of holding nodes across a possible ResizeObserver replacement.
+- Ruff lint/format, Prettier, Bandit medium/high checks and wheel/sdist build pass.
+  Private data remain excluded from packages. One existing pytest plugin
+  deprecation warning is present. No dependency or deployment configuration changes.
+
+# Previous: Named jobs, Other language and persistent tower colors (0.10.3)
 
 Executed 2026-11-10, Python 3.12, Torch 2.15.0+cpu, Transformers 5.22.1,
 ner_lab pinned to `8640d4797b081a5f6b66d9b45c11269542a79a26`, system Chromium:

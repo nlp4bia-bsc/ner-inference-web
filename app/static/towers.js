@@ -1,5 +1,5 @@
 /** Read-only span towers over one copy of the source. All offsets are code points. */
-import { color, lanes } from "./spans.js";
+import { color, lanes, segments } from "./spans.js";
 /** Minimal interval coloring per overlap component; touching spans share a lane. */
 export function overlapLanes(rows) {
   const result = new Map();
@@ -73,15 +73,7 @@ export function layoutLines(text, width, measure) {
   if (line || !lines.length) emit(line);
   return lines;
 }
-export function drawTowers(
-  host,
-  text,
-  start,
-  rows,
-  onSelect,
-  selected,
-  revealed = null,
-) {
+export function drawTowers(host, text, start, rows, onSelect, selected) {
   const scroll = { left: host.scrollLeft, top: host.scrollTop };
   const scale =
     parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
@@ -145,6 +137,11 @@ export function drawTowers(
       "data-end": right,
     });
     content.append(lineGroup);
+    const coverage = create("g", {
+      class: "tower-coverage",
+      "aria-hidden": "true",
+    });
+    lineGroup.append(coverage);
     const brackets = create("g", { "aria-hidden": "true" });
     lineGroup.append(brackets);
     const source = create("text", {
@@ -178,23 +175,23 @@ export function drawTowers(
         );
       }
       if (ending) source.append(create("tspan", { display: "none" }, ending));
-      const count = source.getNumberOfChars();
-      function position(offset, last) {
-        const n = points
-          .slice(0, offset)
-          .join("")
-          .replace(/[\r\n]/g, "").length;
-        if (!count || (last && !n)) return 8;
-        if (last || n >= count)
-          return source.getEndPositionOfChar(Math.min(n, count) - 1).x;
-        return source.getStartPositionOfChar(n).x;
-      }
       for (const p of parts) {
         p.x1 = position(p.from, false);
         p.x2 = position(p.to, true);
         p.center = (p.x1 + p.x2) / 2;
         p.labelX = p.center - p.labelWidth / 2;
       }
+    }
+    function position(offset, last) {
+      const count = source.getNumberOfChars();
+      const n = points
+        .slice(0, offset)
+        .join("")
+        .replace(/[\r\n]/g, "").length;
+      if (!count || (last && !n)) return 8;
+      if (last || n >= count)
+        return source.getEndPositionOfChar(Math.min(n, count) - 1).x;
+      return source.getStartPositionOfChar(n).x;
     }
     const assignments = overlapLanes(parts.map((p) => p.a));
     for (const p of parts) p.lane = assignments.get(p.a.id);
@@ -232,15 +229,55 @@ export function drawTowers(
       );
     }
     maxX = Math.max(maxX, source.getBBox().x + source.getBBox().width + 8);
-    const textY = y + laneCount * 40 + 28;
+    const ascent = Math.max(0, -source.getBBox().y),
+      bandGap = parts.length ? Math.max(0, ascent - 10) : 0,
+      textY = y + laneCount * 40 + 28 + bandGap;
     source.setAttribute("y", textY);
+    const byId = new Map(parts.map((p) => [p.a.id, p.a]));
+    // Partition the visible source at annotation boundaries. Each intersection
+    // shares one fixed-height band between its category colors, without hiding
+    // a category behind another or adding copies of the original text.
+    for (const segment of segments(
+      visible,
+      0,
+      parts.map((p) => ({
+        id: p.a.id,
+        start: p.from,
+        end: p.to,
+      })),
+    )) {
+      if (!segment.ids.length) continue;
+      const colors = [
+        ...new Set(segment.ids.map((id) => color(byId.get(id).label))),
+      ].sort();
+      const band = create("g", {
+        class: "tower-coverage-segment",
+        "data-start": left + segment.start,
+        "data-end": left + segment.end,
+        "data-annotations": segment.ids.join(" "),
+      });
+      const x = position(segment.start, false),
+        width = Math.max(1, position(segment.end, true) - x);
+      colors.forEach((category, index) =>
+        band.append(
+          create("rect", {
+            class: `tower-coverage-band ${category}`,
+            x,
+            y: textY - ascent - 8 + (index * 6) / colors.length,
+            width,
+            height: 6 / colors.length,
+          }),
+        ),
+      );
+      coverage.append(band);
+    }
     for (const p of parts) {
-      const top = textY - 56 - p.lane * 40,
+      const top = textY - bandGap - 56 - p.lane * 40,
         railY = top + 30;
       brackets.append(
         create("path", {
           d: `M ${p.x1} ${railY + 4} V ${railY} H ${Math.max(p.x1 + 1, p.x2)} V ${railY + 4}`,
-          class: `tower-bracket ${color(p.a.label)}${revealed === p.a.id ? " revealed" : ""}`,
+          class: `tower-bracket ${color(p.a.label)}${selected === p.a.id ? " selected" : ""}`,
           "data-annotation": p.a.id,
           "data-start": p.a.start,
           "data-end": p.a.end,
@@ -259,7 +296,7 @@ export function drawTowers(
         role: "button",
         tabindex: 0,
         "aria-label": `${p.a.label}: ${p.a.text} [${p.a.start}, ${p.a.end})`,
-        "aria-pressed": String(revealed === p.a.id),
+        "aria-pressed": String(selected === p.a.id),
       });
       group.append(
         create(

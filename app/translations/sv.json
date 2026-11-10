@@ -543,5 +543,6 @@
   "Find similar terms when no exact match is available.": "Hitta liknande termer när det inte finns en exakt matchning.",
   "Job name": "Jobbnamn",
   "Specify language": "Ange språk",
-  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "För Annat är endast flerspråkiga modeller tillgängliga; det angivna språket sparas men används ännu inte."
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "För Annat är endast flerspråkiga modeller tillgängliga; det angivna språket sparas men används ännu inte.",
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Färgade klamrar och överlappningsband är alltid synliga. Välj en etikett för att visa dess annotering."
 }

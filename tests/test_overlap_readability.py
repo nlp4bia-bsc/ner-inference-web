@@ -242,12 +242,18 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         page.locator('[data-reader-mode="towers"]').click()
         page.wait_for_selector(".tower-caption")
         visible_lines_script = """() => [...new Set([...document.querySelectorAll('.tower-bracket')]
-          .filter(n=>Number(getComputedStyle(n).opacity)>0).map(n=>n.dataset.annotation))]"""
-        # Previous inline selection must not reveal rails before a label is activated.
-        assert page.evaluate(visible_lines_script) == []
+          .filter(n=>Number(getComputedStyle(n).opacity)>0).map(n=>n.dataset.annotation))].sort()"""
+        # Every annotation has a colored bracket before any tower is activated.
+        expected_visible = sorted(
+            page.locator(".tower-annotation").evaluate_all(
+                "nodes=>nodes.map(n=>n.dataset.annotation)"
+            )
+        )
+        assert page.evaluate(visible_lines_script) == expected_visible
         assert page.locator(".tower-caption").count() == len(ranges)
         # Every tower keeps its category color before selection, including custom labels.
-        colors = page.locator(".tower-annotation").evaluate_all("""nodes => nodes.map(node => {
+        # Query and measure in one evaluation: ResizeObserver can replace the SVG.
+        colors = page.evaluate("""() => [...document.querySelectorAll('.tower-annotation')].map(node => {
           const style = getComputedStyle(node), tag = node.querySelector('.tower-tag');
           const probe = document.createElementNS('http://www.w3.org/2000/svg','rect');
           probe.style.fill = style.getPropertyValue('--entity-color'); node.append(probe);
@@ -258,7 +264,20 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert all(
             row["fill"] == row["expected"] and row["caption"] == "rgb(255, 255, 255)"
             for row in colors
-        )
+        ), colors
+        if name == "pair-plus-separated":
+            partitions = page.locator(".tower-coverage-segment").evaluate_all("""nodes => nodes.map(n => ({
+              start:Number(n.dataset.start),end:Number(n.dataset.end),
+              ids:n.dataset.annotations.split(' ').sort(), colors:n.children.length,
+              height:[...n.children].reduce((sum,rect)=>sum+Number(rect.getAttribute('height')),0)
+            }))""")
+            assert partitions == [
+                {"start": 0, "end": 1, "ids": ["T1"], "colors": 1, "height": 6},
+                {"start": 1, "end": 4, "ids": ["T1", "T2"], "colors": 2, "height": 6},
+                {"start": 4, "end": 6, "ids": ["T1"], "colors": 1, "height": 6},
+                {"start": 7, "end": 8, "ids": ["T3"], "colors": 1, "height": 6},
+                {"start": 9, "end": 10, "ids": ["T4"], "colors": 1, "height": 6},
+            ]
         assert page.locator(".tower-annotation").count() == len(ranges)
         assert "".join(page.locator(".tower-source").all_text_contents()) == text
         geometry_script = """() => {
@@ -276,6 +295,8 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             return {start:Math.abs(first.x-position(from)),end:Math.abs(last.x-Math.max(position(from)+1,position(to,true)))};
           });
           const paths=[...document.querySelectorAll('.tower-bracket')];
+          const bands=[...document.querySelectorAll('.tower-coverage-band')].map(n=>n.getBoundingClientRect());
+          const bandCollisions=bands.some(a=>[...tags,...sources,...paths.map(p=>p.getBoundingClientRect())].some(b=>a.left<b.right-.1&&a.right>b.left+.1&&a.top<b.bottom-.1&&a.bottom>b.top+.1));
           const lineBoxes=[...document.querySelectorAll('.tower-line')].map(n=>n.getBoundingClientRect());
           const lineCollisions=lineBoxes.some((a,i)=>lineBoxes.slice(i+1).some(b=>a.top<b.bottom && a.bottom>b.top));
           const railCollisions=paths.some(p=>{const a=p.getBoundingClientRect();return [...tags,...sources].some(b=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top);});
@@ -289,7 +310,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             const spans=[...line.querySelectorAll('.tower-bracket')];
             return spans.flatMap(a=>spans.filter(b=>Number(a.dataset.end)-Number(a.dataset.start)<Number(b.dataset.end)-Number(b.dataset.start) && Number(b.dataset.start)<=Number(a.dataset.start) && Number(b.dataset.end)>=Number(a.dataset.end) && a.getBoundingClientRect().y<=b.getBoundingClientRect().y));
           }).length;
-          return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,errors,centers,orderErrors};
+          return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,bandCollisions,errors,centers,orderErrors};
         }"""
         geometry = page.evaluate(geometry_script)
         depth_errors = page.evaluate("""() => [...document.querySelectorAll('.tower-line')].flatMap(line=>{
@@ -307,6 +328,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert not geometry["textCollisions"]
         assert not geometry["lineCollisions"]
         assert not geometry["railCollisions"]
+        assert not geometry["bandCollisions"]
         assert geometry["orderErrors"] == 0
         assert all(
             row["error"] < 1
@@ -325,7 +347,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             page.keyboard.press("Enter")
             assert identity in page.locator("#annotation-details").text_content()
             assert page.evaluate("document.activeElement.dataset.annotation") == identity
-            assert page.evaluate(visible_lines_script) == [identity]
+            assert page.evaluate(visible_lines_script) == expected_visible
             assert (
                 page.locator(f'.tower-annotation[data-annotation="{identity}"]').get_attribute(
                     "aria-pressed"
@@ -334,9 +356,9 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             )
         active_tag = page.locator(f'.tower-annotation[data-annotation="{identity}"]')
         active_tag.click()
-        assert page.evaluate(visible_lines_script) == []
+        assert page.evaluate(visible_lines_script) == expected_visible
         active_tag.click()
-        assert page.evaluate(visible_lines_script) == [identity]
+        assert page.evaluate(visible_lines_script) == expected_visible
         # Each line remains independent after reflow; fonts and labels never shrink.
         for next_width in (width + 80, width):
             old_svg = page.locator("#tower-view > svg").element_handle()
@@ -351,6 +373,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                     "railCollisions",
                     "collisions",
                     "textCollisions",
+                    "bandCollisions",
                     "orderErrors",
                 )
             ), resized
@@ -362,7 +385,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                 for row in resized["centers"]
             ), resized
             assert page.evaluate("document.activeElement.dataset.annotation") == focused
-            assert page.evaluate(visible_lines_script) == [focused]
+            assert page.evaluate(visible_lines_script) == expected_visible
         if name == "clinical-disjoint" and width == 1440:
             previous_scroll = page.evaluate("""() => {
               const host=document.querySelector('#tower-view');
@@ -482,7 +505,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             page.locator(".reading-panel").screenshot(path=str(path / f"towers-{name}-{width}.png"))
         page.locator('[data-reader-mode="inline"]').click()
         page.locator('[data-reader-mode="towers"]').click()
-        assert page.evaluate(visible_lines_script) == []
+        assert page.evaluate(visible_lines_script) == expected_visible
         page.locator('[data-reader-mode="inline"]').click()
         page.select_option("#auth-locale", "es")
         assert page.locator("#annotated-text").text_content() == text

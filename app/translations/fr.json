@@ -543,5 +543,6 @@
   "Find similar terms when no exact match is available.": "Rechercher des termes similaires lorsqu’aucune correspondance exacte n’est disponible.",
   "Job name": "Nom du travail",
   "Specify language": "Précisez la langue",
-  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pour Autre, seuls les modèles multilingues sont disponibles ; la langue indiquée est enregistrée mais pas encore utilisée."
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pour Autre, seuls les modèles multilingues sont disponibles ; la langue indiquée est enregistrée mais pas encore utilisée.",
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Les crochets colorés et les bandes de chevauchement sont toujours visibles. Sélectionnez une étiquette pour consulter son annotation."
 }

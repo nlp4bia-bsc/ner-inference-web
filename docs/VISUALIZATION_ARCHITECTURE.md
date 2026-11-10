@@ -66,14 +66,27 @@ benchmark real models before increasing corpus/document limits. Accessibility is
 supported by labeled controls, focus states, text labels, keyboard-selectable
 regions and an alternate mention list; no formal WCAG certification is claimed.
 
-## Tower caption colors (0.10.3)
+## Persistent tower coverage (0.10.4)
 
 Tower captions always use a solid canonical category color with white text,
 including unselected annotations, translated category aliases and unknown labels
 (deterministic fallback palette). All palette backgrounds have at least 4.5:1
-contrast with white text. Selecting a label reveals only that annotation's span
-lines; hiding those lines never removes its caption color. This preserves category
-identification in screenshots without adding levels or duplicating source text.
+contrast with white text. Every span bracket is visible without selection, in the
+same category color as its caption. Selecting a label opens its inspector and
+thickens only its bracket; repeated selection never hides the other spans.
+
+A six-pixel band above the source is partitioned at annotation boundaries,
+using the existing interval sweep and measured SVG glyph positions. Each covered
+part shares its height equally among its distinct active category colors. Nested
+mentions of the same category share one color; their separate brackets and labels
+remain visible. Unannotated gaps have no band. Wrapped continuations retain their
+brackets and color bands with one caption per annotation. Display boundaries
+respect graphemes; original scientific offsets and exported text are unchanged.
+
+The band reserves space above the actual source glyph box, including emoji and
+combining accents, without changing the minimal overlap-based lane allocation.
+This preserves category identification and overlapping boundaries in screenshots
+without adding levels or duplicating source text.
 
 ## V3 live publications
 
