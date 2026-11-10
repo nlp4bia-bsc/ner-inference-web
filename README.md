@@ -10,6 +10,11 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.10.6 restores the requested color families consistently in labels and
+shared brackets: light pink for DISEASE, orange for SYMPTOM, blue for PROCEDURE
+and green for MEDICATION. Secondary categories use more separated colors.
+Caption text switches to dark ink on light fills to preserve readability.
+
 Version 0.10.5 draws one shared bracket immediately above each connected annotated
 region. Its thin stroke alternates category colors only over actual overlaps;
 separate regions keep separate brackets. There are no source bands or brackets

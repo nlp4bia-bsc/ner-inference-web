@@ -258,12 +258,14 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
           const style = getComputedStyle(node), tag = node.querySelector('.tower-tag');
           const probe = document.createElementNS('http://www.w3.org/2000/svg','rect');
           probe.style.fill = style.getPropertyValue('--entity-color'); node.append(probe);
-          const expected = getComputedStyle(probe).fill; probe.remove();
+          const expected = getComputedStyle(probe).fill;
+          probe.style.fill = style.getPropertyValue('--entity-text').trim() || '#ffffff';
+          const expectedCaption = getComputedStyle(probe).fill; probe.remove();
           return {fill:getComputedStyle(tag).fill, expected,
-            caption:getComputedStyle(node.querySelector('.tower-caption')).fill};
+            caption:getComputedStyle(node.querySelector('.tower-caption')).fill,expectedCaption};
         })""")
         assert all(
-            row["fill"] == row["expected"] and row["caption"] == "rgb(255, 255, 255)"
+            row["fill"] == row["expected"] and row["caption"] == row["expectedCaption"]
             for row in colors
         ), colors
         assert page.locator(".tower-coverage-band, .tower-coverage-segment").count() == 0
@@ -279,16 +281,16 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                     "start": 0,
                     "end": 6,
                     "ids": ["T1", "T2"],
-                    "colors": ["rgb(155, 69, 28)", "rgb(181, 45, 67)"],
+                    "colors": ["rgb(239, 141, 28)", "rgb(240, 166, 198)"],
                 },
-                {"start": 7, "end": 8, "ids": ["T3"], "colors": ["rgb(37, 84, 164)"]},
-                {"start": 9, "end": 10, "ids": ["T4"], "colors": ["rgb(22, 112, 78)"]},
+                {"start": 7, "end": 8, "ids": ["T3"], "colors": ["rgb(8, 125, 63)"]},
+                {"start": 9, "end": 10, "ids": ["T4"], "colors": ["rgb(21, 91, 197)"]},
             ]
             overlap_colors = page.evaluate("""() => {
               const path=document.querySelector('.tower-bracket[data-start="0"]'),source=path.closest('.tower-line').querySelector('.tower-source');
               const gradient=document.getElementById(path.getAttribute('stroke').match(/#([^)]*)/)[1]),x1=Number(gradient.getAttribute('x1')),width=Number(gradient.getAttribute('x2'))-x1;
               const low=(source.getStartPositionOfChar(1).x-x1)/width,high=(source.getEndPositionOfChar(3).x-x1)/width;
-              const orange=[...gradient.children].filter(n=>getComputedStyle(n).stopColor==='rgb(155, 69, 28)'),tolerance=.25/width;
+              const orange=[...gradient.children].filter(n=>getComputedStyle(n).stopColor==='rgb(239, 141, 28)'),tolerance=.25/width;
               // Final SVG scaling can round glyph positions by a fraction of a pixel.
               return {count:orange.length,low,high,width,offsets:orange.map(n=>Number(n.getAttribute('offset'))),outside:orange.filter(n=>Number(n.getAttribute('offset'))<low-tolerance||Number(n.getAttribute('offset'))>high+tolerance).length};
             }""")

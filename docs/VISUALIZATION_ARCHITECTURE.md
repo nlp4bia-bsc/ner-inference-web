@@ -87,8 +87,12 @@ caption per annotation. Bracket endpoints follow measured source glyphs and
 respect graphemes; the scientific offsets and exported text are unchanged.
 Space above the actual glyph box keeps brackets clear of accents and emoji.
 Selecting a caption opens its inspector and emphasizes that caption; shared
-brackets remain visible. Captions retain the canonical category palette and white
-text (at least 4.5:1 contrast), consistent across interface/document languages.
+brackets remain visible. Captions and shared brackets use the same canonical category color, consistent
+across interface/document languages. Version 0.10.6 preserves the user's reference
+families: DISEASE light pink, SYMPTOM orange, PROCEDURE blue and MEDICATION green.
+Caption text is dark on light fills and white on dark fills (at least 4.5:1
+contrast). Inline fills remain pale variants of the same color family. All current
+colors and measurements are listed in OVERLAP_REVIEW.md.
 
 ## V3 live publications
 

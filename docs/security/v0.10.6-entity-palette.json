@@ -1,0 +1,167 @@
+{
+  "scope": "13 registered categories; original requested color families. Palette distances describe normal-vision OKLab separation, not color-vision-deficiency certification. Labels/IDs remain available.",
+  "anchors": {
+    "DISEASE": "light pink",
+    "SYMPTOM": "orange",
+    "PROCEDURE": "blue",
+    "MEDICATION": "green"
+  },
+  "old_minimum_oklab_distance": 0.040845,
+  "new_minimum_oklab_distance": 0.128207,
+  "closest_pairs": [
+    {
+      "distance": 0.128207,
+      "categories": [
+        "procedure",
+        "location"
+      ]
+    },
+    {
+      "distance": 0.139702,
+      "categories": [
+        "symptom",
+        "temporality"
+      ]
+    },
+    {
+      "distance": 0.139714,
+      "categories": [
+        "anonymization",
+        "human"
+      ]
+    },
+    {
+      "distance": 0.140236,
+      "categories": [
+        "negation",
+        "situation"
+      ]
+    },
+    {
+      "distance": 0.140901,
+      "categories": [
+        "medication",
+        "human"
+      ]
+    }
+  ],
+  "palettes": [
+    {
+      "category": "disease",
+      "color": "#f0a6c6",
+      "inline_background": "#ffe8ed",
+      "caption_text": "#142031",
+      "caption_contrast": 8.57,
+      "inline_text_contrast": 12.17,
+      "stroke_white_contrast": 1.913
+    },
+    {
+      "category": "symptom",
+      "color": "#ef8d1c",
+      "inline_background": "#ffedde",
+      "caption_text": "#142031",
+      "caption_contrast": 6.635,
+      "inline_text_contrast": 12.442,
+      "stroke_white_contrast": 2.472
+    },
+    {
+      "category": "procedure",
+      "color": "#155bc5",
+      "inline_background": "#e8efff",
+      "caption_text": "#ffffff",
+      "caption_contrast": 6.298,
+      "inline_text_contrast": 12.308,
+      "stroke_white_contrast": 6.298
+    },
+    {
+      "category": "medication",
+      "color": "#087d3f",
+      "inline_background": "#def5e9",
+      "caption_text": "#ffffff",
+      "caption_contrast": 5.23,
+      "inline_text_contrast": 12.39,
+      "stroke_white_contrast": 5.23
+    },
+    {
+      "category": "anonymization",
+      "color": "#282828",
+      "inline_background": "#eeeeee",
+      "caption_text": "#ffffff",
+      "caption_contrast": 14.743,
+      "inline_text_contrast": 12.226,
+      "stroke_white_contrast": 14.743
+    },
+    {
+      "category": "event",
+      "color": "#981ab8",
+      "inline_background": "#f2e0f8",
+      "caption_text": "#ffffff",
+      "caption_contrast": 6.614,
+      "inline_text_contrast": 11.343,
+      "stroke_white_contrast": 6.614
+    },
+    {
+      "category": "human",
+      "color": "#005342",
+      "inline_background": "#dcefe9",
+      "caption_text": "#ffffff",
+      "caption_contrast": 9.067,
+      "inline_text_contrast": 11.865,
+      "stroke_white_contrast": 9.067
+    },
+    {
+      "category": "location",
+      "color": "#007f9e",
+      "inline_background": "#ddf3f8",
+      "caption_text": "#ffffff",
+      "caption_contrast": 4.636,
+      "inline_text_contrast": 12.327,
+      "stroke_white_contrast": 4.636
+    },
+    {
+      "category": "negation",
+      "color": "#bd1c26",
+      "inline_background": "#fce3e6",
+      "caption_text": "#ffffff",
+      "caption_contrast": 6.254,
+      "inline_text_contrast": 11.665,
+      "stroke_white_contrast": 6.254
+    },
+    {
+      "category": "profession",
+      "color": "#343477",
+      "inline_background": "#e5e5f5",
+      "caption_text": "#ffffff",
+      "caption_contrast": 11.032,
+      "inline_text_contrast": 11.387,
+      "stroke_white_contrast": 11.032
+    },
+    {
+      "category": "situation",
+      "color": "#83164b",
+      "inline_background": "#f7e1eb",
+      "caption_text": "#ffffff",
+      "caption_contrast": 9.627,
+      "inline_text_contrast": 11.432,
+      "stroke_white_contrast": 9.627
+    },
+    {
+      "category": "species",
+      "color": "#8491d2",
+      "inline_background": "#eaedfa",
+      "caption_text": "#142031",
+      "caption_contrast": 5.436,
+      "inline_text_contrast": 12.153,
+      "stroke_white_contrast": 3.016
+    },
+    {
+      "category": "temporality",
+      "color": "#9c9600",
+      "inline_background": "#f6f3d5",
+      "caption_text": "#142031",
+      "caption_contrast": 5.291,
+      "inline_text_contrast": 12.631,
+      "stroke_white_contrast": 3.099
+    }
+  ]
+}

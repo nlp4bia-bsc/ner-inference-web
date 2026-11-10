@@ -1216,10 +1216,10 @@ fieldset {
     SFMono-Regular,
     Consolas,
     monospace;
-  fill: #fff;
+  fill: var(--entity-text, #fff);
 }
 .tower-bracket {
-  stroke-width: 1.5;
+  stroke-width: 2;
   opacity: 1;
   pointer-events: none;
 }
@@ -1239,56 +1239,69 @@ fieldset {
   stroke-width: 2.5;
 }
 .entity-disease {
-  --entity-color: #b52d43;
+  --entity-color: #f0a6c6;
   --entity-bg: #ffe8ed;
+  --entity-text: #142031;
 }
 .entity-symptom {
-  --entity-color: #9b451c;
+  --entity-color: #ef8d1c;
   --entity-bg: #ffedde;
+  --entity-text: #142031;
 }
 .entity-medication {
-  --entity-color: #2554a4;
-  --entity-bg: #e8efff;
+  --entity-color: #087d3f;
+  --entity-bg: #def5e9;
+  --entity-text: #ffffff;
 }
 .entity-procedure {
-  --entity-color: #16704e;
-  --entity-bg: #def5e9;
+  --entity-color: #155bc5;
+  --entity-bg: #e8efff;
+  --entity-text: #ffffff;
 }
 .entity-anonymization {
-  --entity-color: #5b556e;
-  --entity-bg: #f0edf6;
+  --entity-color: #282828;
+  --entity-bg: #eeeeee;
+  --entity-text: #ffffff;
 }
 .entity-event {
-  --entity-color: #8c456f;
-  --entity-bg: #fae8f3;
+  --entity-color: #981ab8;
+  --entity-bg: #f2e0f8;
+  --entity-text: #ffffff;
 }
 .entity-human {
-  --entity-color: #805326;
-  --entity-bg: #faefde;
+  --entity-color: #005342;
+  --entity-bg: #dcefe9;
+  --entity-text: #ffffff;
 }
 .entity-location {
-  --entity-color: #066b79;
-  --entity-bg: #dff4f8;
+  --entity-color: #007f9e;
+  --entity-bg: #ddf3f8;
+  --entity-text: #ffffff;
 }
 .entity-negation {
-  --entity-color: #75429e;
-  --entity-bg: #f1e7fb;
+  --entity-color: #bd1c26;
+  --entity-bg: #fce3e6;
+  --entity-text: #ffffff;
 }
 .entity-profession {
-  --entity-color: #5b6424;
-  --entity-bg: #f1f4dc;
+  --entity-color: #343477;
+  --entity-bg: #e5e5f5;
+  --entity-text: #ffffff;
 }
 .entity-situation {
-  --entity-color: #7c4750;
-  --entity-bg: #f8ecef;
+  --entity-color: #83164b;
+  --entity-bg: #f7e1eb;
+  --entity-text: #ffffff;
 }
 .entity-species {
-  --entity-color: #32634e;
-  --entity-bg: #e6f2e8;
+  --entity-color: #8491d2;
+  --entity-bg: #eaedfa;
+  --entity-text: #142031;
 }
 .entity-temporality {
-  --entity-color: #735c14;
-  --entity-bg: #fff4ce;
+  --entity-color: #9c9600;
+  --entity-bg: #f6f3d5;
+  --entity-text: #142031;
 }
 .entity-other {
   --entity-color: #53647a;

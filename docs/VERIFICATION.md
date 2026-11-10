@@ -1,4 +1,30 @@
-# Latest: One shared multicolor bracket above each annotated region (0.10.5)
+# Latest: Reference color families and separated secondary categories (0.10.6)
+
+Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
+
+- `BROWSER_TESTS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js
+  SCREENSHOT_OUTPUT=work/restored-palette-previews /tmp/ner-ui-env/bin/python -m
+  pytest -q tests/test_overlap_readability.py`: **36 passed**, 114.85 seconds.
+  Checks include identical caption/bracket colors for the four reference categories,
+  correct shared-gradient colors and limits, keyboard selection, source conservation,
+  minimal overlap depth and geometry at 320, 390, 1440 and 3840 pixels.
+- `/tmp/ner-ui-env/bin/python -m pytest -q tests/test_design_v5.py
+  tests/test_viewer_api.py tests/test_locale_catalogs.py`: **13 passed**, 4.94 seconds.
+  The full server and CI browser suites were not repeated for this CSS palette change.
+- DISEASE is light pink, SYMPTOM orange, PROCEDURE blue and MEDICATION green.
+  Captions and shared brackets use the identical canonical color. Dark caption text
+  on light fills preserves these requested colors instead of darkening the fill.
+  Reviewed the four-category synthetic screenshot at 1440 pixels.
+- [Current palette measurements](security/v0.10.6-entity-palette.json) cover all
+  thirteen registered categories: minimum caption-text contrast **4.636:1**, minimum
+  inline text contrast **11.343:1**. Minimum normal-vision pairwise OKLab distance
+  increased from **0.040845** to **0.128207**. This does not certify accessibility for
+  every color-vision deficiency; category names and IDs remain available.
+- Ruff lint/format, Prettier, Bandit medium/high checks and wheel/sdist build pass.
+  Private data remain excluded from packages. One existing pytest plugin
+  deprecation warning is present. No runtime dependency or model changes.
+
+# Previous: One shared multicolor bracket above each annotated region (0.10.5)
 
 Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
 

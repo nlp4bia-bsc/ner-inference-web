@@ -125,28 +125,36 @@ hash bucket. All 13 current catalog categories have explicit colors; known alias
 share their canonical color. Unknown labels use24 stable extension palettes. This is a
 consistent project convention, not a universal biomedical NER color standard.
 
-| Category | Border / pale background |
+| Category | Label and bracket / inline background / caption text |
 |---|---|
-| DISEASE | `#b52d43` / `#ffe8ed` |
-| SYMPTOM | `#9b451c` / `#ffedde` |
-| MEDICATION | `#2554a4` / `#e8efff` |
-| PROCEDURE | `#16704e` / `#def5e9` |
-| ANONYMIZATION | `#5b556e` / `#f0edf6` |
-| EVENT | `#8c456f` / `#fae8f3` |
-| HUMAN | `#805326` / `#faefde` |
-| LOCATION | `#066b79` / `#dff4f8` |
-| NEGATION_UNCERTAINTY | `#75429e` / `#f1e7fb` |
-| PROFESSION | `#5b6424` / `#f1f4dc` |
-| SITUATION | `#7c4750` / `#f8ecef` |
-| SPECIES | `#32634e` / `#e6f2e8` |
-| TEMPORALITY | `#735c14` / `#fff4ce` |
+| DISEASE | `#f0a6c6` / `#ffe8ed` / `#142031` |
+| SYMPTOM | `#ef8d1c` / `#ffedde` / `#142031` |
+| PROCEDURE | `#155bc5` / `#e8efff` / `#ffffff` |
+| MEDICATION | `#087d3f` / `#def5e9` / `#ffffff` |
+| ANONYMIZATION | `#282828` / `#eeeeee` / `#ffffff` |
+| EVENT | `#981ab8` / `#f2e0f8` / `#ffffff` |
+| HUMAN | `#005342` / `#dcefe9` / `#ffffff` |
+| LOCATION | `#007f9e` / `#ddf3f8` / `#ffffff` |
+| NEGATION_UNCERTAINTY | `#bd1c26` / `#fce3e6` / `#ffffff` |
+| PROFESSION | `#343477` / `#e5e5f5` / `#ffffff` |
+| SITUATION | `#83164b` / `#f7e1eb` / `#ffffff` |
+| SPECIES | `#8491d2` / `#eaedfa` / `#142031` |
+| TEMPORALITY | `#9c9600` / `#f6f3d5` / `#142031` |
 
 Labels, IDs, outlines, mention lists and the technical table supply redundant
 cues; color alone is not used to identify a span.
 
-The [static palette measurements](security/v5.3-entity-palette.json) record main
-text, mention metadata and border contrast above4.5:1 for all37 active palettes.
-These bounded CSS checks supplement browser scans, not conformance certification.
+The [current palette measurements](security/v0.10.6-entity-palette.json) record
+caption and inline text contrast above 4.5:1. DISEASE stays light pink, SYMPTOM
+orange, PROCEDURE blue and MEDICATION green, with the identical solid color in
+tower captions and the shared bracket. Inline backgrounds retain their pale
+family colors. Light caption fills use dark text instead of white.
+
+The minimum pairwise OKLab distance across the thirteen registered category
+colors increased from 0.040845 to 0.128207. This is a bounded normal-vision palette
+comparison, not a claim of color-vision-deficiency accessibility or WCAG certification.
+The [older measurements](security/v5.3-entity-palette.json) describe the previous
+palette, not the current colors.
 
 ## Captures
 
