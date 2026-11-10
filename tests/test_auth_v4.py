@@ -162,7 +162,7 @@ def test_every_private_route_is_denied_without_session(settings, prefix):
         assert "models_available" not in client.get(prefix + "/ready").json()
 
 
-def test_two_real_users_and_admin_never_read_each_others_jobs(auth_app):
+def test_two_real_users_and_admin_without_mfa_remain_isolated(auth_app):
     with ExitStack() as stack:
         a = stack.enter_context(TestClient(auth_app, client=("10.1.1.1", 1)))
         b = stack.enter_context(TestClient(auth_app, client=("10.1.1.2", 1)))
@@ -188,12 +188,12 @@ def test_two_real_users_and_admin_never_read_each_others_jobs(auth_app):
                     assert "abc" not in bad.text
             assert accepted["job_id"] not in other.get("/api/my/jobs").text
             assert accepted["job_id"] not in other.get("/").text
-        # A session-level ADMIN role still cannot bypass job ownership.
+        # An administrator without MFA still cannot access another owner's project.
         with auth_app.state.db.connect() as c:
             c.execute(
                 "UPDATE users SET system_role='ADMIN' WHERE email=?", ("researcher_b@example.test",)
             )
-        assert b.get("/api/jobs/" + a.get("/api/my/jobs").json()[0]["id"]).status_code == 404
+        assert b.get("/api/jobs/" + a.get("/api/my/jobs").json()[0]["id"]).status_code == 403
 
 
 def test_mass_assignment_profile_and_owner_forgery(auth_app):

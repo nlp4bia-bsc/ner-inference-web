@@ -107,8 +107,10 @@ def test_wrong_service_origin_is_reported_before_upload_admission(settings, capl
 
 
 @pytest.mark.skipif(os.environ.get("BROWSER_TESTS") != "1", reason="Actual Chromium opt-in")
-def test_browser_zip_csrf_failure_preserves_selection_and_can_retry(simple_server):
+def test_browser_zip_csrf_failure_preserves_selection_and_can_retry(simple_server, tmp_path):
     from playwright.sync_api import expect, sync_playwright
+
+    from tests.auth_helpers import approve_fixture_database
 
     base = simple_server
     with sync_playwright() as p:
@@ -130,6 +132,7 @@ def test_browser_zip_csrf_failure_preserves_selection_and_can_retry(simple_serve
             ).status
             == 200
         )
+        approve_fixture_database(tmp_path / "private", "zip@example.org")
         assert (
             page.request.post(
                 base + "/api/auth/login",

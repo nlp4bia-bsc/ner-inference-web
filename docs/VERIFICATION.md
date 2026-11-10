@@ -1,4 +1,78 @@
-# Latest: Reference color families and separated secondary categories (0.10.6)
+# Latest: Administrator approval, all projects, erasure and custom quotas (0.11.0)
+
+Executed 2026-11-10 with Python3.12.14, FastAPI0.141.1, Starlette1.6.0,
+Pydantic2.13.4, torch2.15.0+cpu, Transformers5.22.1, Playwright1.62.0 and
+local Chromium on Linux. All accounts/documents/checkpoints are synthetic fixtures.
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q`: **300 passed, 121 browser cases
+  skipped**, 109.45 seconds. Browser cases require the explicit opt-in below.
+- Full current CI browser command below: **156 passed, one synchronization
+  assertion failed**, 540.90 seconds, with Chromium and axe WCAG2/2.1/2.2 AA checks.
+  The failing case read computed style from an SVG node detached by live redraw,
+  yielding an empty string. Its color check now retries against the current node
+  and requires the exact reference pink for both owner and administrator. The
+  entire affected six-case matrix then passed (below). All selected cases have
+  passing evidence across these runs; there was no third full run. The full
+  selection contains **121 browser cases and 36 overlapping server cases**.
+- After the final route enum, audit-target links and responsive changes,
+  `tests/test_admin_workflows.py tests/test_auth_migrations.py
+  tests/test_locale_catalogs.py`: **31 passed**, 27.86 seconds.
+- Dedicated final administrator browser matrix `tests/test_admin_browser.py`:
+  **6 passed**, 48.60 seconds, using root and `/ner`, 320/390/1440-pixel screens,
+  actual signup/review/login/MFA/quota/project/account actions, reflow and axe.
+  Reviewed desktop/mobile screenshots; the entity color is identical in owner
+  and administrator viewers. Existing overlap/palette browser cases also pass
+  in the full command at 320,390,1440 and3840 pixels.
+- An initial full browser run exposed **8 old fixture assumptions** that public
+  signup allowed immediate login (149 passed,8 failed). Synthetic account setup
+  now explicitly approves those fixtures; no production bypass/test HTTP route
+  was added. The new review tests use the real administrator endpoints/UI.
+  Corrected auth matrix: **10 passed**, 67.14 seconds; corrected upload/model/
+  localhost matrix: **38 passed**, 37.61 seconds. The subsequent full run includes
+  those corrections; its only failure was the detached-node test assertion above. Counts are not summed across reruns.
+
+```bash
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 \
+  /tmp/ner-ui-env/bin/python -m pytest -q \
+  tests/test_browser.py tests/test_viewer_browser.py tests/test_ui_v3.py \
+  tests/test_auth_browser.py tests/test_design_browser.py \
+  tests/test_overlap_readability.py tests/test_simple_registration.py \
+  tests/test_on_demand_models.py tests/test_submission_security.py \
+  tests/test_local_origins.py tests/test_document_management_browser.py \
+  tests/test_model_progress_browser.py tests/test_admin_browser.py
+```
+
+Security cases exercise pending/rejected login and stale-session denial,
+verification independent of approval, request-profile visibility/escaping,
+CSRF/origin/mass-assignment rejection, direct/encoded administration URLs,
+ordinary-user isolation, authorized cross-owner reads/exports/erasure, role
+revocation while a destructive action waits on a lock, account deletion during
+upload, quota lowering during upload, zero/reset/increased quotas, last-admin
+protection, interrupted erasure/retry and late-worker fencing. Migration tests
+construct the previous schema and preserve existing administrator/MFA/session
+records; injected DDL failure rolls back and a retry succeeds.
+
+- `python -m scripts.inventory_routes`: **96 method/route pairs** recorded in
+  [route inventory](ROUTE_SECURITY_V4.md).
+- Ruff lint and format: **pass**, 137 Python files formatted.
+- Prettier check for modified authored JS/CSS: **pass**.
+- `work/release-tools/bin/python -m bandit -r app scripts -ll`: **no medium/high
+  findings** (seven low-severity findings; not a clean-all-levels claim).
+- `work/release-tools/bin/python -m build --no-isolation --outdir
+  /tmp/ner-admin-build`: wheel and sdist **pass**. Archive inspection confirms the
+  new erasure module/project template are packaged and private `gazetteers/`,
+  `storage/`, `work/` and `.env` are excluded. `git diff --check` passes.
+- One existing AnyIO pytest-plugin deprecation warning is present. Docker images
+  and GPU execution were **not rebuilt/retested** for this account/UI release;
+  container/proxy configuration and dependency locks are unchanged. No new SMTP,
+  real clinical checkpoint accuracy, confidential terminology or production TLS
+  delivery claim is made by these tests.
+
+See [administration](ADMINISTRATION.md), [current security review](security/admin-approval-review.md)
+and the updated privacy/terms drafts. Older V4 reports remain historical evidence
+for the previous owner-only administrator policy.
+
+# Previous: Reference color families and separated secondary categories (0.10.6)
 
 Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
 

@@ -154,23 +154,28 @@ class Database:
 
                 require_live(c, {"id": owner_user_id, "session_hash": owner_session_hash}, self.s)
                 owner = c.execute(
-                    "SELECT account_status,email_verified_at,access_tier FROM users WHERE id=?",
+                    "SELECT account_status,email_verified_at,access_tier,approval_status,document_limit FROM users WHERE id=?",
                     (owner_user_id,),
                 ).fetchone()
                 if (
                     not owner
                     or owner["account_status"] != "ACTIVE"
+                    or owner["approval_status"] != "APPROVED"
                     or (self.s.require_email_verification and not owner["email_verified_at"])
                 ):
                     raise ServiceError("authentication_required", 401)
-                maximum = document_limit(owner["access_tier"], self.s.max_documents_per_job)
+                maximum = document_limit(
+                    owner["access_tier"],
+                    self.s.max_documents_per_job,
+                    override=owner["document_limit"],
+                )
                 if maximum is not None and count > maximum:
                     raise ServiceError(f"A request may contain at most {maximum} documents.", 422)
                 from app.services.document_management import retained_count
 
-                retained_limit = {"STANDARD": 100, "EXTENDED": 1000, "UNLIMITED": None}[
-                    owner["access_tier"]
-                ]
+                retained_limit = document_limit(
+                    owner["access_tier"], override=owner["document_limit"]
+                )
                 if (
                     retained_limit is not None
                     and retained_count(c, owner_user_id, now) + count > retained_limit

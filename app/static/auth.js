@@ -106,7 +106,7 @@ export function applyLocale(language = currentLocale()) {
     );
   for (const node of document.querySelectorAll("[data-retention-hours]"))
     node.textContent = t(
-      "Results remain available for {count} hours after processing. Only your account can access them.",
+      "Results remain available for {count} hours after processing. You and authorized administrators can access them.",
       { count: number(Number(node.dataset.retentionHours)) },
     );
   localLinks(language);
@@ -216,7 +216,10 @@ for (const form of document.querySelectorAll("form[data-confirm]"))
     const button = event.submitter;
     const dialog = openDialog(
       t("Confirm change"),
-      t("Review this administrative action before applying it."),
+      t(
+        form.dataset.confirmMessage ||
+          "Review this administrative action before applying it.",
+      ),
       [
         {
           label: t("Confirm"),
@@ -232,9 +235,9 @@ for (const form of document.querySelectorAll("form[data-confirm]"))
     detail.className = "confirm-details";
     detail.textContent = [
       form.dataset.identity,
-      ...[...form.querySelectorAll("select")].map(
-        (select) =>
-          `${select.closest("label")?.querySelector("[data-i18n]")?.textContent || ""}: ${select.selectedOptions[0].textContent}`,
+      ...[...form.querySelectorAll('select,input[type="number"]')].map(
+        (field) =>
+          `${field.labels?.[0]?.querySelector("[data-i18n]")?.textContent || ""}: ${field.tagName === "SELECT" ? field.selectedOptions[0].textContent : field.value || t("Use tier limit")}`,
       ),
     ]
       .filter(Boolean)

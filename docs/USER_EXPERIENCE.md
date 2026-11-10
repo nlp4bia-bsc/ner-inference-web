@@ -125,11 +125,17 @@ is not immediate deletion. Administrators can see the request in audit history;
 actual identity verification, handling and legal/account retention decisions need
 an institutional procedure. It does not change job TTL or silently send email.
 
-Administration is visible only to ADMIN and still requires verified email and an
-MFA-verified session on the server. Search, account/tier/state/role changes, session
-revocation, aggregate metrics and audit history use the existing authorization.
+Administration is visible only to approved active ADMIN and requires an
+MFA-verified live session on the server. Email verification applies only if opted in.
+Search, approval/decline, account/tier/state/role/numeric-quota changes, session
+revocation, erasure and audit history use backend authorization.
 Sensitive actions require a visual confirmation; cancelling leaves the account
-unchanged. Administrators gain no access to other owners' clinical documents.
+unchanged. Since0.11, All projects explicitly permits approved administrators
+with MFA to inspect and erase other owners' documents. User management supports
+account deletion with owned data. The administrator workspace has a pale mauve
+theme on every page, preserving the scientific entity palette. New registrations
+are access requests and cannot sign in until approved. Existing accounts/admins
+are preserved automatically. See [Administration](ADMINISTRATION.md).
 
 ## Institutional notices and remaining operations
 

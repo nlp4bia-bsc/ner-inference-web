@@ -1,5 +1,11 @@
 # Account, MFA and deployment recovery
 
+> Current policy: email verification is optional (disabled by default). New access
+> requests require administrator approval regardless of email verification. The
+> SMTP guidance below applies only when those mail-based workflows are enabled.
+> Existing administrator accounts/MFA survive migration6; see
+> [Administration](ADMINISTRATION.md) for approval, quota and account erasure.
+
 Use the public forgot/reset flow for a forgotten password. Its response is generic,
 tokens expire after30min and are one-use. Reset revokes all sessions and requires a
 new login; it does not remove MFA or prove email possession for another purpose.

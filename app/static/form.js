@@ -203,7 +203,7 @@ form.addEventListener("submit", async (event) => {
     const accepted = showDialog(
       t("Request accepted"),
       t(
-        "Your documents have entered the persistent queue. Only your account can access this job.",
+        "Your documents are queued. You and authorized administrators can access this job.",
       ),
       [
         {

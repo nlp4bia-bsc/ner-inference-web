@@ -2,9 +2,9 @@
 
 Every work/catalog/document/progress/download route requires a live server
 session. Private APIs/OpenAPI return401 without it; HTML redirects303 to login.
-Job IDs and legacy tokens are locators only: every route requires strict ownership
-(without an ADMIN bypass) and an unexpired job. Unknown/foreign/unowned resources
-return404. Name/email come from the account, never from a claimed owner field.
+Job IDs and legacy tokens are locators only: project routes require the owner or
+an active approved ADMIN with MFA, and unexpired content. Ordinary users receive
+404 for foreign/unowned resources; direct URLs do not grant authority. Name/email come from the account, never from a claimed owner field.
 Public exceptions and the complete method/policy matrix are in ROUTE_SECURITY_V4.md.
 
 Auth APIs accept JSON (public actions also require csrf_token from the login/register
@@ -14,7 +14,7 @@ are HttpOnly/Secure in production and must not be copied into browser storage.
 
 | API | Purpose |
 |---|---|
-| POST /api/auth/register | name/email/institution/profession/Other/password/confirmation/legal acceptance; USER+STANDARD only |
+| POST /api/auth/register | name/email/institution/profession/Other/password/confirmation/legal acceptance; PENDING USER+STANDARD; no session until administrator approval |
 | POST /api/auth/login | email/password and optional TOTP/recovery code; fresh session cookie |
 | POST /api/auth/verify-email, /resend-verification | one-use token confirmation / generic email request |
 | POST /api/auth/forgot-password, /reset-password | generic email request / token+new password+confirmation |
@@ -24,9 +24,19 @@ are HttpOnly/Secure in production and must not be copied into browser storage.
 | GET/PATCH /api/profile | own allowlisted profile; roles/tiers/email/owner cannot be edited |
 | GET /api/my/jobs?offset=0 | paged owner-only history, maximum100 rows |
 | POST /api/auth/mfa/start, /mfa/confirm | password-protected TOTP enrollment, one-time recovery-code display |
-| GET /api/admin/users, /metrics, /audit | verified ADMIN+MFA account management/aggregate audit, no clinical access |
-| PATCH /api/admin/users/{identity} | allowlisted role/tier/state change, atomically audited |
+| GET /api/admin/users, /metrics, /audit | approved active ADMIN+MFA account management/aggregate audit |
+| PATCH /api/admin/users/{identity} | allowlisted role/tier/state/document_limit change, atomically audited |
 | POST /api/admin/users/{identity}/revoke-sessions | audited real revocation |
+| POST /api/admin/users/{identity}/review | decision APPROVED or REJECTED; PENDING only; audited |
+| DELETE /api/admin/users/{identity} | confirm_email required; revoke and erase account and owned projects; audited |
+| GET /api/admin/projects?q=&offset=0 | all owners; safe metadata; maximum100 rows |
+| DELETE /api/admin/projects/{identity} | erase a project and release its owner's retained quota; empty body |
+
+`document_limit` is an integer >=0, or null to restore the tier default. It applies
+to retained documents across jobs and is checked fresh at admission. No documents
+are removed by lowering it. Email verification, when opted in, does not replace
+administrator approval. See [administration](ADMINISTRATION.md) for erasure and
+last-admin protections. `/admin` and `/admin/projects` provide guarded HTML forms.
 
 Field contracts and defaults are in AUTHENTICATION_V4.md. Malformed fields never
 echo passwords or tokens; extra privilege/profile fields are rejected. Public
@@ -123,7 +133,7 @@ noindex, nosniff and a same-origin CSP.
 
 All routes can be mounted with APP_PREFIX=/ner; set PUBLIC_BASE_URL with the same
 path. Existing unprefixed contracts are unchanged when APP_PREFIX is empty.
-New document content routes require a live session, strict owner and unexpired job and an annotated
+New document content routes require a live session, owner or authorized ADMIN+MFA and unexpired job and an annotated
 document; metadata can be read during processing. 404/409/410 apply before reading files. OpenAPI exposes Pydantic document/text/annotation/statistics schemas.
 
 | GET path (append to /api/jobs/{token}) | Parameters / response |
@@ -165,7 +175,7 @@ GET /jobs/{token}/viewer is an alias for the existing API viewer URL and opens
 when at least one annotated document is published. GET
 /api/jobs/{token}/documents/{document_id}/download/txt and /download/ann provide
 individual validated artifacts, including during processing. Every route checks
-the session, strict owner and exact expiry before reading data.
+the session, owner or authorized ADMIN+MFA, and exact expiry before reading data.
 
 COMPLETED_WITH_ERRORS is a new terminal status. Full-export endpoints offer only
 the validated subset with *_partial attachment names and an explicit partial

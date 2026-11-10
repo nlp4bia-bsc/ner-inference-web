@@ -9,8 +9,28 @@ def router(service, templates):
 
     @api.get("/documents", response_class=HTMLResponse, include_in_schema=False)
     def my_documents(request: Request):
+        from app.permissions.policies import user
+
+        account, owner = user(), None
+        identity = request.query_params.get("job")
+        administrative_scope = False
+        if identity and account["system_role"] == "ADMIN":
+            job = service.available(identity)
+            administrative_scope = job["owner_user_id"] != account["id"]
+            if administrative_scope:
+                with service.db.connect() as connection:
+                    row = connection.execute(
+                        "SELECT full_name,email FROM users WHERE id=?", (job["owner_user_id"],)
+                    ).fetchone()
+                    owner = dict(row) if row else None
         return templates.TemplateResponse(
-            request=request, name="documents.html", context={"prefix": service.settings.app_prefix}
+            request=request,
+            name="documents.html",
+            context={
+                "prefix": service.settings.app_prefix,
+                "administrative_scope": administrative_scope,
+                "document_owner": owner,
+            },
         )
 
     @api.get("/annotate", response_class=HTMLResponse, include_in_schema=False)
@@ -26,7 +46,9 @@ def router(service, templates):
             name="index.html",
             context={
                 "max_documents": document_limit(
-                    account["access_tier"], service.settings.max_documents_per_job
+                    account["access_tier"],
+                    service.settings.max_documents_per_job,
+                    override=account["document_limit"],
                 ),
                 "account": account,
                 "csrf": request.app.state.auth.csrf(account["csrf_seed"]),

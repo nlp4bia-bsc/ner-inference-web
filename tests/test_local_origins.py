@@ -143,8 +143,10 @@ def test_worker_missing_runtime_exits_before_touching_queue(settings, monkeypatc
 
 
 @pytest.mark.skipif(os.environ.get("BROWSER_TESTS") != "1", reason="Actual Chromium opt-in")
-def test_browser_localhost_login_zip_and_private_job_link(simple_server):
+def test_browser_localhost_login_zip_and_private_job_link(simple_server, tmp_path):
     from playwright.sync_api import expect, sync_playwright
+
+    from tests.auth_helpers import approve_fixture_database
 
     canonical = simple_server
     base = canonical.replace("127.0.0.1", "localhost")
@@ -164,6 +166,7 @@ def test_browser_localhost_login_zip_and_private_job_link(simple_server):
             ).status
             == 200
         )
+        approve_fixture_database(tmp_path / "private", "aliases@example.org")
         login(page, base, "aliases@example.org")
         page.goto(base + "/annotate")
         page.locator("#tab-zip").click()

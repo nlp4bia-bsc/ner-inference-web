@@ -340,8 +340,10 @@ def test_real_missing_hub_model_does_not_cancel_working_classifier(settings, tmp
 
 
 @pytest.mark.skipif(os.environ.get("BROWSER_TESTS") != "1", reason="Actual Chromium opt-in")
-def test_browser_can_launch_an_uncached_configured_repository(simple_server):
+def test_browser_can_launch_an_uncached_configured_repository(simple_server, tmp_path):
     from playwright.sync_api import sync_playwright
+
+    from tests.auth_helpers import approve_fixture_database
 
     base = simple_server
     with sync_playwright() as p:
@@ -369,6 +371,7 @@ def test_browser_can_launch_an_uncached_configured_repository(simple_server):
             ).status
             == 200
         )
+        approve_fixture_database(tmp_path / "private", "cold@example.org")
         token = csrf("/login")
         assert (
             page.request.post(

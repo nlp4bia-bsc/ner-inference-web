@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.errors import ServiceError
-from app.permissions.policies import document_limit, require_owner, user
+from app.permissions.policies import document_limit, require_job_access, user
 from app.persistence.progress import ProgressRepository
 from app.services.documents import ingest
 from app.services.registry import model_snapshot, statistics_reference
@@ -35,7 +35,11 @@ class JobService:
         form = form.model_copy(
             update={"submitter_name": account["full_name"], "submitter_email": account["email"]}
         )
-        limit = document_limit(account["access_tier"], self.settings.max_documents_per_job)
+        limit = document_limit(
+            account["access_tier"],
+            self.settings.max_documents_per_job,
+            override=account["document_limit"],
+        )
         ingestion_settings = self.settings.model_copy(update={"max_documents_per_job": limit})
         selected = self.registry.select(form.language, form.entities, form.models)
         reference, reference_digest = statistics_reference(
@@ -119,7 +123,7 @@ class JobService:
         }
 
     def available(self, token: str) -> dict:
-        job = require_owner(self.db.get(token))
+        job = require_job_access(self.db.get(token))
         if job["status"] == "DELETED":
             raise ServiceError("Results have been deleted or are scheduled for deletion.", 410)
         if job["status"] == "EXPIRED" or (job["expires_at"] and job["expires_at"] <= time.time()):
@@ -150,8 +154,8 @@ class JobService:
         with self.db.connect() as c:
             position = (
                 c.execute(
-                    "SELECT count(*) FROM jobs WHERE status='QUEUED' AND seq<=? AND owner_user_id=?",
-                    (job["seq"], user()["id"]),
+                    "SELECT count(*) FROM jobs WHERE status='QUEUED' AND seq<=? AND owner_user_id IS ?",
+                    (job["seq"], job["owner_user_id"]),
                 ).fetchone()[0]
                 if job["status"] == "QUEUED"
                 else None

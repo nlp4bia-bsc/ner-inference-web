@@ -4,6 +4,36 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Administrator workspace|Espacio de administración|Espai d’administració
+All projects|Todos los proyectos|Tots els projectes
+Review access requests and manage all accounts and projects.|Revisa solicitudes de acceso y gestiona todas las cuentas y proyectos.|Revisa les sol·licituds d’accés i gestiona tots els comptes i projectes.
+Pending requests|Solicitudes pendientes|Sol·licituds pendents
+No pending requests.|No hay solicitudes pendientes.|No hi ha sol·licituds pendents.
+Approve|Aprobar|Aprova
+Decline|Denegar|Denega
+Account approval|Aprobación de cuenta|Aprovació del compte
+Pending approval|Pendiente de aprobación|Pendent d’aprovació
+Approved|Aprobada|Aprovat
+Declined|Denegada|Denegat
+Deletion in progress|Eliminación en curso|Eliminació en curs
+Document limit|Límite de documentos|Límit de documents
+Use tier limit|Usar límite del plan|Utilitza el límit del pla
+Delete account|Eliminar cuenta|Elimina el compte
+Delete account and all its projects? This cannot be undone.|¿Eliminar la cuenta y todos sus proyectos? Esta acción no se puede deshacer.|Vols eliminar el compte i tots els seus projectes? Aquesta acció no es pot desfer.
+Owner|Propietario|Propietari
+Projects|Proyectos|Projectes
+Unassigned owner|Sin propietario asignado|Sense propietari assignat
+No projects found.|No se han encontrado proyectos.|No s’han trobat projectes.
+Delete this project and all its documents and annotations?|¿Eliminar este proyecto y todos sus documentos y anotaciones?|Vols eliminar aquest projecte i tots els seus documents i anotacions?
+Request access|Solicitar acceso|Sol·licita accés
+Your account is awaiting administrator approval.|Tu cuenta está pendiente de aprobación por el administrador.|El teu compte està pendent d’aprovació per l’administrador.
+Your access request was declined. Contact the administrator.|Tu solicitud de acceso ha sido denegada. Contacta con el administrador.|La teva sol·licitud d’accés ha estat denegada. Contacta amb l’administrador.
+Request already reviewed.|La solicitud ya ha sido revisada.|La sol·licitud ja ha estat revisada.
+Use another administrator to delete this account.|Otro administrador debe eliminar esta cuenta.|Un altre administrador ha d’eliminar aquest compte.
+Administrator approval required.|Se requiere la aprobación del administrador.|Cal l’aprovació de l’administrador.
+Your projects are accessible to you and authorized administrators.|Tus proyectos son accesibles para ti y para los administradores autorizados.|Els teus projectes són accessibles per a tu i per als administradors autoritzats.
+Your documents are queued. You and authorized administrators can access this job.|Tus documentos están en cola. Tú y los administradores autorizados podéis acceder a este trabajo.|Els teus documents són a la cua. Tu i els administradors autoritzats podeu accedir a aquest treball.
+Results remain available for {count} hours after processing. You and authorized administrators can access them.|Los resultados están disponibles durante {count} horas tras finalizar. Tú y los administradores autorizados podéis acceder a ellos.|Els resultats estan disponibles durant {count} hores després de finalitzar. Tu i els administradors autoritzats hi podeu accedir.
 Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.|Las llaves compartidas sobre el texto muestran varios colores en los tramos solapados. Pulsa una etiqueta para consultar su anotación.|Les claus compartides sobre el text mostren diversos colors als trams solapats. Prem una etiqueta per consultar-ne l’anotació.
 Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.|Las llaves de colores y las bandas de solapamiento están siempre visibles. Pulsa una etiqueta para consultar su anotación.|Les claus de colors i les bandes de solapament són sempre visibles. Prem una etiqueta per consultar-ne l’anotació.
 Job name|Nombre del trabajo|Nom del treball
@@ -185,11 +215,9 @@ Upload complete. Validating and registering your request…|Subida completada. V
 Upload progress|Progreso de subida|Progrés de la pujada
 Start annotation|Iniciar anotación|Inicia l'anotació
 Request accepted|Solicitud aceptada|Sol·licitud acceptada
-Your documents have entered the persistent queue. Only your account can access this job.|Tus documentos han entrado en la cola persistente. Solo tu cuenta puede acceder a este trabajo.|Els documents han entrat a la cua persistent. Només el teu compte pot accedir a aquest treball.
 Copy private link|Copiar enlace privado|Copia l'enllaç privat
 Continue to request|Continuar al trabajo|Continua al treball
 BRAT ZIP · TSV · Interactive explorer|BRAT ZIP · TSV · Visor interactivo|BRAT ZIP · TSV · Visor interactiu
-Results remain available for {count} hours after processing. Only your account can access them.|Los resultados están disponibles durante {count} horas tras finalizar. Solo tu cuenta puede acceder a ellos.|Els resultats estan disponibles durant {count} hores després de finalitzar. Només el teu compte hi pot accedir.
 Model catalog|Catálogo de modelos|Catàleg de models
 Explore the registered models. Availability reflects local validation, not clinical accuracy.|Explora los modelos registrados. La disponibilidad refleja su validación local, no su precisión clínica.|Explora els models registrats. La disponibilitat reflecteix la validació local, no la precisió clínica.
 Annotation explorer|Visor de anotaciones|Visualitzador d'anotacions
@@ -330,7 +358,6 @@ No users match your search.|No hay usuarios que coincidan con la búsqueda.|No h
 No administrative changes recorded.|No hay cambios administrativos registrados.|No hi ha canvis administratius registrats.
 All times are shown in your local timezone.|Las horas se muestran en tu zona horaria local.|Les hores es mostren a la zona horària local.
 Request recorded|Solicitud registrada|Sol·licitud registrada
-Your jobs are visible only to your account.|Tus trabajos solo son visibles para tu cuenta.|Els teus treballs només són visibles per al teu compte.
 Reading mode|Modo de lectura|Mode de lectura
 Inline highlights|Resaltados inline|Ressaltats inline
 Entity towers|Torres de entidades|Torres d’entitats

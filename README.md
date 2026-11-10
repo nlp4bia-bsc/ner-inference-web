@@ -7,8 +7,16 @@ Developed by NLP4BIA · Barcelona Supercomputing Center
 Explore, annotate and analyze multilingual documents with registered accounts.
 Pasted text, UTF-8 TXT and nested-folder ZIP corpora use incremental ner_lab
 inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
-requires login and strict ownership; an old private link alone grants no access.
-Files remain available to their owner for **72 hours after completion**.
+requires an approved account. Owners and MFA-authenticated administrators can
+access projects; a private link alone grants no access. Files remain available
+for **72 hours after completion**.
+
+Version **0.11.0** adds mandatory administrator approval for new access requests,
+account deletion and an **All projects** administration view. Administrators can
+inspect/delete any project and set a numeric document quota for each user. Existing
+accounts, administrator credentials and MFA remain valid through automatic migration.
+An administrator workspace uses a pale mauve theme across every page while retaining
+the NER category palette. See [administration and approval](docs/ADMINISTRATION.md).
 
 Version 0.10.6 restores the requested color families consistently in labels and
 shared brackets: light pink for DISEASE, orange for SYMPTOM, blue for PROCEDURE
@@ -71,15 +79,16 @@ The directory is ignored by Git and excluded from images/packages. See
 
 
 Accounts use a **four-character minimum password**. Registration checks that the
-normalized email is unique and lets the user sign in immediately, without sending
-or verifying an email. SMTP is optional for registration. Account help/error reports
+normalized email is unique and creates a **pending access request**. An administrator
+must approve it before sign-in or job submission. Email verification is disabled by
+default and is independent from administrator approval. SMTP is optional for registration. Account help/error reports
 link to **fernando.gallego@bsc.es** through the user's mail client.
 
 V4 introduced optional email verification, Argon2id, server sessions/CSRF, personal dashboards,
 account-derived 100 / 1000 / UNLIMITED tiers and audited administration with TOTP.
 V5 adds the shared institutional interface, research workspace, responsive catalog/
 annotation viewer and complete EN/ES/CA controls. Scientific offsets and consolidation
-remain unchanged. Existing authentication/ownership checks remain mandatory.
+remain unchanged. Session, CSRF and backend authorization checks remain mandatory.
 Since0.5.4, `REQUIRE_EMAIL_VERIFICATION=false` is the default; older verification
 instructions apply only when that legacy policy is explicitly enabled.
 See [authentication and operations](docs/AUTHENTICATION_V4.md),
@@ -108,8 +117,8 @@ Synthetic fixtures are not evidence of biomedical model accuracy.
 The public welcome is the protected platform's Sign in screen. After actual email
 login, Research Workspace shows only your retained job metrics/history,
 with New annotation, My jobs, Models and Profile navigation. The model catalog is
-also private. Administration requires ADMIN plus MFA and never grants
-clinical-document access to other owners.
+also private. Administration requires an approved active ADMIN plus MFA. Its
+separate All projects view grants authorized inspection and erasure across owners.
 
 ![NLP4BIA sign in with the original BSC institutional logo](docs/previews/v5/login-desktop.png)
 
@@ -160,7 +169,7 @@ Automatic accessibility checks plus keyboard/reflow probes are not WCAG certific
 ```mermaid
 flowchart LR
     B[Browser: templates / ES modules] --> P[HTTPS proxy /ner/]
-    P --> G[Live session / CSRF / strict owner gate]
+    P --> G[Approved session / CSRF / owner or ADMIN+MFA]
     G --> A[FastAPI routers]
     A --> J[Job use cases / input streams]
     J --> Q[SQLite WAL: FIFO / document states / rate limits]
@@ -289,15 +298,18 @@ docker compose exec web python -m scripts.create_admin
 ```
 
 The command prompts securely; no default/password argument/first-registrant rule
-exists. Verify the email, sign in, open /mfa, enroll an authenticator and save the
-eight one-use recovery codes shown once. Enrollment revokes its session: sign in
+exists. Keep the existing administrator on upgrades; bootstrap only once. Sign in,
+open /mfa, enroll an authenticator and save the eight one-use recovery codes shown
+once. Enrollment revokes its session: sign in
 again with TOTP or a recovery code, then open /admin. An administrator can search
-accounts, assign tiers/roles, suspend/reactivate, revoke sessions and inspect
-aggregate metrics/audit history. ADMIN never bypasses clinical job ownership.
+access requests and profiles, approve/decline, assign tiers/roles/numeric quotas,
+suspend/reactivate, revoke sessions and delete accounts. All projects allows
+inspection and erasure of other owners' documents. Email verification applies
+only when explicitly enabled. See [administration](docs/ADMINISTRATION.md).
 
 STANDARD=100 documents, EXTENDED=1000, UNLIMITED=null administrative cap. Tier
-changes apply to new requests; every batch is counted/validated in full, including
-ZIP folders. UNLIMITED retains byte/expansion/ZIP-entry/storage/queue/time/resource
+and numeric quota changes are checked fresh at admission; every batch is counted
+and validated in full, including ZIP folders. UNLIMITED retains byte/expansion/ZIP-entry/storage/queue/time/resource
 bounds. MAX_DOCUMENTS_PER_JOB is an optional technical ceiling, unset by default;
 remove an old global1000 setting if it should not constrain UNLIMITED.
 
@@ -310,9 +322,10 @@ into Spanish/Catalan. See [full configuration and workflows](docs/AUTHENTICATION
 and [account/deployment recovery](docs/RECOVERY_V4.md).
 
 Upgrade with both web/worker drained/stopped and a consistent protected SQLite/key
-backup. Startup applies additive migration3; it does not reset FIFO, rewrite
-clinical artifacts or extend deadlines. Old ownerless jobs are closed, not claimed
-by matching email. Never roll back to anonymous v3 while exposing an owned database.
+backup. Startup applies additive migrations through6; it does not reset FIFO, rewrite
+clinical artifacts or extend deadlines. Old ownerless jobs remain closed to
+ordinary users and are never claimed by matching email; administrators may inspect
+or erase them. Never roll back to anonymous v3 while exposing an owned database.
 
 ## Model catalog correction
 
@@ -392,7 +405,7 @@ curl -X POST http://127.0.0.1:8000/api/jobs \
   -F language=es -F entities=DISEASE -F 'files=@corpus.zip'
 ```
 
-Save the returned locator URL. It remains protected by login, ownership and
+Save the returned locator URL. It remains protected by approved login, owner or ADMIN+MFA authorization and
 expiry; sharing a token does not transfer access. Name/email come from the account.
 See docs/API.md for repeated checkpoint IDs and all authentication contracts.
 
@@ -623,9 +636,9 @@ See [verification](docs/VERIFICATION.md) for actual results and untested limits.
 
 ## Security, layout and limits
 
-Login, verified email for processing, strict job ownership and live server
-permissions are mandatory. Administrators manage accounts without automatic
-clinical access. Keep TLS, trusted proxy boundaries, private storage, rate limits,
+Approved login and live server permissions are mandatory. Email verification is
+optional. Owners and approved MFA-authenticated administrators can access project
+data; ordinary users cannot access other owners' projects. Keep TLS, trusted proxy boundaries, private storage, rate limits,
 upload bounds and no-store/no-referrer/noindex/CSP. Administrators must
 approve the institution's data-handling/retention policy and trusted checkpoints.
 The service does not anonymize documents. See [security](docs/SECURITY.md).
@@ -634,8 +647,8 @@ The service does not anonymize documents. See [security](docs/SECURITY.md).
 app/main.py              composition root
 app/api/                 NER routers, transport middleware/errors and schemas
 app/auth/                sessions, Argon2id, CSRF, email/actions, MFA, localized flows
-app/users/, permissions/ validated profiles, roles/tiers and strict owner policies
-app/admin/               audited account management; no clinical owner bypass
+app/users/, permissions/ validated profiles, roles/quotas and owner/admin policies
+app/admin/               audited approval, accounts, cross-owner projects and erasure
 app/domain/              original-coordinate annotation contracts
 app/services/jobs.py     admission/status/result use cases
 app/services/pipeline.py ner_lab/statistics/export/index orchestration

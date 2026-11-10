@@ -55,6 +55,7 @@ def migrate(database):
     _migration_three(database)
     _migration_four(database)
     _migration_five(database)
+    _migration_six(database)
 
 
 def _migration_three(database):
@@ -164,3 +165,20 @@ def _migration_five(database):
           total_units INTEGER,unit TEXT,started_at REAL,updated_at REAL NOT NULL,
           error_code TEXT,PRIMARY KEY(job_id,model_id))""")
         connection.execute("INSERT INTO schema_migrations VALUES(5,?)", (time.time(),))
+
+
+def _migration_six(database):
+    """Grandfather existing accounts; public registration explicitly creates PENDING requests."""
+    with database.connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        if connection.execute("SELECT 1 FROM schema_migrations WHERE version=6").fetchone():
+            return
+        for statement in (
+            "ALTER TABLE users ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'APPROVED' CHECK(approval_status IN ('PENDING','APPROVED','REJECTED','DELETING'))",
+            "ALTER TABLE users ADD COLUMN approval_reviewed_at REAL",
+            "ALTER TABLE users ADD COLUMN approval_reviewed_by TEXT",
+            "ALTER TABLE users ADD COLUMN document_limit INTEGER CHECK(document_limit IS NULL OR document_limit>=0)",
+            "CREATE INDEX user_approval ON users(approval_status,created_at)",
+        ):
+            connection.execute(statement)
+        connection.execute("INSERT INTO schema_migrations VALUES(6,?)", (time.time(),))

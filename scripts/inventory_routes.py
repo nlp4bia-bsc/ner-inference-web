@@ -44,9 +44,9 @@ def policy(path, method):
     if path.startswith(("/api/admin/", "/admin")):
         return (
             "Session",
-            "Live ADMIN + MFA; atomic revalidation for writes",
-            "No clinical access",
-            "admin/MFA tests + independent review",
+            "Approved live ADMIN + MFA; atomic revalidation for writes; CSRF",
+            "All account and project data; audited account/project erasure",
+            "admin_workflows + real browser + revocation/upload races",
         )
     if path in (
         "/api/my/documents",
@@ -56,21 +56,21 @@ def policy(path, method):
     ):
         return (
             "Session",
-            "Live owner; CSRF for mutations",
-            "Owner-filtered metadata and quota",
+            "Approved live owner; ADMIN + MFA for an explicit foreign project; CSRF writes",
+            "Personal quota/history; authorized foreign-project metadata",
             "individual/bulk deletion + two-user history + browser",
         )
     if path.startswith(("/api/jobs/", "/jobs/")):
         return (
             "Session",
-            "Central and service owner guard + expiry; CSRF for DELETE",
-            "Strict owner only; ADMIN has no bypass",
-            "two-user API/browser + legacy/TTL",
+            "Owner or approved ADMIN + MFA, centrally and in service; expiry; CSRF writes",
+            "Owner data; authorized administrators can inspect and delete",
+            "two-user isolation + admin all-project API/browser + legacy/TTL",
         )
     if path in ("/api/jobs", "/annotate"):
         return (
             "Session",
-            "Optional email verification; CSRF for POST; retained quota atomically",
+            "Approved account; optional email verification; CSRF for POST; current custom quota atomically",
             "Owner from session only",
             "quota + unverified + delayed-upload tests",
         )

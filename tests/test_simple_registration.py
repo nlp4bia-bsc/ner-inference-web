@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from app.auth.passwords import verify_password
 from app.config import Settings
 from app.main import create_app
-from tests.auth_helpers import csrf_from
+from tests.auth_helpers import approve_fixture_account, approve_fixture_database, csrf_from
 from tests.test_auth_v4 import public_post, register_values
 
 
@@ -64,6 +64,11 @@ def test_production_registration_without_mail_and_duplicate_email(tmp_path, pref
             assert verify_password(rows[0]["password_hash"], "abcd")
             assert c.execute("SELECT count(*) FROM mail_outbox").fetchone()[0] == 0
             assert c.execute("SELECT count(*) FROM email_verifications").fetchone()[0] == 0
+        login = public_post(
+            client, "/api/auth/login", {"email": "simple@example.org", "password": "abcd"}
+        )
+        assert login.status_code == 403 and "approval" in login.json()["detail"]
+        approve_fixture_account(app, "simple@example.org")
         login = public_post(
             client, "/api/auth/login", {"email": "simple@example.org", "password": "abcd"}
         )
@@ -238,7 +243,7 @@ def simple_server(tmp_path, request):
 
 @pytest.mark.skipif(os.environ.get("BROWSER_TESTS") != "1", reason="Actual Chromium opt-in")
 @pytest.mark.parametrize("width", [390, 1440])
-def test_four_character_signup_login_without_verification(simple_server, width):
+def test_four_character_signup_login_without_verification(simple_server, width, tmp_path):
     from playwright.sync_api import sync_playwright
 
     base = simple_server
@@ -264,7 +269,8 @@ def test_four_character_signup_login_without_verification(simple_server, width):
         page.locator('[name="legal_accepted"]').check()
         page.locator('button[type="submit"]').click()
         page.wait_for_selector('h1[data-i18n="login"]')
-        assert "Cuenta creada" in page.get_by_role("status").text_content()
+        assert "pendiente de aprobación" in page.get_by_role("status").text_content()
+        approve_fixture_database(tmp_path / "private", "short@example.org")
         page.locator("#email").fill("short@example.org")
         page.locator("#password").fill("abcd")
         page.locator('button[type="submit"]').click()

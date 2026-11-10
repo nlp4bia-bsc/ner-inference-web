@@ -103,3 +103,17 @@ class AdminChange(SafeModel):
     access_tier: Literal["STANDARD", "EXTENDED", "UNLIMITED"] | None = None
     account_status: Literal["ACTIVE", "SUSPENDED"] | None = None
     system_role: Literal["USER", "ADMIN"] | None = None
+    document_limit: int | None = Field(default=None, ge=0, le=2_147_483_647)
+
+    @field_validator("document_limit", mode="before")
+    @classmethod
+    def empty_limit(cls, value):
+        return None if value == "" else value
+
+
+class AccessReview(SafeModel):
+    decision: Literal["APPROVED", "REJECTED"]
+
+
+class DeleteAccount(SafeModel):
+    confirm_email: EmailAddress

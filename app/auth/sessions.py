@@ -18,6 +18,7 @@ def require_live(c, account, settings, admin=False):
         or now - row["last_seen_at"] >= settings.session_idle_seconds
         or row["auth_version"] != row["session_version"]
         or row["account_status"] != "ACTIVE"
+        or row["approval_status"] != "APPROVED"
     ):
         raise ServiceError("authentication_required", 401)
     if admin and (

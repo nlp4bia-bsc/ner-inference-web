@@ -302,18 +302,20 @@ terminal completion. Live publication and recovery are in INCREMENTAL_PROCESSING
 ## V4 rollout
 
 Drain/stop both services, protect a consistent SQLite/key backup, configure the
-HTTPS origin/prefix, Secure cookies and SMTP, then deploy together. Migration3 is
+HTTPS origin/prefix and Secure cookies, then deploy together. SMTP is optional
+unless mail-based verification/recovery is enabled. Migration3 is
 additive; old ownerless links are closed without changing their TTL. Do not claim
 historical jobs by email, and do not expose a v3 rollback against the v4 database.
 The web container alone receives SMTP credentials. Bootstrap with
 `docker compose exec web python -m scripts.create_admin` in an interactive terminal,
-verify mail, enroll TOTP and save recovery codes before administering accounts.
+enroll TOTP and save recovery codes before administering accounts. Verify mail
+only if the optional email verification policy has been enabled.
 
 The full native CPU regression uses a synthetic checkpoint. Clinical checkpoints,
 GPU/full-neural images and real SMTP/BSC edge delivery have not been validated.
-The upstream torch2.10.0 pin retains two published advisories; resolve the neural
-profile risk before declaring that deployment hardened. HTTP dependency/security
-results are recorded separately in SECURITY_AUDIT_V4.md.
+The torch2.10.0 advisory findings in SECURITY_AUDIT_V4.md describe the historical
+V4 neural profile. Current CPU/neural locks use torch2.15.0; see VERIFICATION.md
+for recorded current dependency/security results and their scope.
 
 ## Updating to 0.7 in Conda
 
@@ -457,3 +459,25 @@ To allow a longer intentional bi-encoder job, set a suitable whole-job deadline
 in the shared private `.env` and restart the worker. Fast lexical normalization
 remains the default when normalization is enabled. Do not infer a timeout solely
 from an old `WorkerInterrupted` or `success=False` message.
+
+## Updating to 0.11: approval and administrator management
+
+Stop web and worker together, keep a consistent private SQLite/key backup, pull
+and restart both from the same version. Initialization runs additive migration6
+transactionally; no manual SQL is needed. Existing users/admins are APPROVED, and
+passwords, MFA and sessions are preserved. Only new public access requests become
+PENDING. Do not recreate the existing administrator or overwrite `.env`.
+
+For Conda, activate the same environment and use `python3 -m uvicorn app.asgi:app`
+with your existing host/port options and, in the other terminal,
+`python3 -m app.worker`. For Compose, rebuild/recreate web and worker while keeping
+the persistent volume and private gazetteer mount. No new environment variable or
+SMTP requirement is introduced. See the [Docker quickstart](DOCKER_QUICKSTART.md)
+for the complete profiles and [Administration](ADMINISTRATION.md) for workflows.
+
+`/admin` now approves/declines access, manages numeric per-user document quotas,
+and deletes accounts with their data. `/admin/projects` explicitly lists all owners'
+projects for inspection/erasure. Both require ADMIN plus live MFA. All administrator
+views have a pale mauve theme, preserving entity colors. The privacy notice and
+route matrix describe this intentional cross-owner administrative access; older
+V4 audit reports describe the previous owner-only policy.

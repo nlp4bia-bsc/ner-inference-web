@@ -150,7 +150,8 @@ docker compose ps
 docker compose logs --tail=100 web worker proxy
 ```
 
-Abre **https://temu.bsc.es:18443**. El registro no requiere correo de verificación.
+Abre **https://temu.bsc.es:18443**. El registro solicita acceso: el administrador
+debe aprobar cada cuenta nueva en `/admin`. No requiere correo de verificación.
 El primer job descarga los modelos seleccionados; luego reutiliza la caché.
 Fuzzy match no construye un índice neuronal.
 
@@ -169,7 +170,13 @@ servicio que ya lo esté usando en el host. El proxy fija las cabeceras de clien
 y esquema; el backend las acepta únicamente desde su red privada sin puerto
 público. Mantén esa separación al modificar el despliegue.
 
-Para crear el primer administrador con un correo nuevo:
+Si el administrador ya existe, conserva el volumen privado y su cuenta; **no lo
+crees de nuevo**. Tras actualizar, accede a `/admin` para aprobar solicitudes,
+modificar cuotas y eliminar cuentas, o a `/admin/projects` para todos los proyectos.
+La migración es automática y conserva sus credenciales y MFA. Véase
+[administración](ADMINISTRATION.md).
+
+Solo para una instalación nueva, crea el primer administrador con un correo nuevo:
 
 ```bash
 docker compose exec web \

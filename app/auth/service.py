@@ -26,6 +26,9 @@ PUBLIC_FIELDS = (
     "professional_role_other",
     "email_verified_at",
     "account_status",
+    "approval_status",
+    "approval_reviewed_at",
+    "document_limit",
     "system_role",
     "access_tier",
     "preferred_locale",
@@ -38,7 +41,9 @@ PUBLIC_FIELDS = (
 def public_user(row, settings):
     return {
         **{key: row[key] for key in PUBLIC_FIELDS},
-        "max_documents_per_job": document_limit(row["access_tier"], settings.max_documents_per_job),
+        "max_documents_per_job": document_limit(
+            row["access_tier"], settings.max_documents_per_job, override=row["document_limit"]
+        ),
     }
 
 
@@ -95,7 +100,7 @@ class AuthService:
         try:
             with self.db.connect() as c:
                 c.execute(
-                    "INSERT INTO users(id,full_name,email,institution,professional_role,professional_role_other,password_hash,preferred_locale,created_at,updated_at,legal_accepted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO users(id,full_name,email,institution,professional_role,professional_role_other,password_hash,preferred_locale,created_at,updated_at,legal_accepted_at,approval_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,'PENDING')",
                     (
                         identity,
                         form.full_name,
@@ -253,8 +258,19 @@ class AuthService:
         with self.db.connect() as c:
             c.execute("BEGIN IMMEDIATE")
             live = c.execute("SELECT * FROM users WHERE id=?", (row["id"],)).fetchone()
-            if live["password_hash"] != row["password_hash"] or live["account_status"] != "ACTIVE":
+            if (
+                not live
+                or live["password_hash"] != row["password_hash"]
+                or live["account_status"] != "ACTIVE"
+            ):
                 raise ServiceError("invalid_credentials", 401)
+            if live["approval_status"] != "APPROVED":
+                raise ServiceError(
+                    "approval_pending"
+                    if live["approval_status"] == "PENDING"
+                    else "approval_declined",
+                    403,
+                )
             if live["mfa_enabled"] and not self._check_mfa(c, live, form.otp):
                 raise ServiceError("invalid_credentials", 401)
             if hasher.check_needs_rehash(live["password_hash"]):
@@ -282,6 +298,7 @@ class AuthService:
                 or now - row["last_seen_at"] >= self.s.session_idle_seconds
                 or row["auth_version"] != row["session_version"]
                 or row["account_status"] != "ACTIVE"
+                or row["approval_status"] != "APPROVED"
             ):
                 return None
             if touch and now - row["last_seen_at"] >= 15:

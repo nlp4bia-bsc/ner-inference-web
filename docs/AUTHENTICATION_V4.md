@@ -1,4 +1,8 @@
-# V4 accounts, sessions and data ownership
+# Accounts, sessions and data ownership (V4–0.11)
+
+Current administrator approval, cross-owner access, erasure and quota policy:
+[Administration 0.11](ADMINISTRATION.md). Historical V4 audit reports describe the
+policy at that release; the route inventory describes the current implementation.
 
 This release replaces anonymous capability access. Every work page, catalog,
 job/document/progress/export API, API reference and OpenAPI requires a live server
@@ -11,15 +15,18 @@ and minimal health endpoints are public. There is no authentication-disable flag
 `app/auth` handles credentials, sessions, CSRF, tokens, encrypted email outbox and
 MFA. `app/users/schemas.py` validates allowlisted profile inputs. `permissions`
 keeps profession, system role, access tier and ownership distinct. `admin` manages
-accounts and aggregate operational metrics. Scientific inference does not resolve
+access requests, accounts, all projects and aggregate operational metrics. Scientific inference does not resolve
 users or sessions; ownership/quota checks happen before durable admission.
 
 - Professional activity: CLINICIAN, RESEARCHER, DATA_SCIENTIST, NLP_ENGINEER,
   STUDENT, OTHER. Other requires a short description. These grant no privileges.
 - System role: USER or ADMIN. Registration always creates USER; the first
-  registrant receives no special treatment.
+  registrant receives no special treatment. New requests are PENDING until an
+  administrator explicitly approves them; pending/rejected users cannot sign in.
 - Access tier: STANDARD=100 documents, EXTENDED=1000, UNLIMITED=no administrative
-  count limit. Only an MFA-authenticated, verified administrator can change tiers.
+  count limit. An MFA-authenticated administrator can change tiers and assign a
+  numeric document_limit override, including zero. Clearing it restores the tier.
+  Email verification is required only when explicitly enabled.
 - Profile: name, normalized email, institution, professional activity/description,
   preferred locale, legal acknowledgment timestamp, verification/account state,
   role/tier and creation/update timestamps. Password confirmation is transient;
@@ -101,8 +108,9 @@ are also one-use; enrollment records the actual accepted time-step counter.
 As of0.5.4, the default is `REQUIRE_EMAIL_VERIFICATION=false`. New registrations
 require a syntactically valid, unique normalized email, but do not send email or
 create verification tokens. Duplicate emails return409, including concurrent
-registration attempts protected by the database unique constraint. New and
-previously unverified ACTIVE accounts can sign in and submit within their tier.
+registration attempts protected by the database unique constraint. Since0.11, new registrations also require administrator approval. Existing
+ACTIVE accounts are migrated to APPROVED. Approved accounts can sign in and submit
+within their current custom quota without email verification under the default policy.
 `email_verified_at` remains unset unless an actual verification occurred; the UI
 shows "Registered email" rather than claiming ownership was verified.
 
@@ -153,16 +161,16 @@ transport and use resend verification/recovery to issue a new token. Missing mai
 configuration returns503 explicitly, never auto-verifies an account. Unverified
 accounts cannot submit any processing job or enter administration.
 
-For local development only, `.env.example` selects development/loopback HTTP and
-MAIL_BACKEND=file. Messages appear as private600 JSON files under
+For optional local mail testing, explicitly select development/loopback HTTP and
+MAIL_BACKEND=file; `.env.example` defaults to MAIL_BACKEND=none. Messages appear as private600 JSON files under
 STORAGE_ROOT/test-mail; read the link locally and confirm it in the browser. Tests
 also support a memory mailbox. Both capture backends are rejected in production;
 there is no HTTP mailbox or public testing verification endpoint.
 
 ## First administrator and routine administration
 
-Configure mail, start the web/worker and create the first administrator from an
-interactive terminal:
+Start the web/worker and, only if no administrator exists, create the first
+administrator from an interactive terminal. Mail is optional under default policy:
 
 ```sh
 python -m scripts.create_admin
@@ -173,41 +181,42 @@ docker compose exec web python -m scripts.create_admin
 The command prompts for profile fields and getpass password/confirmation. It
 requires a new email and no existing administrator, creates/promotes the new
 identity atomically and records ADMIN_BOOTSTRAP. No default password, first-user
-rule, password argument or public bootstrap API exists. Verify the emailed link,
-sign in, open `/mfa`, re-enter the password, add the displayed secret to an
+rule, password argument or public bootstrap API exists. With the optional email
+verification policy enabled, verify the emailed link. Sign in, open `/mfa`, re-enter the password, add the displayed secret to an
 RFC6238 authenticator and confirm its code. Save the eight recovery codes when
 shown once; their HMAC verifiers, not raw values, are stored. Enrollment revokes
 its session; sign in again with the next unused TOTP or a recovery code.
 
-`/admin` and `/api/admin/*` require the actual ADMIN role, verified email and an
-MFA-verified session. They support user search, tier/role/state changes, session
-revocation, aggregate metrics and administrative history. Changes are audited
-atomically. The last active administrator cannot be removed. Granting ADMIN to
-another user still requires that user to verify email/enroll MFA; it never grants
-clinical access to other owners' jobs. MFA recovery limits are in RECOVERY_V4.md.
+`/admin`, `/admin/projects` and `/api/admin/*` require an active, approved ADMIN
+and an MFA-verified live session (plus email verification only if opted in).
+The same gate authorizes foreign project content, exports and management. Search,
+approval/decline, role/tier/state/quota changes, session revocation and account/project
+erasure are audited. The last active approved administrator is protected; self-account
+deletion is rejected. Granting ADMIN still requires that user to enroll MFA. The
+existing administrator is preserved by migration 6. See [Administration](ADMINISTRATION.md).
 
 ## Ownership, quotas and history
 
-New jobs store owner_user_id exclusively from the live session. Job IDs and legacy
-43-character tokens are both locators, never authorization. A central route guard
-and JobService enforce strict equality with the owner, without an ADMIN bypass.
-Unknown/foreign/unowned jobs return the same404 before any file read; only an
-owner can receive expiry410. History is owner-filtered in SQL and paged by100;
-queue position counts only that user's pending requests.
+New jobs derive owner_user_id only from the live session. Job IDs and legacy
+43-character tokens are locators, never authorization. Central middleware and
+JobService enforce owner access or the explicit ADMIN+MFA gate. Ordinary users
+receive 404 for foreign/unowned IDs before file reads; authorized access receives
+410 at expiry. Personal history remains owner-filtered, queue positions refer to
+the project's owner, and All projects is an explicit administrator view.
 
-Submission counts actual TXT files/ZIP contents/paste documents and validates the
-account-derived cap before accepting anything. The complete admission transaction
-revalidates the owner's session/state/verification and quota against the actual
-count. A too-large batch is rejected in full, not truncated. A request snapshots
-its server-derived tier at start; changes apply to subsequent requests. UNLIMITED
-keeps all byte, expansion, compression-ratio, ZIP-entry, queue, disk, memory and
-execution bounds. MAX_DOCUMENTS_PER_JOB is now an optional **technical** ceiling,
-unset by default; it is not the per-user administrative tier. Keeping an old value
-of1000 will also cap UNLIMITED at that technical ceiling, so review old .env files.
+Admission counts actual files/ZIP entries/paste documents, checks the per-batch
+cap and retained total across jobs, then revalidates live approval/session state
+and the fresh custom quota in its SQL write transaction. A large batch is rejected
+in full, not truncated. Lowering a quota below occupancy does not delete existing
+files. User/system deletion and expiry release retained capacity; upload history
+is independent. UNLIMITED removes the administrative count cap, while all byte,
+expansion, queue, disk, memory and execution bounds remain. MAX_DOCUMENTS_PER_JOB
+is an optional technical ceiling, not the user's retained quota.
 
-Accounts are persistent, while job files still expire72h after terminal completion.
-Historical jobs with no owner are inaccessible, are not claimed by matching email,
-and keep their original deadlines/FIFO. There is no public ownership-transfer API.
+Accounts persist until administrator deletion; job files expire72h after terminal
+completion. Ownerless legacy jobs keep their original deadlines and cannot be
+claimed by email; administrators may inspect them while valid or erase them.
+No public ownership-transfer API exists.
 
 ## V5 presentation additions
 
@@ -217,6 +226,7 @@ and all work routes remain closed. /models and /my-jobs require authentication.
 /sessions and /api/auth/sessions return only the current owner's non-secret session
 metadata. /account-deletion is a CSRF-protected, throttled and transactionally
 revalidated audited request for institutional review, not immediate deletion.
-ADMIN can review that event without acquiring clinical document access. No new
-schema migration is needed; existing migrations1–3 and72h deadlines remain.
+ADMIN can review that event and explicitly delete the account through the 0.11
+workflow. Migration6 adds approval and custom quota fields without altering
+existing credentials, MFA, sessions or72h deadlines.
 See USER_EXPERIENCE.md and REDESIGN_VERIFICATION.md for current UI evidence.

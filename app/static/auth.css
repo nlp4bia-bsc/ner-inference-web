@@ -948,6 +948,11 @@ textarea {
 }
 .admin-search input {
   font-size: 0.8125rem !important;
+  min-width: 0;
+}
+.admin-search button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .admin-table th:last-child {
   width: 38%;
@@ -1789,4 +1794,85 @@ tr:has([data-select-document]:checked) {
   min-height: 24px;
   margin: 0;
   accent-color: var(--accent);
+}
+
+/* Role styling is presentation only; every administrative route authorizes server-side. */
+body.admin-theme {
+  --bg: #f8f2fb;
+  --paper: #fffaff;
+  --soft: #f0e6f7;
+  --line: #e0d1e9;
+  --accent: #65377e;
+  --accent-hover: #4d265f;
+  --blue: #754592;
+}
+.admin-theme .app-header {
+  background: #f1e5f8;
+  border-bottom-color: #d8c3e5;
+}
+.admin-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px max(18px, calc((100vw - 1400px) / 2));
+  background: #eadcf3;
+  color: #4f285f;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  border-bottom: 1px solid #d8c3e5;
+}
+.admin-context a {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.admin-page > .card {
+  margin-bottom: 24px;
+}
+.request-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+.access-request {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  background: var(--paper);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.access-request h3 {
+  margin-top: 0;
+}
+.access-request dl {
+  grid-template-columns: fit-content(42%) minmax(0, 1fr);
+  font-size: 0.8125rem;
+}
+.access-request dt,
+.access-request dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-table .admin-change {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.admin-table .admin-change label,
+.admin-table .admin-change input,
+.admin-table .admin-change select {
+  min-width: 0;
+  width: 100%;
+}
+.admin-usage {
+  white-space: nowrap;
+}
+.admin-table td .admin-usage strong {
+  display: inline;
+}
+@media (max-width: 420px) {
+  .admin-table .admin-change {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

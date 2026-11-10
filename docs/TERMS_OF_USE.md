@@ -10,14 +10,16 @@ are authorized to process. Model outputs may contain errors and are not a substi
 for clinical judgment. Registered checkpoints and availability do not establish
 clinical accuracy. No evaluation metrics are inferred without appropriate evidence.
 
-Keep account credentials, authenticator and recovery codes private. Verify email
-and use institutional procedures for access changes. Registration grants USER and
-STANDARD access; administrators may assign other tiers. UNLIMITED removes only the
+Keep account credentials, authenticator and recovery codes private. Use institutional procedures for access changes. Registration creates a PENDING
+USER / STANDARD request; access requires explicit administrator approval. Email
+verification is optional and independent. Administrators may assign tiers or a
+numeric retained-document quota. UNLIMITED removes only the
 administrative document-count cap, not technical resource limits. Attempting to
 access another user's work, bypass controls or overload the service is outside the
 intended authorized workflow.
 
-Only an authenticated owner can access job data. A job URL alone grants no access.
+Owners and authorized MFA-authenticated administrators can access job data.
+Administrators may review profiles and erase any project or account with its data. A job URL alone grants no access.
 Results expire 72 hours after completion; download authorized results before expiry.
 The service does not promise long-term archival storage. Account deletion requests
 are reviewed institutionally and are not immediate deletion. See the draft
@@ -33,8 +35,9 @@ Estas condiciones requieren revisión institucional antes de producción. Utiliz
 plataforma solo para investigación y con datos cuyo tratamiento tengas autorizado.
 Las predicciones pueden contener errores y no sustituyen el juicio clínico. Protege
 tus credenciales y factores MFA. Las cuotas se aplican en el servidor; UNLIMITED
-mantiene los límites de recursos. Solo el propietario autenticado puede consultar
-sus trabajos; un enlace no concede acceso. Los resultados caducan a las 72 horas de
+mantiene los límites de recursos. El propietario y los administradores autorizados con MFA pueden consultar
+los trabajos; el administrador puede eliminar proyectos y cuentas. Las nuevas
+cuentas requieren aprobación administrativa; un enlace no concede acceso. Los resultados caducan a las 72 horas de
 finalizar. La solicitud de eliminación no es inmediata. No se afirman aprobación
 jurídica, certificación clínica ni derechos adicionales sobre marcas o modelos.
 
@@ -44,7 +47,8 @@ Aquestes condicions requereixen revisió institucional abans de producció. Util
 la plataforma només per a recerca i amb dades que tinguis autorització per tractar.
 Les prediccions poden contenir errors i no substitueixen el judici clínic. Protegeix
 les credencials i els factors MFA. Les quotes s'apliquen al servidor; UNLIMITED
-manté els límits de recursos. Només el propietari autenticat pot consultar els
-treballs; un enllaç no concedeix accés. Els resultats caduquen a les 72 hores de
+manté els límits de recursos. El propietari i els administradors autoritzats amb MFA poden consultar els
+treballs; l’administrador pot eliminar projectes i comptes. Els comptes nous
+requereixen aprovació administrativa; un enllaç no concedeix accés. Els resultats caduquen a les 72 hores de
 finalitzar. La sol·licitud d'eliminació no és immediata. No s'afirmen aprovació
 jurídica, certificació clínica ni drets addicionals sobre marques o models.

@@ -210,10 +210,7 @@ def router(auth, templates, jobs):
             extra = {}
             if operation == "register":
                 await run_in_threadpool(auth.register, form, ip)
-                if auth.s.require_email_verification:
-                    message = "email_sent"
-                else:
-                    message, target = "account_created", "/login"
+                message, target = "approval_requested", "/login"
             elif operation == "login":
                 response_token = await run_in_threadpool(auth.login, form, ip)
                 # Revoke an existing pre-login session to prevent session fixation.

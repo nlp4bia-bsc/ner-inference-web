@@ -1,4 +1,4 @@
-"""Owner-only retained-document quota, persistent upload history and content erasure."""
+"""Retained quotas and content erasure for owners and authorized administrators."""
 
 import json
 import shutil
@@ -6,7 +6,7 @@ import time
 
 from app.auth.sessions import require_live
 from app.errors import ServiceError
-from app.permissions.policies import require_owner, user
+from app.permissions.policies import document_limit, require_job_access, user
 from app.persistence.job_locks import job_lock
 from app.storage import directory_bytes
 
@@ -24,9 +24,11 @@ def retained_count(connection, owner, now):
 def quota(database, account):
     with database.connect() as connection:
         tier = connection.execute(
-            "SELECT access_tier FROM users WHERE id=?", (account["id"],)
+            "SELECT access_tier,document_limit FROM users WHERE id=?", (account["id"],)
         ).fetchone()
-        limit = {"STANDARD": 100, "EXTENDED": 1000, "UNLIMITED": None}[tier[0]]
+        if not tier:
+            raise ServiceError("authentication_required", 401)
+        limit = document_limit(tier["access_tier"], override=tier["document_limit"])
         occupied = retained_count(connection, account["id"], time.time())
         uploaded = connection.execute(
             "SELECT count(*) FROM upload_ledger WHERE owner_user_id=?", (account["id"],)
@@ -41,7 +43,10 @@ def quota(database, account):
 
 def upload_history(database, account, offset=0, limit=50, state=None, job_id=None):
     now = time.time()
-    conditions, parameters = ["owner_user_id=?"], [account["id"]]
+    owner = account["id"]
+    if job_id and account["system_role"] == "ADMIN":
+        owner = require_job_access(database.get(job_id))["owner_user_id"]
+    conditions, parameters = ["owner_user_id=?"], [owner]
     if state:
         conditions.append("state=?")
         parameters.append(state)
@@ -85,16 +90,16 @@ def delete_documents(service, token, document_id=None, *, document_ids=None):
     if identities == set():
         raise ServiceError("Select at least one document.", 422)
     account = user()
-    job = require_owner(service.db.get(token))
+    job = require_job_access(service.db.get(token))
     with job_lock(service.settings, job["id"]):
         with service.db.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            require_live(connection, account, service.settings)
-            current = dict(
-                connection.execute(
-                    "SELECT * FROM jobs WHERE id=? AND owner_user_id=?", (job["id"], account["id"])
-                ).fetchone()
-            )
+            current = connection.execute("SELECT * FROM jobs WHERE id=?", (job["id"],)).fetchone()
+            if not current:
+                raise ServiceError("Request not found.", 404)
+            current = require_job_access(dict(current))
+            administrative = current["owner_user_id"] != account["id"]
+            require_live(connection, account, service.settings, admin=administrative)
             if current["status"] in ("EXPIRED", "DELETED"):
                 if current["status"] == "DELETED":
                     return {"deleted": 0, "quota": quota(service.db, account)}
@@ -128,7 +133,7 @@ def delete_documents(service, token, document_id=None, *, document_ids=None):
                 )
                 connection.execute(
                     "UPDATE upload_ledger SET state='DELETED',removed_at=? WHERE job_id=? AND document_id=? AND owner_user_id=?",
-                    (time.time(), job["id"], row["document_id"], account["id"]),
+                    (time.time(), job["id"], row["document_id"], current["owner_user_id"]),
                 )
             for name in ("output", "building", "viewer"):
                 if (root / name).exists():
@@ -185,6 +190,16 @@ def delete_documents(service, token, document_id=None, *, document_ids=None):
                     (service.db.reservation(size), job["id"]),
                 )
             service.db.event(connection, job["id"], "DOCUMENTS_DELETED", time.time())
+            if administrative:
+                from app.auth.service import audit
+
+                audit(
+                    connection,
+                    account["id"],
+                    current["owner_user_id"],
+                    "ADMIN_PROJECT_DOCUMENTS_DELETED",
+                    {"job_id": job["id"], "documents": len(selected)},
+                )
     return {"deleted": len(selected), "quota": quota(service.db, account)}
 
 
@@ -217,9 +232,11 @@ def delete_selected_documents(service, documents):
     resolved = {}
     # No mutation if the selection contains a foreign project or unknown document.
     for identity, selected in groups.items():
-        job = require_owner(service.db.get(identity))
+        job = require_job_access(service.db.get(identity))
         with service.db.connect() as connection:
-            require_live(connection, account, service.settings)
+            require_live(
+                connection, account, service.settings, admin=job["owner_user_id"] != account["id"]
+            )
             available = {
                 row[0]
                 for row in connection.execute(

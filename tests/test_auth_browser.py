@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.auth_helpers import PASSWORD
+from tests.auth_helpers import PASSWORD, approve_fixture_database
 from tests.test_auth_v4 import private_paths
 
 pytestmark = pytest.mark.skipif(
@@ -110,7 +110,7 @@ def signup(page, base, email):
         page.locator("#" + field).fill(value)
     page.select_option("#professional_role", "RESEARCHER")
     page.locator('[name="legal_accepted"]').check()
-    page.get_by_role("button", name="Create account", exact=True).click()
+    page.get_by_role("button", name="Request access", exact=True).click()
     page.get_by_role("status").wait_for()
 
 
@@ -118,6 +118,7 @@ def verify(page, root, email):
     page.goto(mail_link(root, email, "/verify-email?"))
     page.get_by_role("button", name="Verify email", exact=True).click()
     page.get_by_role("status").wait_for()
+    approve_fixture_database(root, email)
 
 
 def submit_job(page, base, text):
@@ -170,6 +171,9 @@ def test_real_signup_verification_two_user_isolation_logout_and_reset(auth_serve
                 full_page=True,
             )
         signup(page, base, "researcher_a@example.test")
+        # This regression isolates optional email verification after admin approval.
+        # Real administrator approval through the UI is covered in test_admin_browser.
+        approve_fixture_database(root, "researcher_a@example.test")
         login(page, base, "researcher_a@example.test")
         assert page.locator("#quota").text_content() == "0 / 100"
         session = page.request.get(base + "/api/auth/session").json()
@@ -283,7 +287,8 @@ def test_real_signup_verification_two_user_isolation_logout_and_reset(auth_serve
 
 
 @pytest.mark.parametrize(
-    "language,button", [("en", "Create account"), ("es", "Crear cuenta"), ("ca", "Crea un compte")]
+    "language,button",
+    [("en", "Request access"), ("es", "Solicitar acceso"), ("ca", "Sol·licita accés")],
 )
 def test_auth_language_selector_and_registration_choices(auth_server, language, button):
     from playwright.sync_api import sync_playwright

@@ -16,6 +16,26 @@ def csrf_from(response):
     return re.search(r'name="csrf-token" content="([^"]+)"', response.text).group(1)
 
 
+def approve_fixture_account(app, email):
+    """Trusted synthetic setup only. Real review endpoints are verified separately."""
+    with app.state.db.connect() as connection:
+        connection.execute(
+            "UPDATE users SET approval_status='APPROVED' WHERE email=? AND approval_status='PENDING'",
+            (email.lower(),),
+        )
+
+
+def approve_fixture_database(root, email):
+    """Approve only in a synthetic browser fixture database, never through a test HTTP route."""
+    import sqlite3
+
+    with sqlite3.connect(root / "jobs.sqlite3") as connection:
+        connection.execute(
+            "UPDATE users SET approval_status='APPROVED' WHERE email=? AND approval_status='PENDING'",
+            (email.lower(),),
+        )
+
+
 def authenticate(client, email=DEFAULT_EMAIL, verify=True, register=True):
     app = client.app
     prefix = app.state.settings.app_prefix
@@ -48,6 +68,7 @@ def authenticate(client, email=DEFAULT_EMAIL, verify=True, register=True):
                 # Existing fixture accounts may have used this one-use link already.
                 assert response.status_code in (200, 422), response.text
                 break
+    approve_fixture_account(app, email)
     csrf = csrf_from(client.get(prefix + "/login"))
     response = client.post(
         prefix + "/api/auth/login", json={"email": email, "password": PASSWORD, "csrf_token": csrf}

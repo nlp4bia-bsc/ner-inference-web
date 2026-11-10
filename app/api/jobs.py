@@ -114,7 +114,18 @@ def router(service):
             from app.permissions.policies import user
 
             account = user()
-            if any(key in data for key in ("owner_user_id", "system_role", "access_tier")):
+            if any(
+                key in data
+                for key in (
+                    "owner_user_id",
+                    "system_role",
+                    "access_tier",
+                    "account_status",
+                    "document_limit",
+                    "approval_status",
+                    "approval_reviewed_by",
+                )
+            ):
                 raise ServiceError("invalid_form", 422)
             try:
                 form = Submission(

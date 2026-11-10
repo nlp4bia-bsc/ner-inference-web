@@ -248,6 +248,39 @@ ROWS = {
 }
 
 
+ROWS.update(
+    {
+        "register": ("Request access", "Solicitar acceso", "Sol·licita accés"),
+        "approval_requested": (
+            "Your account is awaiting administrator approval.",
+            "Tu cuenta está pendiente de aprobación por el administrador.",
+            "El teu compte està pendent d’aprovació per l’administrador.",
+        ),
+        "approval_pending": (
+            "Your account is awaiting administrator approval.",
+            "Tu cuenta está pendiente de aprobación por el administrador.",
+            "El teu compte està pendent d’aprovació per l’administrador.",
+        ),
+        "approval_declined": (
+            "Your access request was declined. Contact the administrator.",
+            "Tu solicitud de acceso ha sido denegada. Contacta con el administrador.",
+            "La teva sol·licitud d’accés ha estat denegada. Contacta amb l’administrador.",
+        ),
+        "approval_reviewed": (
+            "Request already reviewed.",
+            "La solicitud ya ha sido revisada.",
+            "La sol·licitud ja ha estat revisada.",
+        ),
+        "delete_self": (
+            "Use another administrator to delete this account.",
+            "Otro administrador debe eliminar esta cuenta.",
+            "Un altre administrador ha d’eliminar aquest compte.",
+        ),
+        "account_deleting": ("Deletion in progress", "Eliminación en curso", "Eliminació en curs"),
+    }
+)
+
+
 def locale(value):
     from app.locales import LOCALES
 

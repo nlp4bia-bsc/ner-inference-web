@@ -79,7 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="NLP4BIA · Multilingual NER Platform",
-        version="0.10.6",
+        version="0.11.0",
         lifespan=lifespan,
         redirect_slashes=False,
         docs_url=None,
@@ -99,7 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_errors(app)
     app.include_router(auth_routes.router(auth, templates, service), prefix=settings.app_prefix)
     app.include_router(
-        admin_routes.router(db, settings, auth, templates), prefix=settings.app_prefix
+        admin_routes.router(db, settings, auth, templates, service), prefix=settings.app_prefix
     )
     for module in (catalog, jobs, downloads, documents):
         app.include_router(module.router(service), prefix=settings.app_prefix)

@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from app.auth.i18n import locale, translate
 from app.auth.origins import safe_origin, trusted_origin
 from app.errors import ServiceError
-from app.permissions.policies import principal, require_owner
+from app.permissions.policies import principal, require_job_access
 
 AUTH_PAGES = {
     "/login",
@@ -118,7 +118,9 @@ class AuthMiddleware:
             if prefix and scope["path"] == prefix and method in ("GET", "HEAD"):
                 return await RedirectResponse(prefix + "/", 303)(scope, receive, secure_send)
             if located:
-                await run_in_threadpool(lambda: require_owner(self.auth.db.get(located.group(1))))
+                await run_in_threadpool(
+                    lambda: require_job_access(self.auth.db.get(located.group(1)))
+                )
             if method not in SAFE:
                 origin = headers.get(b"origin")
                 referer = headers.get(b"referer")
