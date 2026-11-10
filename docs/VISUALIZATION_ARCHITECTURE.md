@@ -66,27 +66,29 @@ benchmark real models before increasing corpus/document limits. Accessibility is
 supported by labeled controls, focus states, text labels, keyboard-selectable
 regions and an alternate mention list; no formal WCAG certification is claimed.
 
-## Persistent tower coverage (0.10.4)
+## Shared brackets above source text (0.10.5)
 
-Tower captions always use a solid canonical category color with white text,
-including unselected annotations, translated category aliases and unknown labels
-(deterministic fallback palette). All palette backgrounds have at least 4.5:1
-contrast with white text. Every span bracket is visible without selection, in the
-same category color as its caption. Selecting a label opens its inspector and
-thickens only its bracket; repeated selection never hides the other spans.
+Each connected region of overlapping annotations has one bracket on a common
+baseline immediately above the source glyphs. Disjoint and merely adjacent spans
+retain separate brackets. Captions remain centered over their own entity and
+stack only according to the existing minimum overlap depth. No bracket is drawn
+under an individual caption, and there is no filled band above or behind text.
 
-A six-pixel band above the source is partitioned at annotation boundaries,
-using the existing interval sweep and measured SVG glyph positions. Each covered
-part shares its height equally among its distinct active category colors. Nested
-mentions of the same category share one color; their separate brackets and labels
-remain visible. Unannotated gaps have no band. Wrapped continuations retain their
-brackets and color bands with one caption per annotation. Display boundaries
-respect graphemes; original scientific offsets and exported text are unchanged.
+The existing interval sweep partitions each region at annotation boundaries.
+The bracket is a single unfilled SVG path, with downward end caps. A hard-step
+SVG gradient colors its stroke: one category color on singly covered portions,
+alternating category colors on overlapping portions. Equal-category mentions
+share their color. The gradient does not blend new colors or color uncovered gaps.
+Artificial SVG spacing between captions uses the colors of the enclosing spans.
+Gradient repetition is bounded to avoid unnecessary SVG nodes for long spans.
 
-The band reserves space above the actual source glyph box, including emoji and
-combining accents, without changing the minimal overlap-based lane allocation.
-This preserves category identification and overlapping boundaries in screenshots
-without adding levels or duplicating source text.
+Wrapped continuations get a shared bracket on each source line and keep one
+caption per annotation. Bracket endpoints follow measured source glyphs and
+respect graphemes; the scientific offsets and exported text are unchanged.
+Space above the actual glyph box keeps brackets clear of accents and emoji.
+Selecting a caption opens its inspector and emphasizes that caption; shared
+brackets remain visible. Captions retain the canonical category palette and white
+text (at least 4.5:1 contrast), consistent across interface/document languages.
 
 ## V3 live publications
 

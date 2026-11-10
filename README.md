@@ -10,10 +10,10 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
-Version 0.10.4 keeps every colored span bracket visible in tower mode and adds
-shared color bands above the source. At each overlap, the band displays all active
-category colors as parallel horizontal strips. Selection inspects and emphasizes an
-annotation without hiding the others. Text and original offsets remain unchanged.
+Version 0.10.5 draws one shared bracket immediately above each connected annotated
+region. Its thin stroke alternates category colors only over actual overlaps;
+separate regions keep separate brackets. There are no source bands or brackets
+attached to individual labels. Towers retain centered labels and original offsets.
 
 Version 0.10.3 adds editable job names above the document inputs, autofilled from
 the TXT/ZIP filename without its extension while preserving existing text.

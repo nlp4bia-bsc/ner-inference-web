@@ -73,6 +73,35 @@ export function layoutLines(text, width, measure) {
   if (line || !lines.length) emit(line);
   return lines;
 }
+/** A shared bracket joins overlapping spans, keeping merely adjacent spans separate. */
+function bracketRegions(text, parts) {
+  const regions = [];
+  let current = null;
+  for (const part of segments(
+    text,
+    0,
+    parts.map((p) => ({
+      id: p.a.id,
+      start: p.from,
+      end: p.to,
+    })),
+  )) {
+    if (!part.ids.length) {
+      current = null;
+      continue;
+    }
+    if (
+      !current ||
+      !current.segments.at(-1).ids.some((id) => part.ids.includes(id))
+    ) {
+      current = { start: part.start, end: part.end, segments: [] };
+      regions.push(current);
+    }
+    current.end = part.end;
+    current.segments.push(part);
+  }
+  return regions;
+}
 export function drawTowers(host, text, start, rows, onSelect, selected) {
   const scroll = { left: host.scrollLeft, top: host.scrollTop };
   const scale =
@@ -100,8 +129,9 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     if (text_ !== undefined) n.textContent = text_;
     return n;
   };
-  const content = create("g", {});
-  svg.append(content);
+  const defs = create("defs", {}),
+    content = create("g", {});
+  svg.append(defs, content);
   host.replaceChildren(svg);
   let y = 0,
     minX = 0,
@@ -137,11 +167,6 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
       "data-end": right,
     });
     content.append(lineGroup);
-    const coverage = create("g", {
-      class: "tower-coverage",
-      "aria-hidden": "true",
-    });
-    lineGroup.append(coverage);
     const brackets = create("g", { "aria-hidden": "true" });
     lineGroup.append(brackets);
     const source = create("text", {
@@ -230,61 +255,87 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     }
     maxX = Math.max(maxX, source.getBBox().x + source.getBBox().width + 8);
     const ascent = Math.max(0, -source.getBBox().y),
-      bandGap = parts.length ? Math.max(0, ascent - 10) : 0,
-      textY = y + laneCount * 40 + 28 + bandGap;
+      bracketGap = parts.length ? Math.max(0, ascent - 16) : 0,
+      textY = y + laneCount * 40 + 28 + bracketGap;
     source.setAttribute("y", textY);
-    const byId = new Map(parts.map((p) => [p.a.id, p.a]));
-    // Partition the visible source at annotation boundaries. Each intersection
-    // shares one fixed-height band between its category colors, without hiding
-    // a category behind another or adding copies of the original text.
-    for (const segment of segments(
-      visible,
-      0,
-      parts.map((p) => ({
-        id: p.a.id,
-        start: p.from,
-        end: p.to,
-      })),
-    )) {
-      if (!segment.ids.length) continue;
-      const colors = [
-        ...new Set(segment.ids.map((id) => color(byId.get(id).label))),
-      ].sort();
-      const band = create("g", {
-        class: "tower-coverage-segment",
-        "data-start": left + segment.start,
-        "data-end": left + segment.end,
-        "data-annotations": segment.ids.join(" "),
-      });
-      const x = position(segment.start, false),
-        width = Math.max(1, position(segment.end, true) - x);
-      colors.forEach((category, index) =>
-        band.append(
-          create("rect", {
-            class: `tower-coverage-band ${category}`,
-            x,
-            y: textY - ascent - 8 + (index * 6) / colors.length,
-            width,
-            height: 6 / colors.length,
-          }),
-        ),
-      );
-      coverage.append(band);
-    }
-    for (const p of parts) {
-      const top = textY - bandGap - 56 - p.lane * 40,
-        railY = top + 30;
+    const byId = new Map(parts.map((p) => [p.a.id, p])),
+      railY = textY - ascent - 7;
+    bracketRegions(visible, parts).forEach((region, index) => {
+      const ids = [
+          ...new Set(region.segments.flatMap((segment) => segment.ids)),
+        ],
+        x1 = position(region.start, false),
+        x2 = Math.max(x1 + 1, position(region.end, true)),
+        gradientId = `tower-bracket-${line.start}-${index}`,
+        gradient = create("linearGradient", {
+          id: gradientId,
+          gradientUnits: "userSpaceOnUse",
+          x1,
+          x2,
+          y1: railY,
+          y2: railY,
+        });
+      function stops(from, to, members) {
+        const colors = [
+            ...new Set(members.map((id) => color(byId.get(id).a.label))),
+          ].sort(),
+          steps =
+            colors.length === 1
+              ? 1
+              : colors.length *
+                Math.min(
+                  8,
+                  Math.max(1, Math.floor((to - from) / (colors.length * 6))),
+                );
+        for (let i = 0; i < steps; i++) {
+          for (const fraction of [i / steps, (i + 1) / steps])
+            gradient.append(
+              create("stop", {
+                offset: Math.max(
+                  0,
+                  Math.min(1, (from + fraction * (to - from) - x1) / (x2 - x1)),
+                ),
+                class: `tower-bracket-color ${colors[i % colors.length]}`,
+              }),
+            );
+        }
+      }
+      let previous = null,
+        cursor = x1;
+      for (const segment of region.segments) {
+        const from = position(segment.start, false),
+          to = position(segment.end, true);
+        // SVG spacing between disjoint captions can lie inside an enclosing span.
+        if (from > cursor && previous)
+          stops(
+            cursor,
+            from,
+            previous.ids.filter((id) => segment.ids.includes(id)),
+          );
+        stops(from, to, segment.ids);
+        previous = segment;
+        cursor = to;
+      }
+      defs.append(gradient);
       brackets.append(
         create("path", {
-          d: `M ${p.x1} ${railY + 4} V ${railY} H ${Math.max(p.x1 + 1, p.x2)} V ${railY + 4}`,
-          class: `tower-bracket ${color(p.a.label)}${selected === p.a.id ? " selected" : ""}`,
-          "data-annotation": p.a.id,
-          "data-start": p.a.start,
-          "data-end": p.a.end,
-          "data-lane": p.lane,
+          d: `M ${x1} ${railY + 4} V ${railY} H ${x2} V ${railY + 4}`,
+          class: "tower-bracket",
+          stroke: `url(#${gradientId})`,
+          "data-start": left + region.start,
+          "data-end": left + region.end,
+          "data-spans": JSON.stringify(
+            ids.map((id) => {
+              const p = byId.get(id);
+              return { id, start: p.a.start, end: p.a.end, lane: p.lane };
+            }),
+          ),
           fill: "none",
         }),
       );
+    });
+    for (const p of parts) {
+      const top = textY - bracketGap - 56 - p.lane * 40;
       // Wrapped continuations keep their brackets, with one control per entity.
       if (!p.label) continue;
       const group = create("g", {

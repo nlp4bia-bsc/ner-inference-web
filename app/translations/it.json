@@ -544,5 +544,6 @@
   "Job name": "Nome del lavoro",
   "Specify language": "Specifica la lingua",
   "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Per Altro sono disponibili solo modelli multilingue; la lingua indicata viene salvata ma non ancora utilizzata.",
-  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Le parentesi colorate e le bande di sovrapposizione sono sempre visibili. Seleziona un’etichetta per consultarne l’annotazione."
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Le parentesi colorate e le bande di sovrapposizione sono sempre visibili. Seleziona un’etichetta per consultarne l’annotazione.",
+  "Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.": "Le parentesi condivise sopra il testo mostrano più colori nei tratti sovrapposti. Seleziona un’etichetta per consultarne l’annotazione."
 }

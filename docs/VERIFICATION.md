@@ -1,4 +1,38 @@
-# Latest: Persistent span brackets and overlap color bands (0.10.4)
+# Latest: One shared multicolor bracket above each annotated region (0.10.5)
+
+Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q`: **272 passed, 115 browser cases
+  skipped**, 89.60 seconds.
+- `BROWSER_TESTS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js
+  SCREENSHOT_OUTPUT=work/shared-bracket-previews /tmp/ner-ui-env/bin/python -m
+  pytest -q tests/test_overlap_readability.py`: **36 passed**, 128.80 seconds.
+  Tests independently reconstruct overlap-connected regions from fixture offsets
+  and require exactly one shared bracket per region. The SVG contains only the
+  caption rectangles: no extra filled source bands. Each bracket sits immediately
+  above its source glyph box, including wrapped text, accents and emoji.
+- Geometry still checks minimal tower depth, independent caption centering over
+  each entity, exact source text, original span offsets, keyboard focus and resize
+  behavior at 320, 390, 1440 and 3840 pixels. Real gradients retain the canonical
+  palette. A hand-specified partial overlap checks both category colors and verifies
+  that the second color stays within the actual intersection.
+- Viewer/form/live-progress regressions and repeated pair/triple overlaps:
+  **31 passed, 28 deselected**, 89.29 seconds, with browser/axe enabled and
+  `tests/test_viewer_browser.py tests/test_ui_v3.py tests/test_model_progress_browser.py
+  tests/test_overlap_readability.py -k 'not test_overlaps_do_not_insert_text_or_change_character_layout
+  or pair-plus-separated or triple-plus-separated'`. Eight overlap cases are
+  repeated here; this is not a second full geometry matrix.
+- An initial color-boundary assertion exposed SVG scaling rounding of about
+  0.03 SVG pixels, rather than an annotation-boundary change. That comparison now
+  allows at most 0.25 SVG pixels (less than one display pixel at the tested scales).
+- Reviewed the synthetic nested-entity screenshot at 1440 pixels: labels stand
+  independently above one thin, unfilled shared bracket per source region. The
+  bracket itself carries the overlapping colors; no separate bar is drawn.
+- Ruff lint/format, Prettier, Bandit medium/high checks and wheel/sdist build pass.
+  Private data remain excluded from packages. Hint text covers all sixteen UI
+  languages. One existing pytest plugin deprecation warning is present.
+
+# Previous: Persistent span brackets and overlap color bands (0.10.4)
 
 Executed 2026-11-10 in the same Python 3.12 / CPU / Chromium environment below:
 

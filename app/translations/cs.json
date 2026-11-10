@@ -544,5 +544,6 @@
   "Job name": "Název úlohy",
   "Specify language": "Upřesněte jazyk",
   "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pro možnost Jiné jsou dostupné pouze vícejazyčné modely; uvedený jazyk se uloží, ale zatím se nepoužívá.",
-  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Barevné závorky a pásy překryvů jsou vždy viditelné. Vyberte štítek a zobrazte jeho anotaci."
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Barevné závorky a pásy překryvů jsou vždy viditelné. Vyberte štítek a zobrazte jeho anotaci.",
+  "Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.": "Společné závorky nad textem zobrazují v překrývajících se úsecích více barev. Vyberte štítek a zobrazte jeho anotaci."
 }

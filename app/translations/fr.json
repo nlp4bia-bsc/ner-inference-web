@@ -544,5 +544,6 @@
   "Job name": "Nom du travail",
   "Specify language": "Précisez la langue",
   "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pour Autre, seuls les modèles multilingues sont disponibles ; la langue indiquée est enregistrée mais pas encore utilisée.",
-  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Les crochets colorés et les bandes de chevauchement sont toujours visibles. Sélectionnez une étiquette pour consulter son annotation."
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Les crochets colorés et les bandes de chevauchement sont toujours visibles. Sélectionnez une étiquette pour consulter son annotation.",
+  "Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.": "Les crochets partagés au-dessus du texte affichent plusieurs couleurs dans les portions qui se chevauchent. Sélectionnez une étiquette pour consulter son annotation."
 }

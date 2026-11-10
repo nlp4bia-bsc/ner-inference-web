@@ -1219,17 +1219,12 @@ fieldset {
   fill: #fff;
 }
 .tower-bracket {
-  stroke: var(--entity-color);
   stroke-width: 1.5;
   opacity: 1;
   pointer-events: none;
 }
-.tower-bracket.selected {
-  stroke-width: 2.5;
-}
-.tower-coverage-band {
-  fill: var(--entity-color);
-  pointer-events: none;
+.tower-bracket-color {
+  stop-color: var(--entity-color);
 }
 .tower-tag {
   fill: var(--entity-color);

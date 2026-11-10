@@ -544,5 +544,6 @@
   "Job name": "Numele lucrării",
   "Specify language": "Specificați limba",
   "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pentru Altă limbă sunt disponibile doar modele multilingve; limba indicată este salvată, dar nu este încă utilizată.",
-  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Parantezele colorate și benzile de suprapunere sunt întotdeauna vizibile. Selectați o etichetă pentru a consulta adnotarea."
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Parantezele colorate și benzile de suprapunere sunt întotdeauna vizibile. Selectați o etichetă pentru a consulta adnotarea.",
+  "Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.": "Parantezele comune deasupra textului afișează mai multe culori în porțiunile suprapuse. Selectați o etichetă pentru a consulta adnotarea."
 }

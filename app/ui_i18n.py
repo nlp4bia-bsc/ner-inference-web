@@ -4,6 +4,7 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.|Las llaves compartidas sobre el texto muestran varios colores en los tramos solapados. Pulsa una etiqueta para consultar su anotación.|Les claus compartides sobre el text mostren diversos colors als trams solapats. Prem una etiqueta per consultar-ne l’anotació.
 Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.|Las llaves de colores y las bandas de solapamiento están siempre visibles. Pulsa una etiqueta para consultar su anotación.|Les claus de colors i les bandes de solapament són sempre visibles. Prem una etiqueta per consultar-ne l’anotació.
 Job name|Nombre del trabajo|Nom del treball
 Specify language|Especifica el idioma|Especifica la llengua

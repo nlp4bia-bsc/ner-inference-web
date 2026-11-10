@@ -242,7 +242,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         page.locator('[data-reader-mode="towers"]').click()
         page.wait_for_selector(".tower-caption")
         visible_lines_script = """() => [...new Set([...document.querySelectorAll('.tower-bracket')]
-          .filter(n=>Number(getComputedStyle(n).opacity)>0).map(n=>n.dataset.annotation))].sort()"""
+          .filter(n=>Number(getComputedStyle(n).opacity)>0).flatMap(n=>JSON.parse(n.dataset.spans).map(s=>s.id)))].sort()"""
         # Every annotation has a colored bracket before any tower is activated.
         expected_visible = sorted(
             page.locator(".tower-annotation").evaluate_all(
@@ -251,6 +251,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         )
         assert page.evaluate(visible_lines_script) == expected_visible
         assert page.locator(".tower-caption").count() == len(ranges)
+        assert page.locator("#tower-view rect").count() == len(ranges)
         # Every tower keeps its category color before selection, including custom labels.
         # Query and measure in one evaluation: ResizeObserver can replace the SVG.
         colors = page.evaluate("""() => [...document.querySelectorAll('.tower-annotation')].map(node => {
@@ -265,21 +266,49 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             row["fill"] == row["expected"] and row["caption"] == "rgb(255, 255, 255)"
             for row in colors
         ), colors
+        assert page.locator(".tower-coverage-band, .tower-coverage-segment").count() == 0
         if name == "pair-plus-separated":
-            partitions = page.locator(".tower-coverage-segment").evaluate_all("""nodes => nodes.map(n => ({
-              start:Number(n.dataset.start),end:Number(n.dataset.end),
-              ids:n.dataset.annotations.split(' ').sort(), colors:n.children.length,
-              height:[...n.children].reduce((sum,rect)=>sum+Number(rect.getAttribute('height')),0)
-            }))""")
-            assert partitions == [
-                {"start": 0, "end": 1, "ids": ["T1"], "colors": 1, "height": 6},
-                {"start": 1, "end": 4, "ids": ["T1", "T2"], "colors": 2, "height": 6},
-                {"start": 4, "end": 6, "ids": ["T1"], "colors": 1, "height": 6},
-                {"start": 7, "end": 8, "ids": ["T3"], "colors": 1, "height": 6},
-                {"start": 9, "end": 10, "ids": ["T4"], "colors": 1, "height": 6},
+            shared = page.evaluate("""() => [...document.querySelectorAll('.tower-bracket')].map(path=>{
+              const gradient=document.getElementById(path.getAttribute('stroke').match(/#([^)]*)/)[1]);
+              return {start:Number(path.dataset.start),end:Number(path.dataset.end),
+                ids:JSON.parse(path.dataset.spans).map(s=>s.id).sort(),
+                colors:[...new Set([...gradient.children].map(n=>getComputedStyle(n).stopColor))].sort()};
+            })""")
+            assert shared == [
+                {
+                    "start": 0,
+                    "end": 6,
+                    "ids": ["T1", "T2"],
+                    "colors": ["rgb(155, 69, 28)", "rgb(181, 45, 67)"],
+                },
+                {"start": 7, "end": 8, "ids": ["T3"], "colors": ["rgb(37, 84, 164)"]},
+                {"start": 9, "end": 10, "ids": ["T4"], "colors": ["rgb(22, 112, 78)"]},
             ]
+            overlap_colors = page.evaluate("""() => {
+              const path=document.querySelector('.tower-bracket[data-start="0"]'),source=path.closest('.tower-line').querySelector('.tower-source');
+              const gradient=document.getElementById(path.getAttribute('stroke').match(/#([^)]*)/)[1]),x1=Number(gradient.getAttribute('x1')),width=Number(gradient.getAttribute('x2'))-x1;
+              const low=(source.getStartPositionOfChar(1).x-x1)/width,high=(source.getEndPositionOfChar(3).x-x1)/width;
+              const orange=[...gradient.children].filter(n=>getComputedStyle(n).stopColor==='rgb(155, 69, 28)'),tolerance=.25/width;
+              // Final SVG scaling can round glyph positions by a fraction of a pixel.
+              return {count:orange.length,low,high,width,offsets:orange.map(n=>Number(n.getAttribute('offset'))),outside:orange.filter(n=>Number(n.getAttribute('offset'))<low-tolerance||Number(n.getAttribute('offset'))>high+tolerance).length};
+            }""")
+            assert overlap_colors["count"] > 0 and overlap_colors["outside"] == 0, overlap_colors
         assert page.locator(".tower-annotation").count() == len(ranges)
         assert "".join(page.locator(".tower-source").all_text_contents()) == text
+        region_errors = page.evaluate(
+            """ranges => [...document.querySelectorAll('.tower-line')].flatMap(line=>{
+          const source=line.querySelector('.tower-source'),text=source.textContent.replace(/[\\r\\n]+$/,''),left=Number(line.dataset.start),right=left+Array.from(text).length;
+          const bounds=[0];for(const g of new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text))bounds.push(bounds.at(-1)+Array.from(g.segment).length);
+          const spans=ranges.map(([label,start,end],i)=>({id:'T'+(i+1),start,end})).filter(s=>s.start<right&&s.end>left)
+            .map(s=>({...s,start:left+bounds.findLast(b=>b<=Math.max(left,s.start)-left),end:left+bounds.find(b=>b>=Math.min(right,s.end)-left)})).sort((a,b)=>a.start-b.start||a.end-b.end);
+          const expected=[];for(const s of spans){const r=expected.at(-1);if(r&&s.start<r.end){r.end=Math.max(r.end,s.end);r.ids.push(s.id);}else expected.push({start:s.start,end:s.end,ids:[s.id]});}
+          for(const r of expected)r.ids.sort();
+          const actual=[...line.querySelectorAll('.tower-bracket')].map(p=>({start:Number(p.dataset.start),end:Number(p.dataset.end),ids:JSON.parse(p.dataset.spans).map(s=>s.id).sort()}));
+          return JSON.stringify(actual)===JSON.stringify(expected)?[]:[{expected,actual}];
+        })""",
+            ranges,
+        )
+        assert not region_errors, region_errors
         geometry_script = """() => {
           const tags=[...document.querySelectorAll('.tower-tag')].map(n=>n.getBoundingClientRect());
           const collisions=tags.flatMap((a,i)=>tags.slice(i+1).filter(b=>a.left<b.right-.1 && a.right>b.left+.1 && a.top<b.bottom-.1 && a.bottom>b.top+.1));
@@ -295,28 +324,34 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             return {start:Math.abs(first.x-position(from)),end:Math.abs(last.x-Math.max(position(from)+1,position(to,true)))};
           });
           const paths=[...document.querySelectorAll('.tower-bracket')];
-          const bands=[...document.querySelectorAll('.tower-coverage-band')].map(n=>n.getBoundingClientRect());
-          const bandCollisions=bands.some(a=>[...tags,...sources,...paths.map(p=>p.getBoundingClientRect())].some(b=>a.left<b.right-.1&&a.right>b.left+.1&&a.top<b.bottom-.1&&a.bottom>b.top+.1));
+          const bracketGaps=paths.map(path=>{
+            const source=path.parentNode.nextElementSibling;
+            return (source.getBoundingClientRect().top-path.getBoundingClientRect().bottom)/source.getScreenCTM().a;
+          });
           const lineBoxes=[...document.querySelectorAll('.tower-line')].map(n=>n.getBoundingClientRect());
           const lineCollisions=lineBoxes.some((a,i)=>lineBoxes.slice(i+1).some(b=>a.top<b.bottom && a.bottom>b.top));
           const railCollisions=paths.some(p=>{const a=p.getBoundingClientRect();return [...tags,...sources].some(b=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top);});
           const centers=[...document.querySelectorAll('.tower-annotation')].map(n=>{
             const tag=n.querySelector('.tower-tag').getBoundingClientRect();
-            const path=[...n.parentNode.querySelectorAll('.tower-bracket')].find(p=>p.dataset.annotation===n.dataset.annotation).getBoundingClientRect();
+            const source=n.parentNode.querySelector('.tower-source'), points=Array.from(source.textContent),left=Number(source.dataset.start);
+            const bounds=[0];for(const g of new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(source.textContent))bounds.push(bounds.at(-1)+Array.from(g.segment).length);
+            const from=bounds.findLast(x=>x<=Math.max(left,Number(n.dataset.start))-left),to=bounds.find(x=>x>=Math.min(Number(source.dataset.end),Number(n.dataset.end))-left);
+            const position=(offset,last=false)=>{const count=source.getNumberOfChars(),i=points.slice(0,offset).join('').replace(/[\\r\\n]/g,'').length;if(!count||(last&&!i))return 8;if(last||i>=count)return source.getEndPositionOfChar(Math.min(i,count)-1).x;return source.getStartPositionOfChar(i).x;};
+            const center=new DOMPoint((position(from)+position(to,true))/2,0).matrixTransform(source.getScreenCTM());
             const caption=n.querySelector('.tower-caption');
-            return {error:Math.abs(tag.x+tag.width/2-path.x-path.width/2),font:parseFloat(getComputedStyle(caption).fontSize),scale:caption.getScreenCTM().a,fits:caption.getComputedTextLength()<=tag.width-14,compressed:caption.hasAttribute('textLength')};
+            return {error:Math.abs(tag.x+tag.width/2-center.x),font:parseFloat(getComputedStyle(caption).fontSize),scale:caption.getScreenCTM().a,fits:caption.getComputedTextLength()<=tag.width-14,compressed:caption.hasAttribute('textLength')};
           });
           const orderErrors=[...document.querySelectorAll('.tower-line')].flatMap(line=>{
-            const spans=[...line.querySelectorAll('.tower-bracket')];
+            const spans=[...line.querySelectorAll('.tower-annotation')];
             return spans.flatMap(a=>spans.filter(b=>Number(a.dataset.end)-Number(a.dataset.start)<Number(b.dataset.end)-Number(b.dataset.start) && Number(b.dataset.start)<=Number(a.dataset.start) && Number(b.dataset.end)>=Number(a.dataset.end) && a.getBoundingClientRect().y<=b.getBoundingClientRect().y));
           }).length;
-          return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,bandCollisions,errors,centers,orderErrors};
+          return {collisions:collisions.length,textCollisions,lineCollisions,railCollisions,bracketGaps,errors,centers,orderErrors};
         }"""
         geometry = page.evaluate(geometry_script)
         depth_errors = page.evaluate("""() => [...document.querySelectorAll('.tower-line')].flatMap(line=>{
           const paths=[...line.querySelectorAll('.tower-bracket')];
           if(!paths.length)return [];
-          const spans=paths.map(p=>({start:Math.max(Number(line.dataset.start),Number(p.dataset.start)),end:Math.min(Number(line.dataset.end),Number(p.dataset.end)),lane:Number(p.dataset.lane)}));
+          const spans=paths.flatMap(p=>JSON.parse(p.dataset.spans)).map(p=>({start:Math.max(Number(line.dataset.start),p.start),end:Math.min(Number(line.dataset.end),p.end),lane:p.lane}));
           const events=spans.flatMap(p=>[[p.start,1],[p.end,-1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
           let active=0,peak=0;for(const [offset,delta] of events){active+=delta;peak=Math.max(peak,active);}
           const lanes=Math.max(...spans.map(p=>p.lane))+1;
@@ -328,7 +363,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert not geometry["textCollisions"]
         assert not geometry["lineCollisions"]
         assert not geometry["railCollisions"]
-        assert not geometry["bandCollisions"]
+        assert all(2 < gap < 4 for gap in geometry["bracketGaps"]), geometry
         assert geometry["orderErrors"] == 0
         assert all(
             row["error"] < 1
@@ -373,7 +408,6 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
                     "railCollisions",
                     "collisions",
                     "textCollisions",
-                    "bandCollisions",
                     "orderErrors",
                 )
             ), resized

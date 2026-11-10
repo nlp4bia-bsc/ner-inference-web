@@ -544,5 +544,6 @@
   "Job name": "Название задания",
   "Specify language": "Укажите язык",
   "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Для варианта Другой доступны только многоязычные модели; указанный язык сохраняется, но пока не используется.",
-  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Цветные скобки и полосы перекрытия всегда видны. Выберите метку, чтобы просмотреть её аннотацию."
+  "Colored brackets and overlap bands are always visible. Select a label to inspect its annotation.": "Цветные скобки и полосы перекрытия всегда видны. Выберите метку, чтобы просмотреть её аннотацию.",
+  "Shared brackets above the text use multiple colors on overlapping portions. Select a label to inspect its annotation.": "Общие скобки над текстом показывают несколько цветов на перекрывающихся участках. Выберите метку, чтобы просмотреть её аннотацию."
 }
