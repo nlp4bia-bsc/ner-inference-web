@@ -44,7 +44,7 @@ def policy(path, method):
     if path.startswith(("/api/admin/", "/admin")):
         return (
             "Session",
-            "Approved live ADMIN + MFA; atomic revalidation for writes; CSRF",
+            "Approved live ADMIN; optional MFA when enabled; atomic revalidation for writes; CSRF",
             "All account and project data; audited account/project erasure",
             "admin_workflows + real browser + revocation/upload races",
         )
@@ -56,14 +56,14 @@ def policy(path, method):
     ):
         return (
             "Session",
-            "Approved live owner; ADMIN + MFA for an explicit foreign project; CSRF writes",
+            "Approved live owner; ADMIN for an explicit foreign project; MFA only when enabled; CSRF writes",
             "Personal quota/history; authorized foreign-project metadata",
             "individual/bulk deletion + two-user history + browser",
         )
     if path.startswith(("/api/jobs/", "/jobs/")):
         return (
             "Session",
-            "Owner or approved ADMIN + MFA, centrally and in service; expiry; CSRF writes",
+            "Owner or approved ADMIN (MFA only when enabled), centrally and in service; expiry; CSRF writes",
             "Owner data; authorized administrators can inspect and delete",
             "two-user isolation + admin all-project API/browser + legacy/TTL",
         )

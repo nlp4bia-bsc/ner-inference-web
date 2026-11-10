@@ -136,13 +136,13 @@ def test_concurrent_same_email_creates_only_one_account(tmp_path):
         assert c.execute("SELECT count(*) FROM users").fetchone()[0] == 1
 
 
-def test_administrator_bootstrap_needs_mfa_but_not_email(tmp_path):
+def test_administrator_bootstrap_optional_mfa_but_not_email(tmp_path):
     import pyotp
 
     from app.users.schemas import Register
     from scripts.create_admin import create_admin
 
-    settings = Settings(_env_file=None, storage_root=tmp_path)
+    settings = Settings(_env_file=None, storage_root=tmp_path, enable_mfa=True)
     values = {
         **register_values("admin@example.org"),
         "password": "abcd",
@@ -203,6 +203,7 @@ def simple_server(tmp_path, request):
         "COOKIE_SECURE": "false",
         "MAIL_BACKEND": "none",
         "REQUIRE_EMAIL_VERIFICATION": "false",
+        "ENABLE_MFA": "false",
         "STORAGE_ROOT": str(tmp_path / "private"),
         "PUBLIC_BASE_URL": base,
         "APP_PREFIX": request.param,

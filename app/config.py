@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     audit_retention_days: int = Field(365, ge=1)
     mail_backend: str = "none"
     require_email_verification: bool = False
+    enable_mfa: bool = False
     support_email: str = "fernando.gallego@bsc.es"
     smtp_host: str = ""
     smtp_port: int = 587

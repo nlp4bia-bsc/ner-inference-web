@@ -24,7 +24,7 @@ users or sessions; ownership/quota checks happen before durable admission.
   registrant receives no special treatment. New requests are PENDING until an
   administrator explicitly approves them; pending/rejected users cannot sign in.
 - Access tier: STANDARD=100 documents, EXTENDED=1000, UNLIMITED=no administrative
-  count limit. An MFA-authenticated administrator can change tiers and assign a
+  count limit. An approved administrator can change tiers and assign a
   numeric document_limit override, including zero. Clearing it restores the tier.
   Email verification is required only when explicitly enabled.
 - Profile: name, normalized email, institution, professional activity/description,
@@ -167,6 +167,16 @@ STORAGE_ROOT/test-mail; read the link locally and confirm it in the browser. Tes
 also support a memory mailbox. Both capture backends are rejected in production;
 there is no HTTP mailbox or public testing verification endpoint.
 
+## MFA disabled by default (0.11.1)
+
+`ENABLE_MFA=false` disables second-factor checks, OTP inputs, setup links and
+HTML/API enrollment endpoints (404). Administrators use email/password immediately;
+previously enrolled accounts also sign in without a code. Stored MFA records are
+preserved, and password-only sessions never claim MFA verification. Existing
+approval/role/CSRF/revocation and transactional actor checks remain required.
+Only future explicit `ENABLE_MFA=true` restores the TOTP/recovery-code flow
+below. No MFA setup or new environment export is required with defaults.
+
 ## First administrator and routine administration
 
 Start the web/worker and, only if no administrator exists, create the first
@@ -182,24 +192,25 @@ The command prompts for profile fields and getpass password/confirmation. It
 requires a new email and no existing administrator, creates/promotes the new
 identity atomically and records ADMIN_BOOTSTRAP. No default password, first-user
 rule, password argument or public bootstrap API exists. With the optional email
-verification policy enabled, verify the emailed link. Sign in, open `/mfa`, re-enter the password, add the displayed secret to an
+verification policy enabled, verify the emailed link. Sign in and open `/admin`.
+The following enrollment instructions apply only with `ENABLE_MFA=true`: open `/mfa`, re-enter the password, add the displayed secret to an
 RFC6238 authenticator and confirm its code. Save the eight recovery codes when
 shown once; their HMAC verifiers, not raw values, are stored. Enrollment revokes
 its session; sign in again with the next unused TOTP or a recovery code.
 
 `/admin`, `/admin/projects` and `/api/admin/*` require an active, approved ADMIN
-and an MFA-verified live session (plus email verification only if opted in).
+and a live session (plus MFA/email verification only if explicitly enabled).
 The same gate authorizes foreign project content, exports and management. Search,
 approval/decline, role/tier/state/quota changes, session revocation and account/project
 erasure are audited. The last active approved administrator is protected; self-account
-deletion is rejected. Granting ADMIN still requires that user to enroll MFA. The
+deletion is rejected. Granting ADMIN requires enrollment only when ENABLE_MFA=true. The
 existing administrator is preserved by migration 6. See [Administration](ADMINISTRATION.md).
 
 ## Ownership, quotas and history
 
 New jobs derive owner_user_id only from the live session. Job IDs and legacy
 43-character tokens are locators, never authorization. Central middleware and
-JobService enforce owner access or the explicit ADMIN+MFA gate. Ordinary users
+JobService enforce owner access or the explicit administrator gate. Ordinary users
 receive 404 for foreign/unowned IDs before file reads; authorized access receives
 410 at expiry. Personal history remains owner-filtered, queue positions refer to
 the project's owner, and All projects is an explicit administrator view.

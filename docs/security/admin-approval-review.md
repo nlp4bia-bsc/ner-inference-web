@@ -1,5 +1,10 @@
 # Administrator approval and project access review — 0.11.0
 
+Policy update0.11.1: MFA is disabled by default at the product owner’s request.
+ADMIN role, approval, live session and CSRF/transactional checks remain required.
+MFA-specific statements below describe 0.11.0 or explicit ENABLE_MFA=true. See
+[Administration](../ADMINISTRATION.md) and current verification for the update.
+
 Reviewed 2026-11-10 during implementation. This is a developer review with
 synthetic regression evidence, not an independent penetration test or certification.
 Executed commands and results are recorded in [VERIFICATION](../VERIFICATION.md).

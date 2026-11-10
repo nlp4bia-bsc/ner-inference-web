@@ -104,7 +104,8 @@ email uniqueness. Success opens Sign in with a confirmation; there is no email
 verification step. A duplicate address shows an explicit error and leaves the
 existing account unchanged. SMTP is not required. The profile says Registered
 email without falsely marking the email as verified. The account starts at the
-existing STANDARD tier. Administrator actions still require ADMIN plus MFA.
+existing STANDARD tier. Administrator actions require an approved active ADMIN and a live session;
+MFA is disabled by default.
 
 Account/help links open a message to fernando.gallego@bsc.es in the user's mail
 client. Automatic server email requires a configured mail transport. Without one,
@@ -125,13 +126,12 @@ is not immediate deletion. Administrators can see the request in audit history;
 actual identity verification, handling and legal/account retention decisions need
 an institutional procedure. It does not change job TTL or silently send email.
 
-Administration is visible only to approved active ADMIN and requires an
-MFA-verified live session on the server. Email verification applies only if opted in.
+Administration is visible only to approved active ADMIN and requires a
+live session on the server; MFA applies only with ENABLE_MFA=true. Email verification applies only if opted in.
 Search, approval/decline, account/tier/state/role/numeric-quota changes, session
 revocation, erasure and audit history use backend authorization.
 Sensitive actions require a visual confirmation; cancelling leaves the account
-unchanged. Since0.11, All projects explicitly permits approved administrators
-with MFA to inspect and erase other owners' documents. User management supports
+unchanged. Since0.11, All projects explicitly permits approved administrators to inspect and erase other owners' documents. User management supports
 account deletion with owned data. The administrator workspace has a pale mauve
 theme on every page, preserving the scientific entity palette. New registrations
 are access requests and cannot sign in until approved. Existing accounts/admins

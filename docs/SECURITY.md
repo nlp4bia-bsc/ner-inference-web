@@ -1,15 +1,19 @@
 # Security and privacy — V4 through 0.11
 
+Since0.11.1, MFA is disabled by default for all accounts, including previously
+enrolled administrators. Login/enrollment UI and endpoints hide/deny MFA unless
+ENABLE_MFA=true. Role, approval, CSRF and live-session gates remain in force.
+
 Current administrative policy: [Administration](ADMINISTRATION.md) and
 [0.11 developer review](security/admin-approval-review.md). V4 audit reports remain
 historical evidence for that release, not a description of current admin privileges.
 
 All work routes require approved live server sessions. Project content requires
-the owner or an active approved administrator with an MFA-verified session. A token
+the owner or an active approved administrator with a live session. A token
 alone grants no access. Default-deny middleware covers old aliases, catalog,
 documents/progress/downloads, HTML, API docs and OpenAPI. APIs deny anonymous users
 with401; HTML redirects to login. Ordinary users receive404 for foreign and
-historical unowned jobs; approved administrators with MFA may inspect/erase them. Every object access is also guarded in JobService;
+historical unowned jobs; approved administrators may inspect/erase them. Every object access is also guarded in JobService;
 no storage directory is mounted publicly. See AUTHENTICATION_V4.md and the complete
 method/route/authorization matrix in ROUTE_SECURITY_V4.md.
 
@@ -18,7 +22,7 @@ passwords. Profession grants no privileges. System roles are USER/ADMIN; access
 tiers are STANDARD100/EXTENDED1000/UNLIMITED. Public/profile schemas forbid role,
 tier, approval, custom quota and owner mass assignment. New registrations remain
 PENDING until explicitly approved. Optional email verification is independent of
-approval and is disabled by default. Administrators must enroll TOTP and use a verified-MFA session;
+approval and is disabled by default. Administrators may use optional MFA only when ENABLE_MFA=true;
 password-protected enrollment generates protected one-use recovery codes. No first
 registrant, default password or public bootstrap/testing bypass creates an admin.
 
@@ -66,7 +70,7 @@ scientific text/offsets: spreadsheet consumers must import untrusted surfaces as
 text to avoid formula interpretation. No frontend filter alters saved artifacts.
 
 Private files and partial publications still expire72h after terminal completion.
-Owner or ADMIN+MFA checks happen before expiry/existence metadata is disclosed. Cleanup runs
+Owner or ADMIN checks happen before expiry/existence metadata is disclosed. Cleanup runs
 without browser visits and removes originals, publications, exports, intermediates
 and caches, then scrubs job metadata. Persistent account data/audit has a separate
 policy. Deletion/unlink is not forensic SSD/backup erasure; encrypt storage and

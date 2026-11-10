@@ -26,7 +26,7 @@ from tests.test_incremental import Predictor, controlled_stats
 
 @pytest.fixture
 def auth_app(settings):
-    app = create_app(settings)
+    app = create_app(settings.model_copy(update={"enable_mfa": True}))
     app.state.registry.models["es-disease"]["available"] = True
     return app
 
@@ -453,6 +453,7 @@ def test_auth_throttle_i18n_and_safe_configuration(settings):
 
 
 def test_admin_bootstrap_mfa_permissions_audit_and_recovery(settings):
+    settings = settings.model_copy(update={"enable_mfa": True})
     identity = create_admin(settings, Register(**register_values("admin@example.org")))
     app = create_app(settings)
     with TestClient(app) as admin:

@@ -41,6 +41,7 @@ PUBLIC_FIELDS = (
 def public_user(row, settings):
     return {
         **{key: row[key] for key in PUBLIC_FIELDS},
+        "mfa_available": settings.enable_mfa,
         "max_documents_per_job": document_limit(
             row["access_tier"], settings.max_documents_per_job, override=row["document_limit"]
         ),
@@ -271,14 +272,14 @@ class AuthService:
                     else "approval_declined",
                     403,
                 )
-            if live["mfa_enabled"] and not self._check_mfa(c, live, form.otp):
+            if self.s.enable_mfa and live["mfa_enabled"] and not self._check_mfa(c, live, form.otp):
                 raise ServiceError("invalid_credentials", 401)
             if hasher.check_needs_rehash(live["password_hash"]):
                 c.execute(
                     "UPDATE users SET password_hash=? WHERE id=?",
                     (hash_password(form.password), live["id"]),
                 )
-            token = self._new_session(c, live, bool(live["mfa_enabled"]))
+            token = self._new_session(c, live, self.s.enable_mfa and bool(live["mfa_enabled"]))
             audit(c, live["id"], live["id"], "LOGIN")
         return token
 
@@ -306,7 +307,11 @@ class AuthService:
                     "UPDATE sessions SET last_seen_at=? WHERE token_hash=? AND revoked_at IS NULL",
                     (now, row["session_hash"]),
                 )
-            return {**dict(row), "email_verification_required": self.s.require_email_verification}
+            return {
+                **dict(row),
+                "email_verification_required": self.s.require_email_verification,
+                "mfa_available": self.s.enable_mfa,
+            }
 
     def csrf(self, seed):
         return hmac.new(self.db.rate_key, ("csrf:" + seed).encode(), hashlib.sha256).hexdigest()
@@ -389,6 +394,8 @@ class AuthService:
             audit(c, account["id"], account["id"], "PROFILE_UPDATED")
 
     def start_mfa(self, account, password, ip):
+        if not self.s.enable_mfa:
+            raise ServiceError("Not found", 404)
         self.throttle("mfa", account["email"], ip)
         if account["mfa_enabled"] or not verify_password(account["password_hash"], password):
             raise ServiceError("invalid_credentials", 401)
@@ -407,6 +414,8 @@ class AuthService:
         return secret
 
     def confirm_mfa(self, account, otp, ip):
+        if not self.s.enable_mfa:
+            raise ServiceError("Not found", 404)
         self.throttle("mfa-confirm", account["email"], ip)
         codes = [secrets.token_hex(12) for _ in range(8)]
         with self.db.connect() as c:

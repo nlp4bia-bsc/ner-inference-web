@@ -2,11 +2,9 @@
 
 import os
 import re
-import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
-import pyotp
 import pytest
 
 from app.config import Settings
@@ -49,19 +47,9 @@ def bootstrap(root, base):
 
 def administrator_login(page, base):
     login(page, base, "browser-admin@example.test")
-    page.goto(base + "/mfa")
-    page.locator("#current_password").fill(PASSWORD)
-    page.get_by_role("button", name="Set up authenticator", exact=True).click()
-    secret = page.locator("#mfa-secret").text_content()
-    page.locator("#otp").fill(pyotp.TOTP(secret).at(time.time() + 30))
-    page.get_by_role("button", name="Confirm authenticator code", exact=True).click()
-    code = page.locator("#recovery-codes li").first.text_content()
-    page.goto(base + "/login")
-    page.locator("#email").fill("browser-admin@example.test")
-    page.locator("#password").fill(PASSWORD)
-    page.locator("#otp").fill(code)
-    page.get_by_role("button", name="Sign in", exact=True).click()
-    page.wait_for_url(base + "/?lang=en")
+    assert page.locator("#otp").count() == 0
+    assert page.locator('a[href*="/mfa"]').count() == 0
+    assert page.request.get(base + "/mfa").status == 404
 
 
 def confirm(page):

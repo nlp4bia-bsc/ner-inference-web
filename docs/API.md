@@ -3,9 +3,13 @@
 Every work/catalog/document/progress/download route requires a live server
 session. Private APIs/OpenAPI return401 without it; HTML redirects303 to login.
 Job IDs and legacy tokens are locators only: project routes require the owner or
-an active approved ADMIN with MFA, and unexpired content. Ordinary users receive
+an active approved ADMIN, and unexpired content. Ordinary users receive
 404 for foreign/unowned resources; direct URLs do not grant authority. Name/email come from the account, never from a claimed owner field.
 Public exceptions and the complete method/policy matrix are in ROUTE_SECURITY_V4.md.
+
+MFA is disabled by default, including for previously enrolled accounts. Login
+requires email/password only. ENABLE_MFA=true explicitly restores the optional
+second-factor feature. Account approval remains mandatory.
 
 Auth APIs accept JSON (public actions also require csrf_token from the login/register
 page and its challenge cookie). After login, GET /api/auth/session returns the
@@ -23,8 +27,8 @@ are HttpOnly/Secure in production and must not be copied into browser storage.
 | POST /api/auth/change-password | current password and new password+confirmation; revoke all sessions |
 | GET/PATCH /api/profile | own allowlisted profile; roles/tiers/email/owner cannot be edited |
 | GET /api/my/jobs?offset=0 | paged owner-only history, maximum100 rows |
-| POST /api/auth/mfa/start, /mfa/confirm | password-protected TOTP enrollment, one-time recovery-code display |
-| GET /api/admin/users, /metrics, /audit | approved active ADMIN+MFA account management/aggregate audit |
+| POST /api/auth/mfa/start, /mfa/confirm | unavailable (404) by default; explicit ENABLE_MFA=true enables TOTP enrollment |
+| GET /api/admin/users, /metrics, /audit | approved active ADMIN account management/aggregate audit |
 | PATCH /api/admin/users/{identity} | allowlisted role/tier/state/document_limit change, atomically audited |
 | POST /api/admin/users/{identity}/revoke-sessions | audited real revocation |
 | POST /api/admin/users/{identity}/review | decision APPROVED or REJECTED; PENDING only; audited |
@@ -133,7 +137,7 @@ noindex, nosniff and a same-origin CSP.
 
 All routes can be mounted with APP_PREFIX=/ner; set PUBLIC_BASE_URL with the same
 path. Existing unprefixed contracts are unchanged when APP_PREFIX is empty.
-New document content routes require a live session, owner or authorized ADMIN+MFA and unexpired job and an annotated
+New document content routes require a live session, owner or authorized ADMIN and unexpired job and an annotated
 document; metadata can be read during processing. 404/409/410 apply before reading files. OpenAPI exposes Pydantic document/text/annotation/statistics schemas.
 
 | GET path (append to /api/jobs/{token}) | Parameters / response |
@@ -175,7 +179,7 @@ GET /jobs/{token}/viewer is an alias for the existing API viewer URL and opens
 when at least one annotated document is published. GET
 /api/jobs/{token}/documents/{document_id}/download/txt and /download/ann provide
 individual validated artifacts, including during processing. Every route checks
-the session, owner or authorized ADMIN+MFA, and exact expiry before reading data.
+the session, owner or authorized ADMIN, and exact expiry before reading data.
 
 COMPLETED_WITH_ERRORS is a new terminal status. Full-export endpoints offer only
 the validated subset with *_partial attachment names and an explicit partial

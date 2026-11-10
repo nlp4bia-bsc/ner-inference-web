@@ -10,7 +10,7 @@ All content is private: originals, ANN, TSV, ZIP, native/operational statistics,
 viewer indexes, incremental published documents, incomplete microbatches and worker intermediates. The API's
 JobService.available/completed guards are shared by status, downloads, statistics,
 viewer HTML and every new document route. All these routes also require a live session and owner access or approved
-ADMIN+MFA. Exactly at expiry authorized access receives410; ordinary users
+ADMIN. Exactly at expiry authorized access receives410; ordinary users
 receive404 for foreign/unowned locators;
 unknown/deleted capabilities return 404. No static mount exposes storage.
 

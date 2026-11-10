@@ -1,4 +1,31 @@
-# Latest: Administrator approval, all projects, erasure and custom quotas (0.11.0)
+# Latest: MFA disabled by default (0.11.1)
+
+Executed 2026-11-10 in the same Python3.12/CPU/Chromium environment below:
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q`: **304 passed, 121 browser cases
+  skipped**, 126.37 seconds. The skipped cases require browser opt-in; this is
+  not a claim that all browser cases were repeated for this release.
+- `AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1
+  /tmp/ner-ui-env/bin/python -m pytest -q tests/test_admin_browser.py
+  tests/test_auth_browser.py tests/test_simple_registration.py`: **24 passed**,
+  128.56 seconds (20 browser cases plus four repeated server cases). Real default
+  admin actions now use password-only sessions, at root and /ner, with responsive
+  and axe checks. Separate explicit ENABLE_MFA=true fixtures still exercise the
+  original enrollment, TOTP/recovery codes, one-use enforcement and auth UI.
+- New regressions use an actually enrolled account on the same database, then
+  disable policy: password-only login/admin access succeeds, MFA records remain,
+  and the session does not falsely claim MFA verification. Enabling policy again
+  denies that password-only administrative session and requires the second factor.
+  Default MFA HTML/API endpoints return404 and login/profile/navigation hide OTP/setup.
+  All approval, role, quota, erasure, CSRF and revocation regressions pass without MFA.
+- `docker compose --env-file /dev/null config --format json`: web and worker both
+  resolve ENABLE_MFA=false. Images were not rebuilt/run for this follow-up.
+- Route inventory regenerated: 96 method/route pairs. Ruff lint/format and
+  `git diff --check` pass. Bandit reports no medium/high findings (seven low).
+- Wheel/sdist build and private-data exclusion checks pass. One existing pytest
+  plugin deprecation warning is present. No new dependencies or schema migration.
+
+# Previous: Administrator approval, all projects, erasure and custom quotas (0.11.0)
 
 Executed 2026-11-10 with Python3.12.14, FastAPI0.141.1, Starlette1.6.0,
 Pydantic2.13.4, torch2.15.0+cpu, Transformers5.22.1, Playwright1.62.0 and

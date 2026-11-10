@@ -7,9 +7,15 @@ Developed by NLP4BIA · Barcelona Supercomputing Center
 Explore, annotate and analyze multilingual documents with registered accounts.
 Pasted text, UTF-8 TXT and nested-folder ZIP corpora use incremental ner_lab
 inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
-requires an approved account. Owners and MFA-authenticated administrators can
+requires an approved account. Owners and authorized administrators can
 access projects; a private link alone grants no access. Files remain available
 for **72 hours after completion**.
+
+Version **0.11.1** disables MFA by default, including for previously enrolled
+accounts. Administrators sign in with email/password and can use all administrative
+features immediately. OTP inputs, MFA links and enrollment endpoints are unavailable.
+Account approval, role checks, CSRF and session revocation remain mandatory.
+No new configuration is required; `ENABLE_MFA=true` is a future explicit opt-in.
 
 Version **0.11.0** adds mandatory administrator approval for new access requests,
 account deletion and an **All projects** administration view. Administrators can
@@ -117,7 +123,7 @@ Synthetic fixtures are not evidence of biomedical model accuracy.
 The public welcome is the protected platform's Sign in screen. After actual email
 login, Research Workspace shows only your retained job metrics/history,
 with New annotation, My jobs, Models and Profile navigation. The model catalog is
-also private. Administration requires an approved active ADMIN plus MFA. Its
+also private. Administration requires an approved active ADMIN. Its
 separate All projects view grants authorized inspection and erasure across owners.
 
 ![NLP4BIA sign in with the original BSC institutional logo](docs/previews/v5/login-desktop.png)
@@ -169,7 +175,7 @@ Automatic accessibility checks plus keyboard/reflow probes are not WCAG certific
 ```mermaid
 flowchart LR
     B[Browser: templates / ES modules] --> P[HTTPS proxy /ner/]
-    P --> G[Approved session / CSRF / owner or ADMIN+MFA]
+    P --> G[Approved session / CSRF / owner or ADMIN]
     G --> A[FastAPI routers]
     A --> J[Job use cases / input streams]
     J --> Q[SQLite WAL: FIFO / document states / rate limits]
@@ -299,9 +305,8 @@ docker compose exec web python -m scripts.create_admin
 
 The command prompts securely; no default/password argument/first-registrant rule
 exists. Keep the existing administrator on upgrades; bootstrap only once. Sign in,
-open /mfa, enroll an authenticator and save the eight one-use recovery codes shown
-once. Enrollment revokes its session: sign in
-again with TOTP or a recovery code, then open /admin. An administrator can search
+then open /admin. MFA is disabled by default, including for existing enrolled
+accounts. No authenticator enrollment or code is needed. An administrator can search
 access requests and profiles, approve/decline, assign tiers/roles/numeric quotas,
 suspend/reactivate, revoke sessions and delete accounts. All projects allows
 inspection and erasure of other owners' documents. Email verification applies
@@ -405,7 +410,7 @@ curl -X POST http://127.0.0.1:8000/api/jobs \
   -F language=es -F entities=DISEASE -F 'files=@corpus.zip'
 ```
 
-Save the returned locator URL. It remains protected by approved login, owner or ADMIN+MFA authorization and
+Save the returned locator URL. It remains protected by approved login, owner or ADMIN authorization and
 expiry; sharing a token does not transfer access. Name/email come from the account.
 See docs/API.md for repeated checkpoint IDs and all authentication contracts.
 
@@ -637,7 +642,7 @@ See [verification](docs/VERIFICATION.md) for actual results and untested limits.
 ## Security, layout and limits
 
 Approved login and live server permissions are mandatory. Email verification is
-optional. Owners and approved MFA-authenticated administrators can access project
+optional. Owners and approved administrators can access project
 data; ordinary users cannot access other owners' projects. Keep TLS, trusted proxy boundaries, private storage, rate limits,
 upload bounds and no-store/no-referrer/noindex/CSP. Administrators must
 approve the institution's data-handling/retention policy and trusted checkpoints.

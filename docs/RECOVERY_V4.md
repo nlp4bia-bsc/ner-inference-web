@@ -1,6 +1,7 @@
 # Account, MFA and deployment recovery
 
-> Current policy: email verification is optional (disabled by default). New access
+> Current policy: MFA and email verification are optional (disabled by default).
+> MFA recovery guidance applies only with ENABLE_MFA=true. New access
 > requests require administrator approval regardless of email verification. The
 > SMTP guidance below applies only when those mail-based workflows are enabled.
 > Existing administrator accounts/MFA survive migration6; see

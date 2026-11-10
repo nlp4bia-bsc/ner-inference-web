@@ -75,7 +75,10 @@ def main():
             legal_accepted=True,
         )
         create_admin(settings, form)
-        print("Administrator created. Sign in and enroll MFA before administration.")
+        print(
+            "Administrator created. Sign in"
+            + (" and enroll MFA before administration." if settings.enable_mfa else ".")
+        )
     except Exception:
         raise SystemExit(
             "Administrator creation failed. Check configuration, profile and password confirmation; no credentials were printed."

@@ -24,8 +24,7 @@ def require_live(c, account, settings, admin=False):
     if admin and (
         (settings.require_email_verification and not row["email_verified_at"])
         or row["system_role"] != "ADMIN"
-        or not row["mfa_enabled"]
-        or not row["mfa_verified"]
+        or (settings.enable_mfa and (not row["mfa_enabled"] or not row["mfa_verified"]))
     ):
         raise ServiceError("forbidden", 403)
     return dict(row)

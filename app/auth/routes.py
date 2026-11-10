@@ -104,6 +104,7 @@ def router(auth, templates, jobs):
                 "prefix": prefix,
                 "csrf": auth.csrf(seed),
                 "account": public_user(account, auth.s) if account else None,
+                "mfa_available": auth.s.enable_mfa,
                 "message": ui_translate(message, language) if message else None,
                 "message_key": message,
                 "token": request.query_params.get("token", ""),
@@ -199,6 +200,8 @@ def router(auth, templates, jobs):
     }
 
     async def operation(request, operation, is_api):
+        if operation in ("mfa/start", "mfa/confirm") and not auth.s.enable_mfa:
+            raise ServiceError("Not found", 404)
         language = locale(request.scope.get("auth_locale"))
         ip = request.client.host if request.client else "unknown"
         try:
@@ -342,6 +345,8 @@ def router(auth, templates, jobs):
 
         def page(page_mode):
             def get(request: Request):
+                if page_mode == "mfa" and not auth.s.enable_mfa:
+                    raise ServiceError("Not found", 404)
                 return render(request, page_mode)
 
             return get

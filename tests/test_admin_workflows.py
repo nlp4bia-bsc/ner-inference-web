@@ -1,11 +1,10 @@
-"""Approval and administration exercise real sessions, MFA, CSRF and ownership gates."""
+"""Approval and administration exercise real sessions, CSRF and ownership gates."""
 
 import json
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from unittest.mock import patch
 
-import pyotp
 import pytest
 from fastapi.testclient import TestClient
 
@@ -48,14 +47,8 @@ def administration(settings, request):
     with TestClient(app) as administrator:
         prefix = settings.app_prefix
         assert sign_in(administrator, ADMIN_EMAIL).status_code == 200
-        assert administrator.get(prefix + "/api/admin/users").status_code == 403
-        secret = administrator.post(
-            prefix + "/api/auth/mfa/start", json={"current_password": register_values()["password"]}
-        ).json()["secret"]
-        codes = administrator.post(
-            prefix + "/api/auth/mfa/confirm", json={"otp": pyotp.TOTP(secret).now()}
-        ).json()["recovery_codes"]
-        assert sign_in(administrator, ADMIN_EMAIL, otp=codes[0]).status_code == 200
+        assert not settings.enable_mfa
+        assert administrator.get(prefix + "/api/admin/users").status_code == 200
         yield app, administrator, prefix, identity
 
 
@@ -503,3 +496,60 @@ def test_profile_markup_is_escaped_and_search_is_parameterized(administration):
         assert (
             administrator.get(prefix + "/api/admin/users", params={"q": "' OR 1=1 --"}).json() == []
         )
+
+
+def test_default_administration_has_no_mfa_forms_or_enrollment_endpoints(administration):
+    _, administrator, prefix, _ = administration
+    session = administrator.get(prefix + "/api/auth/session").json()
+    assert session["user"]["mfa_available"] is False
+    assert session["user"]["mfa_enabled"] == 0
+    assert 'id="otp"' not in administrator.get(prefix + "/login").text
+    for path in ("/", "/profile", "/admin", "/admin/projects"):
+        response = administrator.get(prefix + path)
+        assert response.status_code == 200
+        assert f'href="{prefix}/mfa' not in response.text
+    for path in ("/mfa", "/api/auth/mfa/start", "/api/auth/mfa/confirm"):
+        response = (
+            administrator.get(prefix + path)
+            if path == "/mfa"
+            else administrator.post(prefix + path, json={})
+        )
+        assert response.status_code == 404
+
+
+def test_previously_enrolled_admin_uses_password_only_when_mfa_is_disabled(administration):
+    import pyotp
+
+    app, administrator, prefix, _ = administration
+    enabled = create_app(app.state.settings.model_copy(update={"enable_mfa": True}))
+    with TestClient(enabled) as client:
+        assert sign_in(client, ADMIN_EMAIL).status_code == 200
+        assert client.get(prefix + "/api/admin/users").status_code == 403
+        started = client.post(
+            prefix + "/api/auth/mfa/start", json={"current_password": register_values()["password"]}
+        )
+        enrolled = client.post(
+            prefix + "/api/auth/mfa/confirm",
+            json={"otp": pyotp.TOTP(started.json()["secret"]).now()},
+        )
+        assert enrolled.status_code == 200
+        assert sign_in(client, ADMIN_EMAIL).status_code == 401
+
+    # The same database and actual enrollment are used after changing only policy.
+    assert sign_in(administrator, ADMIN_EMAIL).status_code == 200
+    assert administrator.get(prefix + "/api/admin/users").status_code == 200
+    session = administrator.get(prefix + "/api/auth/session").json()
+    assert session["user"]["mfa_enabled"] == 1
+    assert session["user"]["mfa_available"] is False
+    raw = administrator.cookies.get(app.state.settings.session_cookie)
+    assert app.state.auth.resolve(raw)["mfa_verified"] == 0
+    # A password-only session must not claim MFA verification if enabled later.
+    with TestClient(enabled) as client:
+        client.cookies.update(administrator.cookies)
+        assert client.get(prefix + "/api/admin/users").status_code == 403
+        assert sign_in(client, ADMIN_EMAIL).status_code == 401
+        assert (
+            sign_in(client, ADMIN_EMAIL, otp=enrolled.json()["recovery_codes"][0]).status_code
+            == 200
+        )
+        assert client.get(prefix + "/api/admin/users").status_code == 200

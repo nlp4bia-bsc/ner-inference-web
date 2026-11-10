@@ -20,7 +20,7 @@ def require_owner(job):
 
 
 def require_job_access(job):
-    """Owners, or an approved administrator with an MFA-verified live session."""
+    """Owners or approved administrators; MFA applies only when explicitly enabled."""
     account = user()
     if job.get("owner_user_id") == account["id"]:
         return job
@@ -44,6 +44,8 @@ def require_admin():
         raise ServiceError("forbidden", 403)
     if account.get("email_verification_required") and not account.get("email_verified_at"):
         raise ServiceError("verification_required", 403)
-    if not account.get("mfa_enabled") or not account.get("mfa_verified"):
+    if account.get("mfa_available") and (
+        not account.get("mfa_enabled") or not account.get("mfa_verified")
+    ):
         raise ServiceError("mfa_required", 403)
     return account

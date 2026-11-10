@@ -1,4 +1,4 @@
-# Administrator approval, projects and document quotas (0.11.0)
+# Administrator approval, projects and document quotas (0.11.1)
 
 ## Access requests
 
@@ -9,7 +9,7 @@ use private APIs or upload documents. Verifying an email, when explicitly enable
 does not approve a request. By default registration neither sends mail nor requires
 email verification. Approval is mandatory and has no public bypass/configuration flag.
 
-An existing administrator signs in with MFA and opens **User management** (`/admin`).
+An existing administrator signs in with email/password and opens **User management** (`/admin`).
 Pending cards show full name, email, institution, professional activity and its
 OTHER description. **Approve** enables subsequent login; **Decline** blocks it.
 Reviews are transactional, audited and only accept PENDING requests. A second
@@ -28,7 +28,7 @@ Theme/link visibility is presentation only: backend authorization is mandatory.
 email and institution, project name, language, status and document counts. Search
 and pagination are server-side. Open job, viewer, document management and exports
 use the ordinary project routes with the same expiry checks. Approved, active
-ADMIN plus an MFA-verified live session grants administrative access. Other users
+ADMIN with a live session grants administrative access. MFA is disabled by default. Other users
 remain strictly isolated, including direct and percent-encoded URLs. Merely knowing
 a project ID or legacy link, or claiming a role in a form, grants no access.
 
@@ -100,10 +100,22 @@ Keep the existing `.env`, private `storage/` and `gazetteers/`.
 For Docker, rebuild/recreate web and worker using the existing deployment profiles;
 see [Docker quickstart](DOCKER_QUICKSTART.md). No new environment flag or SMTP setup
 is needed. **Do not run create_admin again if the administrator already exists.**
-If MFA has not been enrolled, open `/mfa`, enroll, save recovery codes and sign in
-again. New installations bootstrap once through the trusted interactive
+MFA is not required and its setup links/endpoints are disabled by default, even
+for previously enrolled accounts. New installations bootstrap once through the trusted interactive
 `python3 -m scripts.create_admin` command, never a public first-user privilege rule.
 
 See [API](API.md), [route inventory](ROUTE_SECURITY_V4.md),
 [review and limitations](security/admin-approval-review.md) and
 [executed verification](VERIFICATION.md).
+
+## MFA policy (0.11.1)
+
+`ENABLE_MFA=false` is the Python and Compose default. Sign-in uses email/password;
+previously enrolled accounts also bypass the second factor. Approval, ACTIVE state,
+ADMIN role, live-session revalidation, CSRF/origin checks and revocation still apply.
+Login has no OTP input, profile/navigation have no MFA links, and `/mfa` plus its
+HTML/API enrollment actions return404. No new migration or enrollment is needed.
+Stored encrypted secrets/recovery hashes are preserved rather than erased. Only
+an explicit future `ENABLE_MFA=true` enables the original enrollment and MFA rules.
+Password-only sessions are never marked MFA-verified: after enabling, administrators
+must sign in with the second factor before using administrative features.

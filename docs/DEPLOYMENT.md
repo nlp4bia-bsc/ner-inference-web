@@ -285,7 +285,7 @@ interrupted jobs replay at their original FIFO sequence up to MAX_ATTEMPTS.
 Inference exceptions/timeouts fail terminally without partial downloads.
 
 The site still requires BSC domain/TLS/reverse proxy, checkpoint paths/revisions,
-resource limits, backup/privacy policy, monitoring and any GPU mounts. Production requires HTTPS/Secure cookies and administrator MFA. STARTTLS SMTP
+resource limits, backup/privacy policy, monitoring and any GPU mounts. Production requires HTTPS/Secure cookies and administrator role checks. MFA is disabled by default. STARTTLS SMTP
 is needed only if email recovery or explicit email verification is enabled. The local file-mail example is for
 loopback development only. See AUTHENTICATION_V4.md for exact settings/bootstrap
 and RECOVERY_V4.md for coordinated upgrade/restore and MFA recovery.
@@ -308,7 +308,8 @@ additive; old ownerless links are closed without changing their TTL. Do not clai
 historical jobs by email, and do not expose a v3 rollback against the v4 database.
 The web container alone receives SMTP credentials. Bootstrap with
 `docker compose exec web python -m scripts.create_admin` in an interactive terminal,
-enroll TOTP and save recovery codes before administering accounts. Verify mail
+sign in with email/password before administering accounts. TOTP/recovery enrollment
+is needed only if ENABLE_MFA=true is explicitly selected. Verify mail
 only if the optional email verification policy has been enabled.
 
 The full native CPU regression uses a synthetic checkpoint. Clinical checkpoints,
@@ -477,7 +478,17 @@ for the complete profiles and [Administration](ADMINISTRATION.md) for workflows.
 
 `/admin` now approves/declines access, manages numeric per-user document quotas,
 and deletes accounts with their data. `/admin/projects` explicitly lists all owners'
-projects for inspection/erasure. Both require ADMIN plus live MFA. All administrator
+projects for inspection/erasure. Both require an approved active ADMIN and a live session. MFA is disabled by default. All administrator
 views have a pale mauve theme, preserving entity colors. The privacy notice and
 route matrix describe this intentional cross-owner administrative access; older
 V4 audit reports describe the previous owner-only policy.
+
+## Updating to 0.11.1: no MFA setup
+
+Restart web and worker from the updated checkout/image, preserving the private
+volume and existing `.env`. `ENABLE_MFA=false` is the Python and Compose default;
+no additional export is required. Existing administrators sign in with email and
+password, even if previously enrolled. OTP/setup UI is hidden and MFA setup routes
+return404. Approval, account/role gates, CSRF, quotas and revocation are unchanged.
+No schema migration or secret deletion is needed. Future `ENABLE_MFA=true` opt-in
+restores second-factor enforcement; password-only sessions are not MFA-verified.

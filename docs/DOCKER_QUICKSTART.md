@@ -183,8 +183,9 @@ docker compose exec web \
   python -m scripts.create_admin
 ```
 
-Introduce los datos interactivamente; después inicia sesión y configura MFA para
-acceder a la administración.
+Introduce los datos interactivamente; después inicia sesión con correo y contraseña
+y accede a la administración. MFA está desactivado por defecto (`ENABLE_MFA=false`),
+incluso para cuentas que ya lo tenían configurado; no hace falta configurar nada.
 
 ## GPU NVIDIA en el futuro
 

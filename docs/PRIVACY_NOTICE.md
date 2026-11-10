@@ -16,7 +16,7 @@ use keyed identifiers; the sessions interface does not expose IPs or token hashe
 
 Uploaded/pasted text, source paths, model selections, annotations, exports and job
 metadata are associated with their uploading account. Owners and authorized
-MFA-authenticated administrators can inspect documents, annotations and exports.
+administrators can inspect documents, annotations and exports.
 Administrators review access requests, see profile details, adjust quotas, and
 can delete any project or account with its owned data. Submit only data you
 are authorized to process under the applicable institutional research policy.
@@ -49,7 +49,7 @@ Este texto no es un aviso legal definitivo ni aprobado. La institución debe def
 responsable, base jurídica, jurisdicción, contacto y procedimiento de derechos.
 Se guardan datos de cuenta, verificadores de seguridad y registros de auditoría;
 los documentos y resultados son accesibles por su propietario y administradores
-autorizados con MFA. Las nuevas solicitudes requieren aprobación administrativa.
+autorizados. Las nuevas solicitudes requieren aprobación administrativa.
 El administrador puede modificar cuotas y eliminar cuentas con sus proyectos.
 Los archivos caducan 72 horas después de finalizar el trabajo; las cuentas y copias
 de seguridad tienen políticas distintas. Se usan cookies esenciales, sin analítica
@@ -62,7 +62,7 @@ principal y la política de retención para el alcance técnico.
 Aquest text no és un avís legal definitiu ni aprovat. La institució ha de definir
 responsable, base jurídica, jurisdicció, contacte i procediment de drets. Es desen
 dades del compte, verificadors de seguretat i registres d'auditoria; els documents
-i resultats són accessibles pel propietari i administradors autoritzats amb MFA.
+i resultats són accessibles pel propietari i administradors autoritzats.
 Les noves sol·licituds requereixen aprovació administrativa. L’administrador pot
 modificar quotes i eliminar comptes amb els seus projectes. Els fitxers caduquen
 72 hores després de finalitzar el treball; els comptes i les còpies de seguretat

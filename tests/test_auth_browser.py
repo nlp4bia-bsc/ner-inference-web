@@ -35,6 +35,7 @@ def auth_server(tmp_path, request):
         "MAIL_BACKEND": "file",
         "MODEL_LOADING_MODE": "validated_local",
         "REQUIRE_EMAIL_VERIFICATION": "true",
+        "ENABLE_MFA": "true",
         "STORAGE_ROOT": str(root),
         "PUBLIC_BASE_URL": base,
         "APP_PREFIX": prefix,
@@ -330,6 +331,7 @@ def test_admin_mfa_recovery_display_and_account_management(auth_server):
         mail_backend="memory",
         model_loading_mode="validated_local",
         require_email_verification=True,
+        enable_mfa=True,
         app_prefix="/ner" if base.endswith("/ner") else "",
         public_base_url=base,
     )

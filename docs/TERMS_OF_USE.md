@@ -18,7 +18,7 @@ administrative document-count cap, not technical resource limits. Attempting to
 access another user's work, bypass controls or overload the service is outside the
 intended authorized workflow.
 
-Owners and authorized MFA-authenticated administrators can access job data.
+Owners and authorized administrators can access job data.
 Administrators may review profiles and erase any project or account with its data. A job URL alone grants no access.
 Results expire 72 hours after completion; download authorized results before expiry.
 The service does not promise long-term archival storage. Account deletion requests
@@ -35,7 +35,7 @@ Estas condiciones requieren revisión institucional antes de producción. Utiliz
 plataforma solo para investigación y con datos cuyo tratamiento tengas autorizado.
 Las predicciones pueden contener errores y no sustituyen el juicio clínico. Protege
 tus credenciales y factores MFA. Las cuotas se aplican en el servidor; UNLIMITED
-mantiene los límites de recursos. El propietario y los administradores autorizados con MFA pueden consultar
+mantiene los límites de recursos. El propietario y los administradores autorizados pueden consultar
 los trabajos; el administrador puede eliminar proyectos y cuentas. Las nuevas
 cuentas requieren aprobación administrativa; un enlace no concede acceso. Los resultados caducan a las 72 horas de
 finalizar. La solicitud de eliminación no es inmediata. No se afirman aprobación
@@ -47,7 +47,7 @@ Aquestes condicions requereixen revisió institucional abans de producció. Util
 la plataforma només per a recerca i amb dades que tinguis autorització per tractar.
 Les prediccions poden contenir errors i no substitueixen el judici clínic. Protegeix
 les credencials i els factors MFA. Les quotes s'apliquen al servidor; UNLIMITED
-manté els límits de recursos. El propietari i els administradors autoritzats amb MFA poden consultar els
+manté els límits de recursos. El propietari i els administradors autoritzats poden consultar els
 treballs; l’administrador pot eliminar projectes i comptes. Els comptes nous
 requereixen aprovació administrativa; un enllaç no concedeix accés. Els resultats caduquen a les 72 hores de
 finalitzar. La sol·licitud d'eliminació no és immediata. No s'afirmen aprovació
