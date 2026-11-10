@@ -58,7 +58,7 @@ def test_workspace_metrics_and_history_are_owner_scoped(settings):
         foreign = response.json()["job_id"]
         own_history = owner.get("/api/my/jobs").json()
         assert [row["id"] for row in own_history] == [accepted["job_id"]]
-        assert own_history[0]["name"] == "nested/sample.txt"
+        assert own_history[0]["name"] == "sample"
         assert own_history[0]["language"] == "es"
         assert foreign not in owner.get("/").text
         assert 'data-number="0"' in owner.get("/").text

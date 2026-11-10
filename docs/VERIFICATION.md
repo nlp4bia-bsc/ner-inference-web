@@ -1,4 +1,38 @@
-# Latest: Fuzzy match, inspector columns and public Docker deployment (0.10.2)
+# Latest: Named jobs, Other language and persistent tower colors (0.10.3)
+
+Executed 2026-11-10, Python 3.12, Torch 2.15.0+cpu, Transformers 5.22.1,
+ner_lab pinned to `8640d4797b081a5f6b66d9b45c11269542a79a26`, system Chromium:
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q`: **272 passed, 115 browser cases
+  skipped**, 113.30 seconds. Metadata tests cover TXT, real ZIP and pasted inputs,
+  custom title preservation, old history/status fallback, control/length validation,
+  multilingual eligibility and owner document metadata.
+- The CI Chromium/accessibility file list ran in two disjoint groups with
+  `BROWSER_TESTS=1 AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js`:
+  `test_ui_v3.py test_overlap_readability.py test_design_browser.py`: **66 passed**,
+  330.72 seconds; remaining CI files: **85 passed**, 196.33 seconds. **151 passed,
+  no skips** in total. This includes all sixteen UI locales, root and `/ner`,
+  inspector glyph geometry, unchanged overlap depth/offsets, colors before
+  selection, and title/language persistence across uploads, tabs and locale changes.
+- Real tiny CPU classifier integration exercises cold download and warm reuse
+  for both Spanish and Other, including native text statistics and exports.
+  It uses a synthetic local HTTP Hub and an ordinary token classifier, not
+  downloaded clinical weights. The separate controlled MTL adapter test verifies
+  routing/publication; it does **not** establish compatibility of the existing
+  custom MTL architectures. Those still require their own compatible runtime adapter.
+- All 38 existing CSS palette backgrounds have at least **5.45:1** contrast with
+  the new white tower captions. Reviewed a synthetic overlapping-entity screenshot
+  at 1440 pixels. Only the active annotation reveals its span lines.
+- Ruff lint/format, Prettier, Bandit medium/high checks and wheel/sdist build pass.
+  Package inspection excludes gazetteers, Parquet, FAISS indices, private storage,
+  certificates, `.env` and development artifacts. No dependency changes or database
+  migration are required. Docker deployment configuration is unchanged.
+- One pytest plugin deprecation warning is present; no final verification failures.
+
+Commands use an isolated verification environment created for this execution;
+this does not change the deployment's Conda environment or Docker images.
+
+# Previous: Fuzzy match, inspector columns and public Docker deployment (0.10.2)
 
 Executed 2026-11-07:
 

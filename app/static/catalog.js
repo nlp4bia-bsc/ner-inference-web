@@ -40,7 +40,7 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
   }
   function modelChoice(row, retained, categories = []) {
     const label = document.createElement("label");
-    const supported = !row.languages || row.languages.includes(language.value);
+    const supported = supports(row);
     const available = row.available && supported;
     label.className = `entity${available ? "" : " unavailable"}`;
     const check = document.createElement("input");
@@ -110,6 +110,11 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
     }
     return container;
   }
+  function supports(row) {
+    return language.value === "oth"
+      ? row.allows_other === true
+      : !row.languages || row.languages.includes(language.value);
+  }
   function render() {
     // A language change may retain compatible multilingual choices, never create selections.
     const retained = new Set(selected());
@@ -162,6 +167,7 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
     entities.append(local);
     const global = document.createElement("details");
     global.open = multilingualOpen;
+    if (language.value === "oth") global.open = true;
     global.id = "multilingual-models";
     const title = document.createElement("summary");
     title.textContent = t("Multilingual models");
@@ -169,7 +175,9 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
     const explanation = document.createElement("p");
     explanation.className = "hint";
     explanation.textContent = t(
-      "Multilingual checkpoints are validated per document language. Check availability before submitting.",
+      language.value === "oth"
+        ? "For Other, only multilingual models are available; the specified language is recorded but not used yet."
+        : "Multilingual checkpoints are validated per document language. Check availability before submitting.",
     );
     global.append(explanation);
     const unique = new Map();
@@ -191,11 +199,7 @@ export function mountCatalog({ onChange = () => {}, readonly = false } = {}) {
     document.querySelector("#catalog-message").textContent = [
       ...rows,
       ...multilingual,
-    ].some(
-      (row) =>
-        row.available &&
-        (!row.languages || row.languages.includes(language.value)),
-    )
+    ].some((row) => row.available && supports(row))
       ? messages.choose
       : messages.noModels;
     onChange();

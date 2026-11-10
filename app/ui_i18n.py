@@ -4,6 +4,9 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Job name|Nombre del trabajo|Nom del treball
+Specify language|Especifica el idioma|Especifica la llengua
+For Other, only multilingual models are available; the specified language is recorded but not used yet.|Para Other, solo están disponibles los modelos multilingües; el idioma indicado se guarda, pero todavía no se utiliza.|Per a Other, només estan disponibles els models multilingües; la llengua indicada es desa, però encara no s’utilitza.
 Fuzzy match|Fuzzy match|Fuzzy match
 Matching mode|Tipo de búsqueda|Tipus de cerca
 Find similar terms when no exact match is available.|Busca términos similares cuando no hay una coincidencia exacta.|Cerca termes similars quan no hi ha cap coincidència exacta.

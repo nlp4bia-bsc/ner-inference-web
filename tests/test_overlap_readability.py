@@ -246,6 +246,19 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         # Previous inline selection must not reveal rails before a label is activated.
         assert page.evaluate(visible_lines_script) == []
         assert page.locator(".tower-caption").count() == len(ranges)
+        # Every tower keeps its category color before selection, including custom labels.
+        colors = page.locator(".tower-annotation").evaluate_all("""nodes => nodes.map(node => {
+          const style = getComputedStyle(node), tag = node.querySelector('.tower-tag');
+          const probe = document.createElementNS('http://www.w3.org/2000/svg','rect');
+          probe.style.fill = style.getPropertyValue('--entity-color'); node.append(probe);
+          const expected = getComputedStyle(probe).fill; probe.remove();
+          return {fill:getComputedStyle(tag).fill, expected,
+            caption:getComputedStyle(node.querySelector('.tower-caption')).fill};
+        })""")
+        assert all(
+            row["fill"] == row["expected"] and row["caption"] == "rgb(255, 255, 255)"
+            for row in colors
+        )
         assert page.locator(".tower-annotation").count() == len(ranges)
         assert "".join(page.locator(".tower-source").all_text_contents()) == text
         geometry_script = """() => {

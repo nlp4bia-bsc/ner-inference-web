@@ -540,5 +540,8 @@
   "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Etiketter staplas bara där annoteringar överlappar. Välj en etikett för att visa dess linjer; välj den igen för att dölja dem.",
   "Fuzzy match": "Fuzzy match",
   "Matching mode": "Matchningsläge",
-  "Find similar terms when no exact match is available.": "Hitta liknande termer när det inte finns en exakt matchning."
+  "Find similar terms when no exact match is available.": "Hitta liknande termer när det inte finns en exakt matchning.",
+  "Job name": "Jobbnamn",
+  "Specify language": "Ange språk",
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "För Annat är endast flerspråkiga modeller tillgängliga; det angivna språket sparas men används ännu inte."
 }

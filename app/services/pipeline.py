@@ -151,7 +151,7 @@ def process_job(
         return {**error, "status": "FAILED"}
 
     reference, reference_digest = statistics_reference(
-        registry.languages[payload["language"]], models
+        registry.languages.get(payload["language"], {}), models
     )
     if "statistics_reference" in payload and (
         reference != payload["statistics_reference"]
@@ -370,6 +370,8 @@ def process_job(
             for k in ("language", "entities", "submitter_name", "submitter_email", "documents")
         }
         manifest.update(
+            job_name=payload.get("job_name", ""),
+            other_language=payload.get("other_language", ""),
             job_id=job["id"],
             created_at=job["created_at"],
             models=provenance,

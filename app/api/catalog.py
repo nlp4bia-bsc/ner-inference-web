@@ -14,7 +14,7 @@ def router(service):
         return [
             {"code": code, "display_name": lang["display_name"]}
             for code, lang in service.registry.languages.items()
-        ]
+        ] + [{"code": "oth", "display_name": "Other"}]
 
     @api.get("/api/models")
     def models(language: str | None = None):

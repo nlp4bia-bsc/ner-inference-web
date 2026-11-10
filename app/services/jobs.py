@@ -6,6 +6,7 @@ import shutil
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from app.errors import ServiceError
 from app.permissions.policies import document_limit, require_owner, user
@@ -38,7 +39,7 @@ class JobService:
         ingestion_settings = self.settings.model_copy(update={"max_documents_per_job": limit})
         selected = self.registry.select(form.language, form.entities, form.models)
         reference, reference_digest = statistics_reference(
-            self.registry.languages[form.language], selected
+            self.registry.languages.get(form.language, {}), selected
         )
         job_id, token = uuid.uuid4().hex, secrets.token_urlsafe(32)
         staging = self.storage.root / "staging" / job_id
@@ -66,6 +67,7 @@ class JobService:
             )
             payload = {
                 **form.model_dump(),
+                "job_name": form.job_name or Path(streams[0][0]).stem[:200],
                 "documents": [r["original_relative_path"] for r in references],
                 "document_references": references,
                 "statistics_reference": reference,
@@ -162,6 +164,8 @@ class JobService:
             "job_id": job["id"],
             "queue_position": position,
             "language": payload["language"],
+            "job_name": payload.get("job_name") or (payload.get("documents") or [job["id"][:8]])[0],
+            "other_language": payload.get("other_language", ""),
             "entities": payload["entities"],
             "models": [m["model_id"] for m in payload["selected_models"]],
             **{k: iso(job[k]) for k in ("created_at", "started_at", "completed_at", "expires_at")},
@@ -178,7 +182,7 @@ class JobService:
                 """SELECT id,CASE WHEN status='DELETED' THEN 'DELETED' WHEN expires_at<=? THEN 'EXPIRED' ELSE status END AS status,
                 document_count,processed_documents,created_at,completed_at,expires_at,
                 json_extract(payload,'$.language') AS language,
-                json_extract(payload,'$.documents[0]') AS name,
+                COALESCE(NULLIF(json_extract(payload,'$.job_name'),''),json_extract(payload,'$.documents[0]')) AS name,
                 json_extract(payload,'$.selected_models') AS selected_models
                 FROM jobs WHERE owner_user_id=? AND status!='DELETED' ORDER BY seq DESC LIMIT 100 OFFSET ?""",
                 (time.time(), account["id"], offset),

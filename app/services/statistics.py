@@ -5,6 +5,10 @@ from pathlib import Path
 
 
 def statistics(documents: dict[str, str], spans: list[dict], language: str, tokenizer_path: str):
+    requested_language = language
+    # Other is metadata, not an ISO code understood by ner_lab's segmenters.
+    # Use a fixed fallback and record it rather than guessing from clinical text.
+    language = "en" if language == "oth" else language
     from lab.core import (
         build_corpus,
         compute_annotation_stats,
@@ -21,6 +25,7 @@ def statistics(documents: dict[str, str], spans: list[dict], language: str, toke
     text = json.loads(
         compute_text_stats(frame, tokenizer_path, language).to_json(orient="records")
     )[0]
+    text["language"] = requested_language
     annotations = json.loads(
         compute_annotation_stats(frame, tokenizer_path).to_json(orient="records")
     )[0]
@@ -60,6 +65,7 @@ def statistics(documents: dict[str, str], spans: list[dict], language: str, toke
             "transformers_version": version("transformers"),
             "tokenizers_version": version("tokenizers"),
             "segmenter": describe_sentence_segmenter(language),
+            "sentence_language": language,
             "words": "ner_lab words_of: UAX #29, containing a letter or digit",
             "tokens": "model subwords without special tokens",
             "offsets": "Unicode code points [start,end)",
@@ -75,7 +81,8 @@ class StreamingStatistics:
         from lab.core.stats.primitives import load_tokenizer
         from lab.core.stats.text import TextMeasurements
 
-        self.language = language
+        self.document_language = language
+        self.language = "en" if language == "oth" else language
         self.reference = tokenizer_path
         self.tokenizer = load_tokenizer(tokenizer_path)
         self.text = TextMeasurements()
@@ -116,6 +123,7 @@ class StreamingStatistics:
             return json.loads(pd.DataFrame([value]).to_json(orient="records"))[0]
 
         t = native(self.text.row(self.language))
+        t["language"] = self.document_language
         return {
             "ner_lab": {"text": t, "annotations": native(a)},
             "operational": {
@@ -131,6 +139,7 @@ class StreamingStatistics:
             "definitions": {
                 "tokenizer": Path(self.reference).name,
                 "segmenter": describe_sentence_segmenter(self.language),
+                "sentence_language": self.language,
                 "transformers_version": version("transformers"),
                 "tokens": "reference tokenizer subwords without special tokens",
                 "words": "ner_lab Unicode words_of",

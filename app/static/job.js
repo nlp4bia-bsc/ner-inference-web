@@ -51,9 +51,13 @@ function paint(data, progress) {
   $("state").textContent = t(data.status);
   $("details").replaceChildren();
   for (const [name, value] of [
+    [t("Job name"), data.job_name || "—"],
     [t("Request ID"), data.job_id],
     [t("Submitted"), date(data.created_at)],
-    [t("Language"), data.language],
+    [t("Language"), data.language === "oth" ? "OTH" : data.language],
+    ...(data.language === "oth" && data.other_language
+      ? [[t("Specify language"), data.other_language]]
+      : []),
     [t("Documents"), data.document_count],
     [t("Entity types"), data.entities.join(", ")],
     [t("Queue position"), data.queue_position ?? "—"],

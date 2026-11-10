@@ -261,7 +261,8 @@ class Registry:
                     else "on_demand"
                 )
             if language is not None and (
-                code != language and not (code == "mul" and language in e["languages"])
+                code != language
+                and not (code == "mul" and (language == "oth" or language in e["languages"]))
             ):
                 continue
             rows.append(
@@ -277,6 +278,7 @@ class Registry:
                     "load_state": e.get("load_state", "local" if e["available"] else "unavailable"),
                     "unavailable_reason": None if e["available"] else e["unavailable_reason"],
                     "languages": e["languages"],
+                    "allows_other": code == "mul",
                     "task": e["task"],
                     "requires": e["requires"],
                     "repository": e.get("repository"),
@@ -306,9 +308,13 @@ class Registry:
     def select(
         self, language: str, entities: list[str], model_ids: list[str] | None = None
     ) -> list[dict]:
-        if language not in self.languages or len(set(entities)) != len(entities):
+        if (language not in self.languages and language != "oth") or len(set(entities)) != len(
+            entities
+        ):
             raise ServiceError("Choose a language and one or more available models.")
         if model_ids is None:
+            if language == "oth":
+                raise ServiceError("Choose multilingual checkpoints explicitly for Other.")
             if not entities:
                 raise ServiceError("Choose one or more available models.")
             model_ids = []
@@ -335,7 +341,11 @@ class Registry:
         result = []
         for identity in ordered:
             e = self.models[identity]
-            if identity not in allowed or language not in e["languages"] or not e["available"]:
+            if (
+                identity not in allowed
+                or (language != "oth" and language not in e["languages"])
+                or not e["available"]
+            ):
                 raise ServiceError("A checkpoint is unavailable for this language.")
             result.append({**e})
         categories = {label for e in result for label in e["label_mapping"].values()}

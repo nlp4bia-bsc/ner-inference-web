@@ -62,6 +62,8 @@ def router(service):
                                 "submitter_name": {"type": "string"},
                                 "submitter_email": {"type": "string", "format": "email"},
                                 "language": {"type": "string"},
+                                "other_language": {"type": "string", "maxLength": 100},
+                                "job_name": {"type": "string", "maxLength": 200},
                                 "normalize": {"type": "boolean", "default": False},
                                 "normalization_method": {
                                     "type": "string",
@@ -119,6 +121,8 @@ def router(service):
                     submitter_name=data.get("submitter_name", account["full_name"]),
                     submitter_email=data.get("submitter_email", account["email"]),
                     language=data.get("language", ""),
+                    other_language=data.get("other_language", ""),
+                    job_name=data.get("job_name", ""),
                     normalize=data.get("normalize", "false"),
                     normalization_method=data.get("normalization_method", "levenshtein"),
                     normalization_threshold=data.get("normalization_threshold", "0.8"),

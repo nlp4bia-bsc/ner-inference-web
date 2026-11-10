@@ -1216,7 +1216,7 @@ fieldset {
     SFMono-Regular,
     Consolas,
     monospace;
-  fill: var(--ink);
+  fill: #fff;
 }
 .tower-bracket {
   stroke: var(--entity-color);
@@ -1229,7 +1229,7 @@ fieldset {
   stroke-width: 2.5;
 }
 .tower-tag {
-  fill: var(--entity-bg);
+  fill: var(--entity-color);
   stroke: var(--entity-color);
 }
 .tower-annotation {

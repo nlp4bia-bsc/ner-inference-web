@@ -264,18 +264,29 @@ def test_real_hub_download_then_cached_reuse_and_job_revision_pin(settings, tmp_
     assert len(calls) == requests
 
 
+@pytest.mark.parametrize("language", ["es", "oth"])
 def test_real_cold_hub_pipeline_and_warm_second_job_without_validation(
-    settings, tmp_path, tiny_hub
+    settings, tmp_path, tiny_hub, language
 ):
     calls, commit = tiny_hub
     s = configured(settings, tmp_path, ("good",))
+    if language == "oth":
+        catalog = yaml.safe_load(s.model_config_path.read_text())
+        catalog["multilingual"] = {
+            "entities": {"DISEASE": {"display_name": "Diseases", "models": ["good"]}}
+        }
+        s.model_config_path.write_text(yaml.safe_dump(catalog))
     s = s.model_copy(update={"rate_limit_seconds": 0.001})
     app = create_app(s)
     with AccountClient(app) as client:
         for number in range(2):
             accepted = client.post(
                 "/api/jobs",
-                data={"language": "es", "models": ["good"]},
+                data={
+                    "language": language,
+                    "other_language": "Turkish" if language == "oth" else "",
+                    "models": ["good"],
+                },
                 files={"files": ("a.txt", "😀 Cancer é.\r\nCancer.".encode())},
             )
             assert accepted.status_code == 202, accepted.text

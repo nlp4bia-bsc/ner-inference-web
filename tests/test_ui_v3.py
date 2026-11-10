@@ -18,6 +18,95 @@ def launch(p):
     )
 
 
+def test_other_language_and_job_names_survive_input_and_locale_changes(viewer_server):
+    from email import policy
+    from email.parser import BytesParser
+
+    from playwright.sync_api import expect, sync_playwright
+
+    from tests.auth_helpers import browser_login
+
+    base, _ = viewer_server
+    identity = "DT4H_XLM-R_mtl_multilingual_multilabel"
+    with sync_playwright() as p:
+        browser = launch(p)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+
+        def catalog(route):
+            response = route.fetch()
+            rows = response.json()
+            for row in rows:
+                row["available"] = row.get("model_id") == identity
+            route.fulfill(response=response, json=rows)
+
+        page.route("**/api/models", catalog)
+        submitted = []
+
+        def record(route):
+            request = route.request
+            message = BytesParser(policy=policy.default).parsebytes(
+                b"Content-Type: "
+                + request.headers["content-type"].encode()
+                + b"\r\n\r\n"
+                + request.post_data_buffer
+            )
+            submitted.append(
+                {
+                    part.get_param("name", header="content-disposition"): part.get_payload(
+                        decode=True
+                    )
+                    for part in message.iter_parts()
+                }
+            )
+            route.fulfill(status=202, json={"url": base + "/jobs/synthetic"})
+
+        page.route("**/api/jobs", record)
+        browser_login(page, base)
+        page.goto(base + "/annotate?lang=en")
+        page.wait_for_selector(".model-category")
+        name = page.locator("#job-name")
+        assert name.bounding_box()["y"] < page.locator(".input-tabs").bounding_box()["y"]
+        page.locator("#files").set_input_files(
+            {"name": "clinical.notes.txt", "mimeType": "text/plain", "buffer": b"Synthetic."}
+        )
+        expect(name).to_have_value("clinical.notes")
+        name.fill("My named project")
+        page.get_by_role("tab", name="Upload ZIP", exact=True).click()
+        page.locator("#files").set_input_files(
+            {"name": "another.zip", "mimeType": "application/zip", "buffer": b"test upload"}
+        )
+        expect(name).to_have_value("My named project")
+        name.fill("")
+        page.locator("#files").set_input_files(
+            {"name": "new.batch.zip", "mimeType": "application/zip", "buffer": b"test upload"}
+        )
+        expect(name).to_have_value("new.batch")
+        page.get_by_role("tab", name="Paste text", exact=True).click()
+        page.locator("#pasted-text").fill("Synthetic clinical text.")
+        expect(name).to_have_value("new.batch")
+        page.locator("#language").select_option("oth")
+        expect(page.locator("#other-language")).to_be_visible()
+        expect(page.locator("#other-language")).to_have_attribute("required", "")
+        expect(page.locator(f'input[value="{identity}"]')).to_be_enabled()
+        page.locator(f'input[value="{identity}"]').check()
+        expect(page.locator("#submit")).to_be_disabled()
+        page.locator("#other-language").fill("Turkish")
+        expect(page.locator("#submit")).to_be_enabled()
+        page.locator("#auth-locale").select_option("es")
+        expect(name).to_have_value("new.batch")
+        expect(page.locator("#other-language")).to_have_value("Turkish")
+        expect(page.locator("#summary")).to_contain_text("OTH · Turkish")
+        expect(page.locator(f'input[value="{identity}"]')).to_be_checked()
+        page.locator("#submit").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        assert submitted[0]["language"] == b"oth"
+        assert submitted[0]["other_language"] == b"Turkish"
+        assert submitted[0]["job_name"] == b"new.batch"
+        assert submitted[0]["models"] == identity.encode()
+        assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
+        browser.close()
+
+
 def test_paste_mode_counters_and_acceptance_dialog(viewer_server):
     from playwright.sync_api import sync_playwright
 

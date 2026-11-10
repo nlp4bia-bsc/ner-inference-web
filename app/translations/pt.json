@@ -540,5 +540,8 @@
   "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "As etiquetas só se empilham onde as anotações se sobrepõem. Selecione uma etiqueta para mostrar as linhas; selecione-a novamente para as ocultar.",
   "Fuzzy match": "Fuzzy match",
   "Matching mode": "Modo de correspondência",
-  "Find similar terms when no exact match is available.": "Encontre termos semelhantes quando não existir uma correspondência exata."
+  "Find similar terms when no exact match is available.": "Encontre termos semelhantes quando não existir uma correspondência exata.",
+  "Job name": "Nome do trabalho",
+  "Specify language": "Especifique o idioma",
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Para Outro, apenas os modelos multilingues estão disponíveis; o idioma indicado é guardado, mas ainda não é utilizado."
 }

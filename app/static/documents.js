@@ -45,7 +45,7 @@ function render() {
     for (const [label, value] of [
       ["Document", row.filename],
       ["Uploaded", date(new Date(row.uploaded_at * 1000))],
-      ["Language", row.language || "—"],
+      ["Language", row.language === "oth" ? "OTH" : row.language || "—"],
       ["status", t(row.state)],
     ]) {
       const td = document.createElement("td");

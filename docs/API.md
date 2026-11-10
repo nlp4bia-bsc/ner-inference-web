@@ -37,7 +37,7 @@ capture/testing inboxes and public bootstrap/verification bypasses do not exist.
 |---|---|
 | GET / | Private personal dashboard; /annotate serves the NER form |
 | GET /jobs/{token} | Private status HTML; its JS polls every 5 seconds while pending |
-| GET /api/languages | Authenticated array of code/display_name from YAML |
+| GET /api/languages | Authenticated array of code/display_name from YAML plus Other (`oth`) |
 | GET /api/models?language=es | Category/checkpoint rows, neutral model_name, supported languages, availability/reason, label mapping, dependencies and verified metrics |
 | POST /api/jobs | Multipart submission, 202 with job_id/status/token/url |
 | GET /api/jobs/{token} | Status, real document counts, queue position, UTC timestamps, summary/download availability |
@@ -50,7 +50,7 @@ capture/testing inboxes and public bootstrap/verification bypasses do not exist.
 
 Multipart fields: submitter_name (1–120 characters, trimmed, no controls),
 submitter_email (validated EmailStr, normalized lowercase; not verified), language
-(two-letter code from catalog), models (one or more repeated checkpoint IDs), files
+(two-letter code from catalog, or `oth`), models (one or more repeated checkpoint IDs), files
 (one or more repeated file fields). Choose either TXT files or exactly one ZIP.
 Submitter name/email are optional legacy inputs; the server uses account identity.
 The server derives the canonical category set. Optional repeated entities must
@@ -58,6 +58,28 @@ match that set. Legacy entities-only requests retain their original single-model
 selection; new ambiguous categories require explicit models. No model is selected
 implicitly by the frontend. Neither public model paths nor inference parameters
 are accepted.
+
+`job_name` is optional, trimmed, single-line text (maximum 200 characters).
+When empty, admission derives a title from the first upload's filename, removing
+its final extension; for ZIP uploads this is the archive name. The form prefills
+only an empty field and preserves it across uploads, input tabs and UI languages.
+Status includes `job_name`; history returns it as `name`. Older jobs without the
+field retain their original first-document-name fallback. Downloads include the
+new metadata in the manifest without renaming document IDs or source files.
+
+For `language=oth`, `other_language` is required, trimmed single-line text
+(maximum 100 characters). It is stored as a description only; it does not select
+models, change a checkpoint's encoding language or establish validated coverage.
+The frontend displays `OTH` in job/document tables. Only explicit selections from
+the registry's multilingual section are eligible; language-specific checkpoints
+are rejected. Model rows expose `allows_other`, independently of their listed
+training/validated languages. Checkpoint format compatibility remains subject to
+the existing runtime adapters (see ON_DEMAND_MODELS.md).
+
+For Other, text statistics use the English sentence segmenter as a deterministic
+fallback, recorded as `definitions.sentence_language=en`; their document language
+remains `oth`. Normalization uses the existing English terminology fallback.
+The free-text language description is not interpreted or used for either stage.
 
 ```sh
 curl -X POST http://127.0.0.1:8000/api/jobs \

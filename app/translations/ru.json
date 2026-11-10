@@ -540,5 +540,8 @@
   "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Метки располагаются друг над другом только при перекрытии аннотаций. Выберите метку, чтобы показать её линии; выберите повторно, чтобы скрыть их.",
   "Fuzzy match": "Fuzzy match",
   "Matching mode": "Режим сопоставления",
-  "Find similar terms when no exact match is available.": "Поиск похожих терминов, если точное совпадение отсутствует."
+  "Find similar terms when no exact match is available.": "Поиск похожих терминов, если точное совпадение отсутствует.",
+  "Job name": "Название задания",
+  "Specify language": "Укажите язык",
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Для варианта Другой доступны только многоязычные модели; указанный язык сохраняется, но пока не используется."
 }

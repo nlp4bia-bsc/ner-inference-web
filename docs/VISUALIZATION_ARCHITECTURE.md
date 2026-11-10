@@ -66,6 +66,15 @@ benchmark real models before increasing corpus/document limits. Accessibility is
 supported by labeled controls, focus states, text labels, keyboard-selectable
 regions and an alternate mention list; no formal WCAG certification is claimed.
 
+## Tower caption colors (0.10.3)
+
+Tower captions always use a solid canonical category color with white text,
+including unselected annotations, translated category aliases and unknown labels
+(deterministic fallback palette). All palette backgrounds have at least 4.5:1
+contrast with white text. Selecting a label reveals only that annotation's span
+lines; hiding those lines never removes its caption color. This preserves category
+identification in screenshots without adding levels or duplicating source text.
+
 ## V3 live publications
 
 New jobs use SQLite document metadata and immutable per-document publications,

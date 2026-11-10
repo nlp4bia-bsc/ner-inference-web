@@ -10,6 +10,12 @@ inference, an overlap-preserving explorer and BRAT/TSV exports. Every work route
 requires login and strict ownership; an old private link alone grants no access.
 Files remain available to their owner for **72 hours after completion**.
 
+Version 0.10.3 adds editable job names above the document inputs, autofilled from
+the TXT/ZIP filename without its extension while preserving existing text.
+**Other (OTH)** records a specified document language and enables selection of
+registered multilingual models; the language description is not used for inference yet.
+All tower labels retain solid category colors before and after selection.
+
 Version 0.10.2 uses **Fuzzy match** in the interface and fixes inspector field
 spacing across languages and screen sizes. See the [Docker quickstart](docs/DOCKER_QUICKSTART.md)
 for a complete web/worker deployment, private terminology import and optional NVIDIA GPU overlay.

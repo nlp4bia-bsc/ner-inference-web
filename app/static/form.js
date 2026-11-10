@@ -6,6 +6,8 @@ const form = document.querySelector("#request-form");
 const language = document.querySelector("#language");
 const entities = document.querySelector("#entities");
 const files = document.querySelector("#files");
+const jobName = document.querySelector("#job-name");
+const otherLanguage = document.querySelector("#other-language");
 const button = document.querySelector("#submit");
 const error = document.querySelector("#error");
 let busy = false;
@@ -72,6 +74,10 @@ function selectedCategories() {
   return catalog.selectedCategories();
 }
 function update() {
+  const other = language.value === "oth";
+  document.querySelector("#other-language-field").hidden = !other;
+  otherLanguage.disabled = !other;
+  otherLanguage.required = other;
   for (const detail of entities.querySelectorAll("details[data-category]")) {
     const active = new Set(selected());
     const ids = new Set(
@@ -99,11 +105,13 @@ function update() {
   button.disabled =
     busy ||
     remaining === 0 ||
+    (other && !otherLanguage.value.trim()) ||
     !selected().length ||
     (pasted ? !value.trim() : !files.files.length);
   if (pasted) {
     document.querySelector("#summary").textContent =
-      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${number(new TextEncoder().encode(value).length)} bytes · ${language.value} · ${selectedCategories().join(", ")} · ${t("{count} model(s)", { count: number(selected().length) })}` +
+      (jobName.value.trim() ? jobName.value.trim() + "\n" : "") +
+      `${document.querySelector("#document-name").value || "pasted-text.txt"} · ${number(new TextEncoder().encode(value).length)} bytes · ${other ? "OTH · " + otherLanguage.value : language.value} · ${selectedCategories().join(", ")} · ${t("{count} model(s)", { count: number(selected().length) })}` +
       normalizationSummary();
     return;
   }
@@ -114,8 +122,17 @@ function update() {
     ? `${names.join(", ")}\n${(bytes / 1024 / 1024).toFixed(2)} MB · ${isZip ? t("ZIP document count is checked by the server") : t("{count} document(s)", { count: number(names.length) })}\n${t("Language")}: ${language.selectedOptions[0]?.textContent || ""} · ${t("Entities")}: ${selectedCategories().join(", ") || t("None")} · ${t("{count} model(s)", { count: number(selected().length) })}`
     : t("No documents selected.");
   document.querySelector("#summary").textContent += normalizationSummary();
+  if (jobName.value.trim())
+    document.querySelector("#summary").prepend(jobName.value.trim() + "\n");
 }
-files.addEventListener("change", update);
+function uploadChanged() {
+  if (!jobName.value.trim() && files.files.length)
+    jobName.value = files.files[0].name.replace(/\.[^.]+$/, "").slice(0, 200);
+  update();
+}
+files.addEventListener("change", uploadChanged);
+jobName.addEventListener("input", update);
+otherLanguage.addEventListener("input", update);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (busy || !selected().length || !form.reportValidity()) return;
@@ -232,7 +249,7 @@ dropZone.addEventListener("drop", (event) => {
   event.preventDefault();
   dropZone.classList.remove("dragging");
   files.files = event.dataTransfer.files;
-  update();
+  uploadChanged();
 });
 
 for (const tab of document.querySelectorAll("[data-mode]")) {

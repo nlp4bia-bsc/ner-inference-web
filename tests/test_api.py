@@ -21,6 +21,7 @@ def test_catalog_and_unconfigured_model(settings):
             "cs",
             "sv",
             "nl",
+            "oth",
         }
         assert not any(x["available"] for x in c.get("/api/models").json())
         assert submit(c).status_code == 422

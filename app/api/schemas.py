@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.domain.identity import EmailAddress
 
@@ -10,12 +10,31 @@ from app.domain.identity import EmailAddress
 class Submission(BaseModel):
     submitter_name: str = Field(min_length=1, max_length=120)
     submitter_email: EmailAddress
-    language: str = Field(pattern="^[a-z]{2}$")
+    language: str = Field(pattern="^(?:[a-z]{2}|oth)$")
+    other_language: str = Field(default="", max_length=100)
+    job_name: str = Field(default="", max_length=200)
     entities: list[str] = Field(default_factory=list, max_length=100)
     normalize: bool = False
     normalization_method: Literal["exact", "levenshtein", "bi_encoder"] = "levenshtein"
     normalization_threshold: float = Field(0.8, ge=0, le=1, allow_inf_nan=False)
     models: list[str] | None = Field(default=None, min_length=1, max_length=100)
+
+    @field_validator("job_name", "other_language")
+    @classmethod
+    def clean_description(cls, value: str) -> str:
+        import unicodedata
+
+        if any(unicodedata.category(c) == "Cc" for c in value):
+            raise ValueError("Use a single line of text")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def check_other_language(self):
+        if self.language == "oth" and not self.other_language:
+            raise ValueError("Specify the document language for Other")
+        if self.language != "oth":
+            self.other_language = ""
+        return self
 
     @field_validator("submitter_name")
     @classmethod
@@ -44,6 +63,8 @@ class JobStatus(BaseModel):
     processed_documents: int
     queue_position: int | None
     language: str
+    job_name: str = ""
+    other_language: str = ""
     entities: list[str]
     models: list[str] = Field(default_factory=list)
     created_at: str

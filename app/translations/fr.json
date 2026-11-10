@@ -540,5 +540,8 @@
   "Labels stack only where annotations overlap. Select a label to show its span lines; select it again to hide them.": "Les étiquettes s’empilent uniquement lorsque les annotations se chevauchent. Sélectionnez une étiquette pour afficher ses lignes ; sélectionnez-la à nouveau pour les masquer.",
   "Fuzzy match": "Fuzzy match",
   "Matching mode": "Mode de correspondance",
-  "Find similar terms when no exact match is available.": "Rechercher des termes similaires lorsqu’aucune correspondance exacte n’est disponible."
+  "Find similar terms when no exact match is available.": "Rechercher des termes similaires lorsqu’aucune correspondance exacte n’est disponible.",
+  "Job name": "Nom du travail",
+  "Specify language": "Précisez la langue",
+  "For Other, only multilingual models are available; the specified language is recorded but not used yet.": "Pour Autre, seuls les modèles multilingues sont disponibles ; la langue indiquée est enregistrée mais pas encore utilisée."
 }
