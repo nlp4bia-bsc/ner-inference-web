@@ -1,10 +1,32 @@
-# Annotation reader review · 0.10.1
+# Annotation reader review · 0.12.1
 
 The reader offers inline highlights and BRAT-inspired entity towers over the same
 original source and canonical annotations. Nested, crossing and equal-range
 mentions remain distinct. Inference, consolidation and export rules are unchanged.
 
 ## Findings and corrections
+
+### Bounded tower reflow (0.12.1)
+
+Text-only wrapping previously ran before SVG caption spacing. Dense adjacent
+mentions could therefore enlarge the complete line beyond the reading column.
+Wrapping now measures the final source/caption geometry, reserves side gutters
+and fits each line inside the actual host padding and stable scrollbar gutter.
+The remainder rejoins the next natural line, stopping at original newlines.
+Prefer word boundaries, or whole graphemes when a word itself is too wide.
+
+Labels remain centered over their own ranges, with one control per annotation
+and the minimum actual overlap depth. Exceptionally long captions wrap internally
+at the same font size instead of adding tower levels or being truncated. Shared
+multicolor brackets continue across wrapped fragments. The SVG stays at the host
+width; source characters, spaces, CRLF and Unicode code-point offsets are preserved.
+No inference/export/consolidation rule or category color changes.
+
+Browser geometry covers 320,390,1440,3840px, including the crowded symptom sentence,
+short mentions with wide labels, nested/crossing spans and Unicode graphemes.
+It asserts viewport bounds for source, labels and brackets, exact source text,
+centered captions and no horizontal overflow. Earlier scrolling descriptions below
+are historical and superseded by this bounded layout.
 
 ### Actual overlap depth and unfinished viewer access (0.10.1)
 

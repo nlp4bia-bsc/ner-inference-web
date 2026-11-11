@@ -9,7 +9,7 @@ use private APIs or upload documents. Verifying an email, when explicitly enable
 does not approve a request. By default registration neither sends mail nor requires
 email verification. Approval is mandatory and has no public bypass/configuration flag.
 
-An existing administrator signs in with email/password and opens **User management** (`/admin`).
+An existing administrator signs in with email/password and opens **Administration** (`/admin`), with **User management** first and **Projects** below.
 Pending cards show full name, email, institution, professional activity and its
 OTHER description. **Approve** enables subsequent login; **Decline** blocks it.
 Reviews are transactional, audited and only accept PENDING requests. A second
@@ -22,9 +22,9 @@ Every work page seen by an administrator uses that theme, including annotation a
 the viewer. Entity category colors and shared overlap brackets are unchanged.
 Theme/link visibility is presentation only: backend authorization is mandatory.
 
-## All projects
+## Projects in Administration
 
-**All projects** (`/admin/projects`) now starts with a lazy user/project/document/
+**Projects**, below users in the same `/admin` page, starts with a lazy user/project/document/
 annotation tree and measured global/scoped statistics. The former search table
 is retained in a collapsed secondary section. See [explorer behavior and metric
 definitions](ADMIN_EXPLORER.md). It provides owner name,
@@ -44,8 +44,12 @@ retains opaque actor/target/job identifiers. Expired/ownerless legacy projects c
 be listed and erased by administrators but are never reassigned by email.
 
 Personal Dashboard, My jobs and unfiltered My documents remain personal. Use the
-explicit All projects view to inspect other owners; document management identifies
+explicit Administration → Projects section to inspect other owners; document management identifies
 the owner and does not display the administrator's personal quota as theirs.
+
+Old `/admin/projects` links redirect to `/admin#projects`, preserving language, search
+and pagination. The primary Administration link is the only global admin navigation;
+there is no second bar. User and project search fields have separate parameters.
 
 ## Per-user numeric quotas
 

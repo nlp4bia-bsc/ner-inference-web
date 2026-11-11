@@ -22,7 +22,43 @@ DENSE = "Severe chronic kidney disease was reported in a synthetic document."
 UNICODE = "Cafe\u0301, 漢字 and 👩\u200d🔬.\r\nSynthetic text."
 CLINICAL = "Enfermedad renal crónica avanzada. Trasplante renal con rechazo agudo."
 DISJOINT_CLINICAL = "Artralgias, tos irritativa, afonía, cefalea, astenia y náuseas.\nTratada con amoxicilina y paracetamol."
+CROWDED = "Estado general, artralgias, tos irritativa no productiva, sensación disneica, afonía, cefalea, astenia, náuseas y sensación distérmica.\nTratada con amoxicilina y paracetamol sin mejoría."
 CASES = [
+    (
+        "crowded-sentence",
+        CROWDED,
+        [
+            (label, CROWDED.index(term), CROWDED.index(term) + len(term))
+            for label, term in [
+                *[
+                    ("SYMPTOM", term)
+                    for term in (
+                        "Estado general",
+                        "artralgias",
+                        "tos irritativa no productiva",
+                        "sensación disneica",
+                        "afonía",
+                        "cefalea",
+                        "astenia",
+                        "náuseas",
+                        "sensación distérmica",
+                    )
+                ],
+                ("DISEASE", "afonía"),
+                ("MEDICATION", "amoxicilina"),
+                ("MEDICATION", "paracetamol"),
+            ]
+        ],
+    ),
+    (
+        "long-caption",
+        "a b c " + "👩\u200d🔬" + " a b c",
+        [
+            ("NEGATION_UNCERTAINTY_WITH_AN_EXTENDED_LABEL", 0, 1),
+            ("DISEASE", 2, 3),
+            ("MEDICATION", 4, 5),
+        ],
+    ),
     (
         "clinical-disjoint",
         DISJOINT_CLINICAL,
@@ -252,6 +288,20 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
         assert page.evaluate(visible_lines_script) == expected_visible
         assert page.locator(".tower-caption").count() == len(ranges)
         assert page.locator("#tower-view rect").count() == len(ranges)
+        bounds = page.evaluate("""() => {
+          const host=document.querySelector('#tower-view'),box=host.getBoundingClientRect(),style=getComputedStyle(host);
+          const left=box.left+parseFloat(style.borderLeftWidth||0)+parseFloat(style.paddingLeft);
+          const right=box.left+parseFloat(style.borderLeftWidth||0)+host.clientWidth-parseFloat(style.paddingRight);
+          const svg=host.querySelector('svg');
+          const nodes=[...svg.querySelectorAll('.tower-source,.tower-tag,.tower-bracket')];
+          return {fits:host.scrollWidth<=host.clientWidth+1,svgWidth:svg.getBoundingClientRect().width,available:right-left,
+            clipped:nodes.map(n=>({name:n.classList.value,box:n.getBoundingClientRect().toJSON()})).filter(n=>n.box.width&& (n.box.left<left-1||n.box.right>right+1)),
+            text:[...host.querySelectorAll('.tower-source')].map(n=>n.textContent).join('')};
+        }""")
+        assert bounds["text"] == text
+        assert bounds["fits"] and bounds["svgWidth"] <= bounds["available"] + 1, bounds
+        assert not bounds["clipped"], bounds
+
         # Every tower keeps its category color before selection, including custom labels.
         # Query and measure in one evaluation: ResizeObserver can replace the SVG.
         colors = page.evaluate("""() => [...document.querySelectorAll('.tower-annotation')].map(node => {
@@ -341,7 +391,7 @@ def test_overlaps_do_not_insert_text_or_change_character_layout(overlap_server, 
             const position=(offset,last=false)=>{const count=source.getNumberOfChars(),i=points.slice(0,offset).join('').replace(/[\\r\\n]/g,'').length;if(!count||(last&&!i))return 8;if(last||i>=count)return source.getEndPositionOfChar(Math.min(i,count)-1).x;return source.getStartPositionOfChar(i).x;};
             const center=new DOMPoint((position(from)+position(to,true))/2,0).matrixTransform(source.getScreenCTM());
             const caption=n.querySelector('.tower-caption');
-            return {error:Math.abs(tag.x+tag.width/2-center.x),font:parseFloat(getComputedStyle(caption).fontSize),scale:caption.getScreenCTM().a,fits:caption.getComputedTextLength()<=tag.width-14,compressed:caption.hasAttribute('textLength')};
+            return {error:Math.abs(tag.x+tag.width/2-center.x),font:parseFloat(getComputedStyle(caption).fontSize),scale:caption.getScreenCTM().a,fits:Math.max(...[...caption.querySelectorAll('tspan')].map(t=>t.getComputedTextLength()),caption.querySelector('tspan')?0:caption.getComputedTextLength())*caption.getScreenCTM().a<=tag.width-14,compressed:caption.hasAttribute('textLength')};
           });
           const orderErrors=[...document.querySelectorAll('.tower-line')].flatMap(line=>{
             const spans=[...line.querySelectorAll('.tower-annotation')];

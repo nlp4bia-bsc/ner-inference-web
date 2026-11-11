@@ -58,7 +58,7 @@ function localLinks(language) {
     const url = new URL(form.action, location.href);
     if (url.origin === location.origin) {
       url.searchParams.set("lang", language);
-      form.action = url.pathname + url.search;
+      form.action = url.pathname + url.search + url.hash;
     }
   }
   for (const input of document.querySelectorAll(

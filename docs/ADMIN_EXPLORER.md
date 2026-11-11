@@ -1,9 +1,12 @@
 # Explorador jerárquico de administración (0.12)
 
-En `/admin/projects`, **Todos los usuarios → Usuario → Proyectos → Proyecto →
+En **Administración** (`/admin`), debajo de **Gestión de usuarios**,
+**Proyectos** incluye **Todos los usuarios → Usuario → Proyectos → Proyecto →
 Documentos → Documento → Anotaciones** es la navegación principal. El buscador
 anterior se conserva en una sección secundaria plegada. Aprobación, cuentas,
-cuotas y eliminación de proyectos siguen en sus vistas y servicios existentes.
+cuotas y eliminación de proyectos comparten la página y conservan sus servicios existentes.
+No hay una segunda barra global. Los enlaces antiguos `/admin/projects` redirigen
+a `/admin#projects`, conservando idioma, búsqueda y paginación.
 
 ## Carga y operaciones
 

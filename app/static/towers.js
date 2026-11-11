@@ -106,8 +106,19 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
   const scroll = { left: host.scrollLeft, top: host.scrollTop };
   const scale =
     parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
-  const width = Math.max(180, (host.clientWidth - 24) / scale),
-    font = "15px ui-monospace, SFMono-Regular, Consolas, monospace",
+  const style = getComputedStyle(host),
+    pixels = Math.max(
+      1,
+      Math.floor(
+        host.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight),
+      ),
+    ),
+    width = pixels / scale,
+    gutter = 8,
+    available = Math.max(1, width - gutter * 2);
+  const font = "15px ui-monospace, SFMono-Regular, Consolas, monospace",
     captionFont = "12px ui-monospace, SFMono-Regular, Consolas, monospace";
   const canvas = document.createElement("canvas"),
     ctx = canvas.getContext("2d");
@@ -119,7 +130,26 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     ctx.font = font;
     return size;
   };
-  const lines = layoutLines(text, width - 16, measure),
+  const captions = new Map();
+  function captionLayout(caption) {
+    if (!captions.has(caption)) {
+      const lines = layoutLines(
+        caption,
+        Math.max(1, available - 24),
+        measureCaption,
+      ).map((line) => line.text);
+      captions.set(caption, {
+        lines,
+        width: Math.max(
+          Math.min(50, available - 8),
+          ...lines.map((line) => measureCaption(line) + 16),
+        ),
+        height: 26 + (lines.length - 1) * 14,
+      });
+    }
+    return captions.get(caption);
+  }
+  const lines = layoutLines(text, available, measure),
     ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("role", "group");
@@ -133,11 +163,9 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     content = create("g", {});
   svg.append(defs, content);
   host.replaceChildren(svg);
-  let y = 0,
-    minX = 0,
-    maxX = width;
+  let y = 0;
   const labelled = new Set();
-  for (const line of lines) {
+  function prepareLine(line) {
     const points = Array.from(line.text),
       bounds = [0];
     if (typeof Intl.Segmenter === "function") {
@@ -158,8 +186,17 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
         to = bounds.find((x) => x >= Math.min(right, a.end) - left);
       const label = !labelled.has(a.id),
         caption = `${a.label} · ${a.id}`,
-        labelWidth = Math.max(50, measureCaption(caption) + 16);
-      parts.push({ a, from, to, label, caption, labelWidth });
+        layout = captionLayout(caption);
+      parts.push({
+        a,
+        from,
+        to,
+        label,
+        caption,
+        labelWidth: layout.width,
+        labelHeight: layout.height,
+        captionLines: layout.lines,
+      });
     }
     const lineGroup = create("g", {
       class: "tower-line",
@@ -245,6 +282,9 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
         }
       }
     }
+    const sourceBox = source.getBBox();
+    let minX = sourceBox.x,
+      maxX = sourceBox.x + sourceBox.width + 8;
     for (const p of parts) {
       minX = Math.min(minX, p.x1 - 4, p.label ? p.labelX - 4 : p.x1);
       maxX = Math.max(
@@ -253,10 +293,116 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
         p.label ? p.labelX + p.labelWidth + 4 : p.x2,
       );
     }
-    maxX = Math.max(maxX, source.getBBox().x + source.getBBox().width + 8);
+    return {
+      lineGroup,
+      source,
+      parts,
+      bounds,
+      left,
+      right,
+      visible,
+      position,
+      laneCount,
+      brackets,
+      minX,
+      extent: maxX - minX,
+    };
+  }
+  function splitLine(line, bounds) {
+    const points = Array.from(line.text);
+    let low = 1,
+      high = bounds.length - 2,
+      best = 1;
+    // Fit against the actual SVG geometry after spacing, not just font advances.
+    while (low <= high) {
+      const middle = (low + high) >>> 1;
+      const trial = prepareLine({
+        text: points.slice(0, bounds[middle]).join(""),
+        start: line.start,
+        end: line.start + bounds[middle],
+      });
+      const fits = trial.extent <= available;
+      trial.lineGroup.remove();
+      if (fits) {
+        best = middle;
+        low = middle + 1;
+      } else high = middle - 1;
+    }
+    let cut = bounds[best];
+    // Prefer a word boundary, retaining every original space/code point.
+    const whitespace = bounds
+      .filter((n) => n > 0 && n <= cut && /\s/u.test(points[n - 1]))
+      .at(-1);
+    if (whitespace) {
+      const trial = prepareLine({
+        text: points.slice(0, whitespace).join(""),
+        start: line.start,
+        end: line.start + whitespace,
+      });
+      if (trial.extent <= available) cut = whitespace;
+      trial.lineGroup.remove();
+    }
+    return [
+      {
+        text: points.slice(0, cut).join(""),
+        start: line.start,
+        end: line.start + cut,
+      },
+      {
+        text: points.slice(cut).join(""),
+        start: line.start + cut,
+        end: line.end,
+      },
+    ];
+  }
+  for (let index = 0; index < lines.length; index++) {
+    let line = lines[index],
+      prepared = prepareLine(line);
+    if (prepared.extent > available && prepared.bounds.length > 2) {
+      const bounds = prepared.bounds;
+      prepared.lineGroup.remove();
+      const [first, rest] = splitLine(line, bounds);
+      // Reflow the remainder with the next natural line rather than leaving a
+      // short orphan line at the old, text-only wrap boundary.
+      const next = lines[index + 1];
+      if (next && !/[\r\n]$/.test(line.text) && rest.end === next.start) {
+        lines.splice(index, 2, first, {
+          text: rest.text + next.text,
+          start: rest.start,
+          end: next.end,
+        });
+      } else lines.splice(index, 1, first, rest);
+      line = first;
+      prepared = prepareLine(line);
+    }
+    const {
+      lineGroup,
+      source,
+      parts,
+      left,
+      right,
+      visible,
+      position,
+      laneCount,
+      brackets,
+      minX,
+    } = prepared;
+    lineGroup.setAttribute("transform", `translate(${gutter - minX} 0)`);
+    const laneHeights = Array.from(
+      { length: laneCount },
+      (_, lane) =>
+        Math.max(
+          26,
+          ...parts
+            .filter((p) => p.label && p.lane === lane)
+            .map((p) => p.labelHeight),
+        ) + 14,
+    );
+    const laneOffset = (lane) =>
+      laneHeights.slice(0, lane).reduce((sum, height) => sum + height, 0);
     const ascent = Math.max(0, -source.getBBox().y),
       bracketGap = parts.length ? Math.max(0, ascent - 16) : 0,
-      textY = y + laneCount * 40 + 28 + bracketGap;
+      textY = y + laneOffset(laneCount) + 28 + bracketGap;
     source.setAttribute("y", textY);
     const byId = new Map(parts.map((p) => [p.a.id, p])),
       railY = textY - ascent - 7;
@@ -335,7 +481,7 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
       );
     });
     for (const p of parts) {
-      const top = textY - bracketGap - 56 - p.lane * 40;
+      const top = textY - bracketGap - 30 - p.labelHeight - laneOffset(p.lane);
       // Wrapped continuations keep their brackets, with one control per entity.
       if (!p.label) continue;
       const group = create("g", {
@@ -362,20 +508,21 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
             x: p.labelX,
             y: top,
             width: p.labelWidth,
-            height: 26,
+            height: p.labelHeight,
             rx: 3,
             class: "tower-tag",
           }),
         );
-        const caption = create(
-          "text",
-          {
-            x: p.center,
-            y: top + 17,
-            "text-anchor": "middle",
-            class: "tower-caption",
-          },
-          p.caption,
+        const caption = create("text", {
+          x: p.center,
+          y: top + 17,
+          "text-anchor": "middle",
+          class: "tower-caption",
+        });
+        p.captionLines.forEach((line, index) =>
+          caption.append(
+            create("tspan", { x: p.center, y: top + 17 + index * 14 }, line),
+          ),
         );
         group.append(caption);
         labelled.add(p.a.id);
@@ -392,13 +539,11 @@ export function drawTowers(host, text, start, rows, onSelect, selected) {
     }
     y = textY + 20;
   }
-  // Keep exact centering at the line edges. Overflow scrolls instead of shifting
-  // labels away from their entity or shrinking their text to fit the viewport.
-  const totalWidth = maxX - minX;
-  content.setAttribute("transform", `translate(${-minX} 0)`);
-  svg.setAttribute("width", totalWidth * scale);
+  // Every line includes its labels, focus/bracket gutters and trailing source.
+  // Wrapping uses extra rows, never horizontal scrolling or compressed glyphs.
+  svg.setAttribute("width", pixels);
   svg.setAttribute("height", y * scale);
-  svg.setAttribute("viewBox", `0 0 ${totalWidth} ${y}`);
+  svg.setAttribute("viewBox", `0 0 ${width} ${y}`);
   host.scrollLeft = scroll.left;
   host.scrollTop = scroll.top;
 }

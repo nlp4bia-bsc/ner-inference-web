@@ -105,6 +105,12 @@ def test_admin_reviews_manages_quota_views_foreign_projects_and_erases_account(
         administrator_login(admin, base)
         expect(admin.locator("body")).to_have_class(re.compile(r"\badmin-theme\b"))
         admin.goto(base + "/admin")
+        expect(admin.locator("h1")).to_have_text("Administration")
+        expect(admin.locator(".admin-context")).to_have_count(0)
+        expect(admin.locator("#projects #admin-explorer-tree")).to_have_count(1)
+        assert admin.locator("#users").evaluate(
+            "node => Boolean(node.compareDocumentPosition(document.querySelector('#projects')) & Node.DOCUMENT_POSITION_FOLLOWING)"
+        )
         card = admin.locator("[data-request-user]").filter(has_text="applicant@example.test")
         expect(card).to_contain_text("Synthetic University")
         identity = card.get_attribute("data-request-user")
@@ -200,6 +206,19 @@ def test_decline_and_admin_mobile_pages_are_guarded_and_readable(simple_server, 
         expect(user.get_by_role("status")).to_contain_text("declined")
         assert user.request.get(base + "/api/admin/projects").status == 401
         admin.goto(base + "/admin?lang=es")
-        expect(admin.locator("h1")).to_have_text("Gestión de usuarios")
+        expect(admin.locator("h1")).to_have_text("Administración")
         check_screen(admin, "admin-es")
+        admin.locator("#auth-locale").select_option("en")
+        project_search = admin.locator("#project-search")
+        expect(project_search.locator("xpath=..")).to_have_attribute(
+            "action", re.compile(r"/admin\?lang=en#projects$")
+        )
+        admin.locator("details.card > summary").click()
+        project_search.fill("no-matching-project")
+        project_search.locator("xpath=..").get_by_role("button", name="Search", exact=True).click()
+        expect(admin).to_have_url(
+            re.compile(r"/admin\?project_q=no-matching-project&lang=en#projects$")
+        )
+        expect(admin.locator("#users-heading")).to_have_text("User management")
+        expect(admin.locator("#projects")).to_contain_text("No projects found.")
         browser.close()

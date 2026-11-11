@@ -1,4 +1,44 @@
-# Latest: Apache profile and hierarchical administrator explorer (0.12.0)
+# Latest: bounded entity towers and unified Administration (0.12.1)
+
+Executed 2026-11-11 on the same Linux/Python3.12.14, Chromium/Playwright and
+HTTP/CPU dependency environment described for0.12.0 below. All inputs are synthetic.
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q -rs`: **331 passed,136 browser cases
+  skipped**,152.18s. Browser checks require the separate opt-in run below.
+  Added server coverage checks users before projects in `/admin`, independent
+  account/project filters, encoded legacy redirects and ADMIN authorization.
+  Existing role/CSRF/approval/quota/expiry/erasure regressions remain included.
+- Final browser matrix: **66 passed**,314.25s, including all44 tower geometry
+  cases and admin/tree/viewer regression. No browser cases in that matrix skipped.
+- An additional `tests/test_admin_browser.py -k decline` run verifies live locale
+  switching followed by project search, the preserved `#projects` anchor and both
+  sections remaining on the same page: **2 passed,4 deselected**,28.17s.
+- Ruff and Prettier pass. Bandit `-r app scripts -ll` reports zero medium/high
+  issues (seven low findings remain). Wheel and sdist build successfully as0.12.1;
+  archive inspection confirms inclusion of the viewer assets and exclusion of
+  gazetteers, Parquet, storage and private `.env` files. The100 route/method inventory
+  is unchanged. No Docker image was built or production service/volume touched.
+
+```bash
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 \
+  SCREENSHOT_OUTPUT=work/unified-admin-previews \
+  /tmp/ner-ui-env/bin/python -m pytest -q \
+  tests/test_admin_browser.py tests/test_admin_explorer_browser.py \
+  tests/test_overlap_readability.py tests/test_viewer_browser.py
+```
+
+The browser run checks real admin approval/quota/deletion, lazy project tree and
+viewer deep links at root and prefixed deployments; no second administrator bar;
+user management above projects; mobile/desktop reflow and Axe WCAG2/2.1/2.2 AA.
+Tower geometry covers44 cases across320,390,1440,3840px, with dense adjacent labels,
+long captions, actual nested/crossing overlaps and Unicode/CRLF. Source text matches
+exactly, source/label/bracket bounds stay within the host, captions remain centered,
+one control represents each entity, and only actual overlaps create tower levels.
+Desktop/mobile captures were inspected. An earlier44-case run before the final
+remainder reflow passed in146.48s; its count is not added to the final matrix.
+Other browser modules were skipped in the server run and were not repeated here.
+
+# Previous: Apache profile and hierarchical administrator explorer (0.12.0)
 
 Executed 2026-11-11 on Linux/Python3.12.14, Chromium/Playwright1.62.0, with the
 HTTP dependencies installed from requirements.lock (FastAPI0.162.0,

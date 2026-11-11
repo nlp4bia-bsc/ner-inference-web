@@ -1810,22 +1810,6 @@ body.admin-theme {
   background: #f1e5f8;
   border-bottom-color: #d8c3e5;
 }
-.admin-context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 10px max(18px, calc((100vw - 1400px) / 2));
-  background: #eadcf3;
-  color: #4f285f;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  border-bottom: 1px solid #d8c3e5;
-}
-.admin-context a {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
 .admin-page > .card {
   margin-bottom: 24px;
 }
@@ -2020,4 +2004,16 @@ body.admin-theme {
     display: block;
     margin-bottom: 4px;
   }
+}
+
+.admin-page #users > .card {
+  margin-bottom: 24px;
+}
+.admin-page #users .section-heading h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+#users-heading,
+#projects-heading {
+  scroll-margin-top: 24px;
 }

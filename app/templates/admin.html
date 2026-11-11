@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}{{ u('admin') }}{% endblock %}
+{% block head %}<script type="module" src="{{ prefix }}/static/admin-explorer.js"></script>{% endblock %}
 {% block content %}
 <main class="content-width admin-page">
-<header class="page-heading heading-row"><div><p class="eyebrow">NLP4BIA / {{ copy('Administrator workspace') }}</p><h1>{{ copy('User management') }}</h1><p class="muted">{{ copy('Review access requests and manage all accounts and projects.') }}</p></div><a class="button" href="{{ prefix }}/admin/projects?lang={{ locale }}">{{ copy('All projects') }}</a></header>
+<header class="page-heading heading-row"><div><p class="eyebrow">NLP4BIA / {{ copy('Administrator workspace') }}</p><h1>{{ copy('admin') }}</h1><p class="muted">{{ copy('Review access requests and manage all accounts and projects.') }}</p></div></header>
 <section class="workspace-metrics">
 {% for label,value,symbol in [('Accounts',metrics.accounts,'user'),('Pending requests',metrics.pending_accounts,'clock'),('Active jobs',(metrics.jobs_by_status.get('QUEUED',0)+metrics.jobs_by_status.get('PROCESSING',0)),'layers'),('Storage used',metrics.storage_bytes,'document')] %}
 <article class="metric-card"><div>{{ copy(label) }}{{ icon(symbol) }}</div><strong data-number="{{ value }}">{{ value }}</strong>{% if label=='Storage used' %}<small>bytes</small>{% endif %}</article>
 {% endfor %}
 </section>
-<section class="card" id="access-requests"><header class="section-heading"><h2>{{ copy('Pending requests') }}</h2></header>
+<section id="users" aria-labelledby="users-heading"><h2 id="users-heading">{{ copy('User management') }}</h2>
+<section class="card" id="access-requests"><header class="section-heading"><h3>{{ copy('Pending requests') }}</h3></header>
 {% if not pending %}<p class="empty-state">{{ copy('No pending requests.') }}</p>{% else %}<div class="request-grid">
-{% for row in pending %}<article class="access-request" data-request-user="{{ row.id }}"><h3>{{ row.full_name }}</h3><dl>
+{% for row in pending %}<article class="access-request" data-request-user="{{ row.id }}"><h4>{{ row.full_name }}</h4><dl>
 <dt>{{ copy('email') }}</dt><dd>{{ row.email }}</dd>
 <dt>{{ copy('institution') }}</dt><dd>{{ row.institution }}</dd>
 <dt>{{ copy('professional_role') }}</dt><dd>{{ copy(row.professional_role) }}{% if row.professional_role_other %}<p>{{ row.professional_role_other }}</p>{% endif %}</dd>
@@ -18,7 +20,7 @@
 </dl><div class="action-row">
 {% for decision,label in [('APPROVED','Approve'),('REJECTED','Decline')] %}<form method="post" action="{{ prefix }}/admin/users/{{ row.id }}/review" data-confirm="true" data-identity="{{ row.email }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="decision" value="{{ decision }}"><button class="{{ 'secondary destructive-text' if decision=='REJECTED' else '' }}">{{ copy(label) }}</button></form>{% endfor %}
 </div></article>{% endfor %}</div>{% endif %}</section>
-<section class="card"><header class="section-heading"><h2>{{ copy('Accounts') }}</h2><form method="get" class="admin-search"><label for="user-search" class="sr-only">{{ copy('Search by email or institution') }}</label><input id="user-search" name="q" maxlength="200" value="{{ request.query_params.get('q','') }}" placeholder="{{ u('Email / institution') }}" data-i18n-placeholder="Email / institution"><input type="hidden" name="lang" value="{{ locale }}"><button class="secondary">{{ copy('Search') }}</button></form></header>
+<section class="card"><header class="section-heading"><h3>{{ copy('Accounts') }}</h3><form method="get" class="admin-search"><label for="user-search" class="sr-only">{{ copy('Search by email or institution') }}</label><input id="user-search" name="q" maxlength="200" value="{{ request.query_params.get('q','') }}" placeholder="{{ u('Email / institution') }}" data-i18n-placeholder="Email / institution"><input type="hidden" name="lang" value="{{ locale }}"><button class="secondary">{{ copy('Search') }}</button></form></header>
 {% if not users %}<p class="empty-state">{{ copy('No users match your search.') }}</p>{% else %}
 <table class="responsive-table admin-table"><thead><tr>{% for label in ['full_name','institution','professional_role','Account approval','Documents','Actions'] %}<th scope="col">{{ copy(label) }}</th>{% endfor %}</tr></thead><tbody>
 {% for row in users %}<tr data-account-user="{{ row.id }}">
@@ -38,6 +40,10 @@
 {% if row.id!=account.id %}<form method="post" action="{{ prefix }}/admin/users/{{ row.id }}/delete" data-confirm="true" data-identity="{{ row.email }}" data-confirm-message="Delete account and all its projects? This cannot be undone."><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="confirm_email" value="{{ row.email }}"><button class="secondary destructive-text">{{ copy('Delete account') }}</button></form>{% endif %}
 </td></tr>{% endfor %}</tbody></table>{% endif %}
 <nav class="pager" aria-label="{{ u('Accounts') }}">{% if offset %}<a class="button secondary" href="{{ prefix }}/admin?lang={{ locale }}&amp;offset={{ [offset-100,0]|max }}&amp;q={{ request.query_params.get('q','')|urlencode }}">{{ copy('previous') }}</a>{% endif %}{% if users|length==100 %}<a class="button secondary" href="{{ prefix }}/admin?lang={{ locale }}&amp;offset={{ offset+100 }}&amp;q={{ request.query_params.get('q','')|urlencode }}">{{ copy('next') }}</a>{% endif %}</nav>
+</section>
+</section>
+<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading">{{ copy('Projects') }}</h2>
+{% include 'admin_projects.html' %}
 </section>
 <section class="card audit-section"><header class="section-heading"><h2>{{ copy('Audit history') }}</h2></header>{% if not history %}<p class="empty-state">{{ copy('No administrative changes recorded.') }}</p>{% else %}<table class="responsive-table"><thead><tr><th>ID</th><th>{{ copy('created') }}</th><th>{{ copy('Actions') }}</th></tr></thead><tbody>{% for event in history %}<tr><td data-label="ID">{{ event.id }}</td><td data-label="{{ u('created') }}"><time datetime="{{ ui_date(event.at) }}">{{ ui_date(event.at) }}</time></td><td data-label="{{ u('Actions') }}"><strong>{{ event.action }}</strong>{% if event.target_user_id %}<small><a href="{{ prefix }}/admin?lang={{ locale }}&amp;q={{ event.target_user_id|urlencode }}">{{ event.target_user_id }}</a></small>{% endif %}<code class="audit-details">{{ event.details }}</code></td></tr>{% endfor %}</tbody></table>{% endif %}</section>
 </main>

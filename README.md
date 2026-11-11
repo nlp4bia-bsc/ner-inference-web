@@ -11,6 +11,12 @@ requires an approved account. Owners and authorized administrators can
 access projects; a private link alone grants no access. Files remain available
 for **72 hours after completion**.
 
+Version **0.12.1** keeps users and projects together in **Administration** (`/admin`),
+with users above the project explorer and no secondary global administrator bar.
+Dense entity towers now wrap against the full label/text geometry, retaining
+centered labels, continued shared overlap brackets and the existing entity colors
+without horizontal clipping on mobile.
+
 Version **0.12.0** adds the lazy administrator tree: users → projects → documents
 → annotations, with real aggregate statistics, existing viewer/export links and
 confirmed foreign-document erasure. See [explorer definitions](docs/ADMIN_EXPLORER.md).
@@ -132,7 +138,7 @@ The public welcome is the protected platform's Sign in screen. After actual emai
 login, Research Workspace shows only your retained job metrics/history,
 with New annotation, My jobs, Models and Profile navigation. The model catalog is
 also private. Administration requires an approved active ADMIN. Its
-separate All projects view grants authorized inspection and erasure across owners.
+Projects section below User management grants authorized inspection and erasure across owners.
 
 ![NLP4BIA sign in with the original BSC institutional logo](docs/previews/v5/login-desktop.png)
 
@@ -316,7 +322,7 @@ exists. Keep the existing administrator on upgrades; bootstrap only once. Sign i
 then open /admin. MFA is disabled by default, including for existing enrolled
 accounts. No authenticator enrollment or code is needed. An administrator can search
 access requests and profiles, approve/decline, assign tiers/roles/numeric quotas,
-suspend/reactivate, revoke sessions and delete accounts. All projects allows
+suspend/reactivate, revoke sessions and delete accounts. Projects, below users on the same page, allows
 inspection and erasure of other owners' documents. Email verification applies
 only when explicitly enabled. See [administration](docs/ADMINISTRATION.md).
 

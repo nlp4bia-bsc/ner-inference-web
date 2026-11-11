@@ -1,4 +1,5 @@
 from typing import Literal
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
@@ -90,7 +91,13 @@ def router(db, settings, auth, templates, jobs):
         return service.history(offset)
 
     @api.get("/admin", include_in_schema=False)
-    def page(request: Request, q: str = Query("", max_length=200), offset: int = Query(0, ge=0)):
+    def page(
+        request: Request,
+        q: str = Query("", max_length=200),
+        offset: int = Query(0, ge=0),
+        project_q: str = Query("", max_length=200),
+        project_offset: int = Query(0, ge=0),
+    ):
         actor = require_admin()
         language = locale(request.scope["auth_locale"])
         return templates.TemplateResponse(
@@ -107,6 +114,8 @@ def router(db, settings, auth, templates, jobs):
                 "offset": offset,
                 "metrics": service.metrics(),
                 "history": service.history(),
+                "projects": service.projects(project_q, project_offset),
+                "project_offset": project_offset,
             },
         )
 
@@ -114,17 +123,10 @@ def router(db, settings, auth, templates, jobs):
     def project_page(
         request: Request, q: str = Query("", max_length=200), offset: int = Query(0, ge=0)
     ):
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_projects.html",
-            context={
-                "prefix": prefix,
-                "locale": locale(request.scope["auth_locale"]),
-                "account": require_admin(),
-                "projects": service.projects(q, offset),
-                "offset": offset,
-            },
+        query = urlencode(
+            {"lang": locale(request.scope["auth_locale"]), "project_q": q, "project_offset": offset}
         )
+        return RedirectResponse(prefix + "/admin?" + query + "#projects", 303)
 
     @api.post("/admin/users/{identity}/review", include_in_schema=False)
     async def review_html(request: Request, identity: str):
@@ -143,7 +145,7 @@ def router(db, settings, auth, templates, jobs):
         if await data(request):
             raise ServiceError("invalid_form", 422)
         await run_in_threadpool(service.delete_project, identity)
-        return RedirectResponse(prefix + "/admin/projects", 303)
+        return RedirectResponse(prefix + "/admin#projects", 303)
 
     @api.post("/admin/users/{identity}", include_in_schema=False)
     async def change_html(request: Request, identity: str):

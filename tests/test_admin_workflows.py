@@ -475,6 +475,7 @@ def test_admin_theme_covers_workspace_and_other_owners_pages(administration):
         ):
             response = administrator.get(prefix + path)
             assert response.status_code == 200
+            assert 'class="admin-context"' not in response.text
             assert "admin-theme" in re.search(r'<body class="([^"]*)"', response.text).group(1)
         ordinary = owner.get(prefix + "/?admin=true&system_role=ADMIN")
         assert "admin-theme" not in re.search(r'<body class="([^"]*)"', ordinary.text).group(1)
@@ -553,3 +554,39 @@ def test_previously_enrolled_admin_uses_password_only_when_mfa_is_disabled(admin
             == 200
         )
         assert client.get(prefix + "/api/admin/users").status_code == 200
+
+
+def test_unified_admin_page_and_legacy_project_links(administration):
+    from urllib.parse import parse_qs, urlsplit
+
+    app, administrator, prefix, _ = administration
+    page = administrator.get(prefix + "/admin?lang=es").text
+    assert page.index('id="users"') < page.index('id="projects"')
+    assert 'id="admin-explorer-tree"' in page
+    assert 'class="admin-context"' not in page
+    assert 'name="project_q"' in page and 'name="q"' in page
+    assert f'action="{prefix}/admin#projects"' in page
+    response = administrator.get(
+        prefix + "/admin/projects",
+        params={"lang": "es", "q": "Synthetic & /?project", "offset": 100},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    target = urlsplit(response.headers["location"])
+    assert not target.netloc and target.path == prefix + "/admin"
+    assert target.fragment == "projects"
+    assert parse_qs(target.query) == {
+        "lang": ["es"],
+        "project_q": ["Synthetic & /?project"],
+        "project_offset": ["100"],
+    }
+    with TestClient(app) as owner:
+        approve(administration, owner, "unified-page@example.test")
+        accepted = job(owner).json()
+        page = administrator.get(
+            prefix + "/admin", params={"q": "no-matching-account", "project_q": accepted["job_id"]}
+        ).text
+        assert f'data-admin-project="{accepted["job_id"]}"' in page
+        assert "data-account-user=" not in page
+        for path in ("/admin", "/admin/projects"):
+            assert owner.get(prefix + path, follow_redirects=False).status_code == 403
