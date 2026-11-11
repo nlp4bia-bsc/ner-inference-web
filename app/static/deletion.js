@@ -9,8 +9,9 @@ export function confirmDeletion(
   onError,
   onBusy = () => {},
   documents,
+  identity,
 ) {
-  return openDialog(t(title), t(description), [
+  const dialog = openDialog(t(title), t(description), [
     {
       label: t("Delete"),
       run: async (dialog) => {
@@ -54,7 +55,7 @@ export function confirmDeletion(
                 ? t(result.detail)
                 : t("The request could not be submitted. Please try again."),
             );
-          paintQuota(result.quota);
+          if (result.quota) paintQuota(result.quota);
           await onDeleted(result);
         } catch (error) {
           onError(
@@ -67,4 +68,11 @@ export function confirmDeletion(
       },
     },
   ]);
+  if (identity) {
+    const detail = document.createElement("p");
+    detail.className = "confirm-details";
+    detail.textContent = identity;
+    dialog.append(detail);
+  }
+  return dialog;
 }

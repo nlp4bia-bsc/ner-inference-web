@@ -154,6 +154,7 @@ def test_admin_reviews_manages_quota_views_foreign_projects_and_erases_account(
         expect(admin.locator("body")).to_have_class(re.compile(r"\badmin-theme\b"))
         check_screen(admin, "admin-annotation")
         admin.goto(base + "/admin/projects")
+        admin.locator("details.card > summary").click()
         admin.locator(f'[data-admin-project="{accepted["job_id"]}"]').get_by_role(
             "button", name="Delete project", exact=True
         ).click()

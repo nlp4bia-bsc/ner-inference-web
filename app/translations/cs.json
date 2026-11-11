@@ -575,5 +575,21 @@
   "Administrator approval required.": "Je vyžadováno schválení administrátorem.",
   "Your projects are accessible to you and authorized administrators.": "Vaše projekty jsou přístupné vám a oprávněným administrátorům.",
   "Your documents are queued. You and authorized administrators can access this job.": "Vaše dokumenty jsou ve frontě. K této úloze máte přístup vy a oprávnění administrátoři.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Výsledky jsou dostupné {count} hodin po zpracování. Přístup máte vy a oprávnění administrátoři."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Výsledky jsou dostupné {count} hodin po zpracování. Přístup máte vy a oprávnění administrátoři.",
+  "Project explorer": "Průzkumník projektů",
+  "All users": "Všichni uživatelé",
+  "Global statistics": "Globální statistiky",
+  "Expand a user to browse projects, documents and annotations.": "Rozbalte uživatele a procházejte projekty, dokumenty a anotace.",
+  "Available projects": "Dostupné projekty",
+  "Expired projects": "Projekty s prošlou platností",
+  "Normalizations": "Normalizace",
+  "Annotations by model": "Anotace podle modelu",
+  "Documents by language": "Dokumenty podle jazyka",
+  "Load more": "Načíst další",
+  "Partial statistics": "Dílčí statistiky",
+  "Annotations": "Anotace",
+  "Text statistics": "Statistiky textu",
+  "Characters": "Znaky",
+  "Annotations by language": "Anotace podle jazyka",
+  "Normalization languages": "Jazyky normalizace"
 }

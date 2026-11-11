@@ -1,0 +1,23 @@
+services:
+  web:
+    environment:
+      APP_ENV: production
+      COOKIE_SECURE: "true"
+      PUBLIC_BASE_URL: https://temu.bsc.es/annotation-tool
+    command:
+      - uvicorn
+      - app.asgi:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --no-access-log
+      - --proxy-headers
+      - --forwarded-allow-ips=*
+
+  worker:
+    environment:
+      APP_ENV: production
+      COOKIE_SECURE: "true"
+      PUBLIC_BASE_URL: https://temu.bsc.es/annotation-tool
+      DEVICE: cpu

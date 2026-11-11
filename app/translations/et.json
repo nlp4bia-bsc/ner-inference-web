@@ -575,5 +575,21 @@
   "Administrator approval required.": "Vajalik on administraatori kinnitus.",
   "Your projects are accessible to you and authorized administrators.": "Teie projektidele pääsete ligi teie ja volitatud administraatorid.",
   "Your documents are queued. You and authorized administrators can access this job.": "Teie dokumendid on järjekorras. Sellele tööle pääsete ligi teie ja volitatud administraatorid.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Tulemused on saadaval {count} tundi pärast töötlemist. Neile pääsete ligi teie ja volitatud administraatorid."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Tulemused on saadaval {count} tundi pärast töötlemist. Neile pääsete ligi teie ja volitatud administraatorid.",
+  "Project explorer": "Projektide sirvija",
+  "All users": "Kõik kasutajad",
+  "Global statistics": "Üldstatistika",
+  "Expand a user to browse projects, documents and annotations.": "Projektide, dokumentide ja märgenduste sirvimiseks avage kasutaja.",
+  "Available projects": "Saadaolevad projektid",
+  "Expired projects": "Aegunud projektid",
+  "Normalizations": "Normaliseerimised",
+  "Annotations by model": "Märgendused mudeli kaupa",
+  "Documents by language": "Dokumendid keele kaupa",
+  "Load more": "Laadi rohkem",
+  "Partial statistics": "Osaline statistika",
+  "Annotations": "Märgendused",
+  "Text statistics": "Teksti statistika",
+  "Characters": "Märgid",
+  "Annotations by language": "Märgendused keele kaupa",
+  "Normalization languages": "Normaliseerimise keeled"
 }

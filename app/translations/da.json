@@ -575,5 +575,21 @@
   "Administrator approval required.": "Administratorgodkendelse kræves.",
   "Your projects are accessible to you and authorized administrators.": "Dine projekter er tilgængelige for dig og autoriserede administratorer.",
   "Your documents are queued. You and authorized administrators can access this job.": "Dine dokumenter er i kø. Du og autoriserede administratorer har adgang til dette job.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Resultater er tilgængelige i {count} timer efter behandling. Du og autoriserede administratorer har adgang til dem."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Resultater er tilgængelige i {count} timer efter behandling. Du og autoriserede administratorer har adgang til dem.",
+  "Project explorer": "Projektoversigt",
+  "All users": "Alle brugere",
+  "Global statistics": "Samlet statistik",
+  "Expand a user to browse projects, documents and annotations.": "Udvid en bruger for at se projekter, dokumenter og annoteringer.",
+  "Available projects": "Tilgængelige projekter",
+  "Expired projects": "Udløbne projekter",
+  "Normalizations": "Normaliseringer",
+  "Annotations by model": "Annoteringer efter model",
+  "Documents by language": "Dokumenter efter sprog",
+  "Load more": "Indlæs flere",
+  "Partial statistics": "Delvis statistik",
+  "Annotations": "Annoteringer",
+  "Text statistics": "Tekststatistik",
+  "Characters": "Tegn",
+  "Annotations by language": "Annoteringer efter sprog",
+  "Normalization languages": "Normaliseringssprog"
 }

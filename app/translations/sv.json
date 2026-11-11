@@ -575,5 +575,21 @@
   "Administrator approval required.": "Administratörsgodkännande krävs.",
   "Your projects are accessible to you and authorized administrators.": "Dina projekt är tillgängliga för dig och behöriga administratörer.",
   "Your documents are queued. You and authorized administrators can access this job.": "Dina dokument står i kö. Du och behöriga administratörer har åtkomst till detta jobb.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Resultaten är tillgängliga i {count} timmar efter bearbetning. Du och behöriga administratörer har åtkomst till dem."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Resultaten är tillgängliga i {count} timmar efter bearbetning. Du och behöriga administratörer har åtkomst till dem.",
+  "Project explorer": "Projektutforskare",
+  "All users": "Alla användare",
+  "Global statistics": "Global statistik",
+  "Expand a user to browse projects, documents and annotations.": "Expandera en användare för att se projekt, dokument och annoteringar.",
+  "Available projects": "Tillgängliga projekt",
+  "Expired projects": "Utgångna projekt",
+  "Normalizations": "Normaliseringar",
+  "Annotations by model": "Annoteringar per modell",
+  "Documents by language": "Dokument per språk",
+  "Load more": "Läs in fler",
+  "Partial statistics": "Partiell statistik",
+  "Annotations": "Annoteringar",
+  "Text statistics": "Textstatistik",
+  "Characters": "Tecken",
+  "Annotations by language": "Annoteringar per språk",
+  "Normalization languages": "Normaliseringsspråk"
 }

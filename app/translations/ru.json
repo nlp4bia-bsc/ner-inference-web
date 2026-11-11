@@ -575,5 +575,21 @@
   "Administrator approval required.": "Требуется одобрение администратора.",
   "Your projects are accessible to you and authorized administrators.": "Ваши проекты доступны вам и уполномоченным администраторам.",
   "Your documents are queued. You and authorized administrators can access this job.": "Ваши документы находятся в очереди. Эта задача доступна вам и уполномоченным администраторам.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Результаты доступны в течение {count} часов после обработки. Они доступны вам и уполномоченным администраторам."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Результаты доступны в течение {count} часов после обработки. Они доступны вам и уполномоченным администраторам.",
+  "Project explorer": "Обозреватель проектов",
+  "All users": "Все пользователи",
+  "Global statistics": "Общая статистика",
+  "Expand a user to browse projects, documents and annotations.": "Разверните пользователя, чтобы просмотреть проекты, документы и аннотации.",
+  "Available projects": "Доступные проекты",
+  "Expired projects": "Проекты с истёкшим сроком",
+  "Normalizations": "Нормализации",
+  "Annotations by model": "Аннотации по модели",
+  "Documents by language": "Документы по языку",
+  "Load more": "Загрузить ещё",
+  "Partial statistics": "Частичная статистика",
+  "Annotations": "Аннотации",
+  "Text statistics": "Статистика текста",
+  "Characters": "Символы",
+  "Annotations by language": "Аннотации по языку",
+  "Normalization languages": "Языки нормализации"
 }

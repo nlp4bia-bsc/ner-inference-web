@@ -1,4 +1,83 @@
-# Latest: MFA disabled by default (0.11.1)
+# Latest: Apache profile and hierarchical administrator explorer (0.12.0)
+
+Executed 2026-11-11 on Linux/Python3.12.14, Chromium/Playwright1.62.0, with the
+HTTP dependencies installed from requirements.lock (FastAPI0.162.0,
+Starlette1.10.0, Pydantic2.14.3). NumPy2.3.5, FAISS-CPU1.15.1, RapidFuzz3.14.6,
+Transformers5.22.1 and ner_lab8640d479 were used for the local checks. The available
+Torch runtime was2.10.0+cpu; the unchanged CPU lock selects2.15.0+cpu. This is not
+an image-build or old-CPU hardware certification. All documents/accounts are synthetic.
+
+- `/tmp/ner-ui-env/bin/python -m pytest -q -rs`: **329 passed,128 browser cases
+  skipped**,141.54 seconds. Browser cases require explicit opt-in below. Initial
+  environment setup exposed nine missing-RapidFuzz failures after FAISS tests were
+  enabled; installing the existing CPU lock's RapidFuzz pin resolved those failures.
+  No normalization algorithm or additional project dependency was introduced.
+- `tests/test_admin_explorer.py tests/test_apache_deployment.py
+  tests/test_admin_workflows.py`: **55 passed**,19.23 seconds after the final
+  aggregation generation check. This includes real review/login/CSRF/role APIs,
+  root and /annotation-tool, exact hand-counted overlap/model/normalization totals,
+  paging, foreign original/BRAT/TSV access, erasure/quota/audit, partial snapshots,
+  corrupt/missing source exclusion, TTL, legacy ownerless/owned exports and
+  historical ledger adoption, concurrent revocation and erasure during aggregation.
+  These cases are included in the full server run, not additional unique tests.
+- With BROWSER_TESTS=1 and AXE_CORE_PATH set, the combined tree/admin/viewer/form/
+  document-management/model-progress/overlap regression passed **77 cases**,
+  303.83 seconds. All36 geometry/color/Unicode overlap cases were included.
+- After the final shared deep-link initialization, explicit deletion identity and
+  expiry clearing changes, the affected tree/admin/viewer/form/document-management/
+  model-progress matrix passed **42 cases**,208.77 seconds. This includes the
+  added expiry/clock-skew case; overlap-only geometry was not repeated again.
+- A repeated deep-link case exposed a concurrent-refresh race (first document
+  selected while the target metadata was in flight). The viewer now shares that
+  initialization. A deterministic delayed-response/second-refresh reproduction
+  passes at root and /annotation-tool: **2 passed,5 deselected**,14.66 seconds.
+  The earlier repeated matrix was **6 passed,1 failed** before that correction.
+  Counts across these reruns are not summed.
+- New-tree browser cases exercise actual keyboard expansion/collapse, lazy API
+  loading, original/BRAT/TSV downloads, overlap and UMLS in the existing viewer,
+  delete cancellation/confirmation, owner quota release, refresh-state restoration,
+  and clearing loaded annotation text on expiry with a wrong browser clock.
+  Desktop/mobile screenshots were reviewed. Axe WCAG2/2.1/2.2 AA and reflow pass;
+  an initial target-size finding was fixed with44px disclosure targets.
+
+```bash
+AXE_CORE_PATH=work/design-a11y/node_modules/axe-core/axe.min.js BROWSER_TESTS=1 \
+  /tmp/ner-ui-env/bin/python -m pytest -q \
+  tests/test_admin_explorer_browser.py tests/test_admin_browser.py \
+  tests/test_viewer_browser.py tests/test_ui_v3.py \
+  tests/test_document_management_browser.py tests/test_model_progress_browser.py
+```
+
+The77-case command also included tests/test_overlap_readability.py. Other browser
+modules were not repeated for this release; they are not described as executed.
+
+- Final targeted expired-project deletion through the tree, including explicit
+  identity confirmation and clearing stale annotation DOM: **1 passed,6 deselected**,
+  9.62 seconds. This extends the existing expiry case, not a new unique test.
+- PyPI requirement metadata for the pinned SciPy1.18.1, pandas3.1.1,
+  scikit-learn1.9.1 and FAISS-CPU1.15.1 accepts NumPy2.3.5. This checks those NumPy
+  constraints; it is not a full CPU-image resolver or hardware execution claim.
+- Production-style Secure-cookie admin login and all new endpoints pass with
+  `APP_PREFIX=/annotation-tool` and `https://temu.bsc.es/annotation-tool` settings.
+  Docker Compose rendering verifies only web/worker, loopback8000, production/
+  Secure settings, inherited prefix, CPU and the existing ner-data declaration.
+  The generic and Apache YAML are validated without reading/overwriting a server
+  .env, starting production containers or deleting any volume.
+- Route inventory: **100 method/route pairs**. All sixteen translation catalogs
+  pass completeness and placeholder checks. Ruff lint/format (144 Python files),
+  authored JS/CSS Prettier and `git diff --check` pass.
+- Bandit app/scripts: no medium/high findings; seven low findings. Wheel/sdist
+  build passes and archive inspection excludes confidential storage/gazetteers,
+  parquet/FAISS files and .env while including the new explorer modules/assets.
+- Production Docker images, the actual bscdspace CPU, Apache vhost/certificate and
+  WordPress installations were **not built/run/changed** in this workspace.
+  Follow [the deployment quickstart](DOCKER_QUICKSTART.md) and run its loopback/
+  HTTPS health checks on the real server. No new DB schema migration is required.
+
+See [metric/navigation definitions](ADMIN_EXPLORER.md) and
+[the security review](security/admin-explorer-review.md).
+
+# Previous: MFA disabled by default (0.11.1)
 
 Executed 2026-11-10 in the same Python3.12/CPU/Chromium environment below:
 

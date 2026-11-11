@@ -575,5 +575,21 @@
   "Administrator approval required.": "Απαιτείται έγκριση διαχειριστή.",
   "Your projects are accessible to you and authorized administrators.": "Τα έργα σας είναι προσβάσιμα σε εσάς και στους εξουσιοδοτημένους διαχειριστές.",
   "Your documents are queued. You and authorized administrators can access this job.": "Τα έγγραφά σας βρίσκονται στην ουρά. Εσείς και οι εξουσιοδοτημένοι διαχειριστές έχετε πρόσβαση σε αυτή την εργασία.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Τα αποτελέσματα παραμένουν διαθέσιμα για {count} ώρες μετά την επεξεργασία. Εσείς και οι εξουσιοδοτημένοι διαχειριστές έχετε πρόσβαση σε αυτά."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Τα αποτελέσματα παραμένουν διαθέσιμα για {count} ώρες μετά την επεξεργασία. Εσείς και οι εξουσιοδοτημένοι διαχειριστές έχετε πρόσβαση σε αυτά.",
+  "Project explorer": "Εξερεύνηση έργων",
+  "All users": "Όλοι οι χρήστες",
+  "Global statistics": "Συνολικά στατιστικά",
+  "Expand a user to browse projects, documents and annotations.": "Αναπτύξτε έναν χρήστη για να δείτε έργα, έγγραφα και επισημειώσεις.",
+  "Available projects": "Διαθέσιμα έργα",
+  "Expired projects": "Ληγμένα έργα",
+  "Normalizations": "Κανονικοποιήσεις",
+  "Annotations by model": "Επισημειώσεις ανά μοντέλο",
+  "Documents by language": "Έγγραφα ανά γλώσσα",
+  "Load more": "Φόρτωση περισσότερων",
+  "Partial statistics": "Μερικά στατιστικά",
+  "Annotations": "Επισημειώσεις",
+  "Text statistics": "Στατιστικά κειμένου",
+  "Characters": "Χαρακτήρες",
+  "Annotations by language": "Επισημειώσεις ανά γλώσσα",
+  "Normalization languages": "Γλώσσες κανονικοποίησης"
 }

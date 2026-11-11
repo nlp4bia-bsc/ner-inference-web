@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
+from app.admin.explorer import AdminExplorer
 from app.admin.service import AdminService
 from app.auth.i18n import locale, translate
 from app.auth.routes import data, validate
@@ -15,7 +16,28 @@ from app.users.schemas import AccessReview, AdminChange, DeleteAccount
 def router(db, settings, auth, templates, jobs):
     api = APIRouter(dependencies=[Depends(require_admin)])
     service = AdminService(db, settings, jobs, auth)
+    explorer = AdminExplorer(jobs)
     prefix = settings.app_prefix
+
+    @api.get("/api/admin/explorer/statistics")
+    def explorer_statistics():
+        return explorer.overview()
+
+    @api.get("/api/admin/explorer/users")
+    def explorer_users(offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100)):
+        return explorer.users(offset, limit)
+
+    @api.get("/api/admin/explorer/users/{identity}/projects")
+    def explorer_projects(
+        identity: str, offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100)
+    ):
+        return explorer.projects(identity, offset, limit)
+
+    @api.get("/api/admin/explorer/projects/{identity}")
+    def explorer_documents(
+        identity: str, offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100)
+    ):
+        return explorer.project(identity, offset, limit)
 
     @api.get("/api/admin/users")
     def users(

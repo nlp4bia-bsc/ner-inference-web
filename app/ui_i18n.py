@@ -4,6 +4,22 @@ from app.auth.i18n import ROWS as AUTH_ROWS
 from app.locales import CODES, translated
 
 _COPY = """
+Project explorer|Explorador de proyectos|Explorador de projectes
+All users|Todos los usuarios|Tots els usuaris
+Global statistics|Estadísticas globales|Estadístiques globals
+Expand a user to browse projects, documents and annotations.|Despliega un usuario para explorar sus proyectos, documentos y anotaciones.|Desplega un usuari per explorar els seus projectes, documents i anotacions.
+Available projects|Proyectos disponibles|Projectes disponibles
+Expired projects|Proyectos caducados|Projectes caducats
+Normalizations|Normalizaciones|Normalitzacions
+Annotations by model|Anotaciones por modelo|Anotacions per model
+Documents by language|Documentos por idioma|Documents per llengua
+Load more|Cargar más|Carrega’n més
+Partial statistics|Estadísticas parciales|Estadístiques parcials
+Annotations|Anotaciones|Anotacions
+Text statistics|Estadísticas del texto|Estadístiques del text
+Characters|Caracteres|Caràcters
+Annotations by language|Anotaciones por idioma|Anotacions per llengua
+Normalization languages|Idiomas de normalización|Llengües de normalització
 Administrator workspace|Espacio de administración|Espai d’administració
 All projects|Todos los proyectos|Tots els projectes
 Review access requests and manage all accounts and projects.|Revisa solicitudes de acceso y gestiona todas las cuentas y proyectos.|Revisa les sol·licituds d’accés i gestiona tots els comptes i projectes.

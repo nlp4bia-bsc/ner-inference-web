@@ -1,4 +1,4 @@
-# Administrator approval, projects and document quotas (0.11.1)
+# Administrator approval, projects and document quotas (0.12)
 
 ## Access requests
 
@@ -24,7 +24,10 @@ Theme/link visibility is presentation only: backend authorization is mandatory.
 
 ## All projects
 
-**All projects** (`/admin/projects`) lists projects across owners with owner name,
+**All projects** (`/admin/projects`) now starts with a lazy user/project/document/
+annotation tree and measured global/scoped statistics. The former search table
+is retained in a collapsed secondary section. See [explorer behavior and metric
+definitions](ADMIN_EXPLORER.md). It provides owner name,
 email and institution, project name, language, status and document counts. Search
 and pagination are server-side. Open job, viewer, document management and exports
 use the ordinary project routes with the same expiry checks. Approved, active

@@ -1,5 +1,12 @@
 # Deployment on a single Linux host
 
+Current production deployment on bscdspace uses Apache and `/annotation-tool`,
+with `COMPOSE_FILE=docker-compose.yml:docker-compose.apache.yml` and the existing
+private `.env`. See [the current quickstart](DOCKER_QUICKSTART.md). Historical
+public/Caddy examples below apply to other deployment profiles and are not used
+for bscdspace. Do not replace the server `.env` or persistent volumes.
+
+
 For the step-by-step Docker setup for https://temu.bsc.es:18443 (CPU/NVIDIA GPU, private Parquet import,
 port forwarding, HTTPS and optional Conda data migration), see
 [Docker quickstart](DOCKER_QUICKSTART.md).

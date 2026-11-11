@@ -1,263 +1,124 @@
-# Docker en temu.bsc.es:18443
+# Docker en bscdspace: Apache y /annotation-tool
 
-La configuración principal reutiliza el certificado SSL del servidor, usa **CPU** y publica la plataforma en
-**https://temu.bsc.es:18443**. El puerto es configurable. Se levantan tres
-servicios: web, worker y proxy HTTPS (Caddy fijado por digest). El perfil NVIDIA queda preparado para
-cuando la máquina tenga GPU. No hace falta activar Conda ni lanzar Python en el
-host: Docker instala las dependencias y arranca los procesos.
+La configuración genérica está en `docker-compose.yml`; la de producción en
+`docker-compose.apache.yml`. Se levantan **web y worker**, sin Caddy ni otro proxy.
+Apache sigue atendiendo HTTPS y las instalaciones WordPress de las demás rutas.
+El backend solo publica **127.0.0.1:8000**. El worker utiliza CPU.
 
-## 1. Repositorio y configuración
+## Actualizar la instalación existente
 
-Con Docker Engine y Compose **v2.24.4 o posterior** instalados, en la máquina final:
+Trabaja en el **mismo directorio del repositorio y proyecto Compose existentes**,
+en la rama `work`. Conserva el mismo `COMPOSE_PROJECT_NAME` si ya lo usáis: cambiar
+el nombre/directorio del proyecto puede seleccionar otro volumen.
 
-```bash
-git clone --branch work https://github.com/nlp4bia-bsc/ner-inference-web.git
-cd ner-inference-web
-# Si ya tienes el checkout: git pull --ff-only.
-mkdir -p gazetteers certificates
-chmod 700 gazetteers certificates
-ss -ltn '( sport = :18443 )'
-```
-
-El último comando comprueba el puerto elegido. Si está ocupado,
-cambia `PUBLIC_HTTPS_PORT` en `.env`. El DNS de `temu.bsc.es` debe apuntar a esta
-máquina y el puerto TCP elegido debe llegar a ella.
-
-Crea una `.env` privada con estas claves, conservando otras que necesites si ya
-existe:
+El `.env` privado del servidor ya contiene:
 
 ```dotenv
-COMPOSE_FILE=docker-compose.yml:docker-compose.public.yml
-PUBLIC_DOMAIN=temu.bsc.es
-PUBLIC_HTTPS_PORT=18443
-APP_PREFIX=
-INSTALL_NLP=true
-NLP_PROFILE=cpu
-MODEL_LOADING_MODE=on_demand
-HF_HUB_OFFLINE=0
-TRANSFORMERS_OFFLINE=0
-REQUIRE_EMAIL_VERIFICATION=false
-MAIL_BACKEND=none
+APP_PREFIX=/annotation-tool
+COMPOSE_FILE=docker-compose.yml:docker-compose.apache.yml
 ```
 
-`COMPOSE_FILE` hace que los comandos Compose carguen siempre el perfil público,
-sin tener que repetir opciones `-f`. La superposición pública fija `APP_ENV=production`, `COOKIE_SECURE=true` y calcula
-`PUBLIC_BASE_URL` con ese dominio, puerto y prefijo para **ambos procesos**. No
-hacen falta los antiguos `export`, y una URL de localhost heredada en `.env` no
-sustituye el origen público en este perfil. Las rutas internas son `/data` y
-`/gazetteers`. `.env`, `gazetteers/` y `certificates/` están excluidos de Git y de
-las imágenes. `HF_TOKEN`, si una descarga lo requiere, puede añadirse a `.env`;
-se proporciona solo al worker.
+**No copies `.env.example` encima de ese archivo.** Conserva todas sus demás
+variables, credenciales y ajustes privados. El perfil Apache fija producción,
+cookies Secure y `PUBLIC_BASE_URL=https://temu.bsc.es/annotation-tool` en ambos
+servicios; no cambia APP_PREFIX. MFA y verificación por correo siguen desactivados
+por defecto. La cuenta de administrador existente se conserva.
 
-## 2. Certificado HTTPS
-
-Reutiliza el certificado SSL que ya utiliza la máquina, siempre que cubra
-`temu.bsc.es`. Los puertos 80 y 443 del host quedan para sus servicios actuales.
-Para identificar el servicio y las rutas, en la máquina final:
+Prepara una copia consistente y privada del almacenamiento/SQLite/claves conforme
+a vuestra política. Deja terminar los trabajos activos antes de la parada prevista.
+Los siguientes comandos no eliminan ni recrean volúmenes:
 
 ```bash
-sudo ss -ltnp '( sport = :80 or sport = :443 )'
-# Si es Nginx:
-sudo nginx -T 2>/dev/null | grep -E 'server_name|ssl_certificate(_key)?'
-# Si es Apache:
-sudo grep -R -E 'ServerName|SSLCertificate(File|KeyFile|ChainFile)' /etc/apache2/sites-enabled/
-```
+git switch work
+git pull --ff-only
 
-Selecciona el certificado del dominio y su clave. Los comandos muestran rutas,
-no el contenido de las claves. Si se gestiona con Certbot, `sudo certbot
-certificates` también muestra las rutas. Copia los archivos a los nombres que
-espera Docker, sustituyendo las dos rutas de ejemplo:
+# Deben aparecer web y worker, y el volumen declarado ner-data.
+docker compose config --services
+docker compose config --volumes
 
-```bash
-sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /RUTA/fullchain.pem certificates/fullchain.pem
-sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /RUTA/privkey.pem certificates/privkey.pem
-openssl x509 -in certificates/fullchain.pem -noout -checkhost temu.bsc.es
-```
-
-Deben quedar aquí:
-
-```text
-certificates/fullchain.pem
-certificates/privkey.pem
-```
-
-`fullchain.pem` contiene el certificado del servidor y sus intermediarios.
-Si el servidor los configura en archivos separados, concatena primero el
-certificado y después la cadena para formar ese archivo. Un
-certificado institucional válido o un wildcard que cubra el dominio sirve. Los
-servicios y Caddy se configuran para HTTPS sin abrir 80 ni 443 en el host: el
-puerto externo es 18443. El certificado debe estar emitido de antemano; este
-perfil no intenta obtenerlo automáticamente mediante desafíos ACME en esos
-puertos. No pegues claves en el chat ni las añadas al repositorio.
-
-```bash
-chmod 600 certificates/privkey.pem
-git check-ignore certificates/privkey.pem gazetteers/dt4h_gazs.zip
-```
-
-El proxy Docker se conecta directamente a `web` en la red privada, también si
-el host usa un proxy HTTP de salida.
-
-## 3. Imágenes y diccionarios privados
-
-Construye primero las imágenes CPU:
-
-```bash
-docker compose config --quiet
+# Construye antes de parar: si falla el build, la versión anterior sigue en marcha.
 docker compose build web worker
-```
+docker compose stop web worker
+docker compose up -d --no-deps web worker
 
-Copia por tu canal privado `dt4h_gazs.zip` a `gazetteers/dt4h_gazs.zip`.
-Si ya tienes `gazetteers/` importado, copia el directorio entero, incluidos
-`manifest.json` y `.prepared/`, y omite la siguiente importación.
-
-Solo si has copiado el ZIP sin importar:
-
-```bash
-docker compose run --rm --no-deps \
-  --user "$(id -u):$(id -g)" \
-  -v "$PWD/gazetteers:/gazetteers:rw" \
-  worker python -m scripts.import_gazetteers \
-  /gazetteers/dt4h_gazs.zip --language-source path
-```
-
-El importador se ejecuta con tu UID para crear los archivos con permisos privados.
-No descarga un Transformer ni genera un índice del bi-encoder. El inventario
-confirmado debe producir **28 recursos** en `cs, en, es, it, nl, ro, sv`.
-
-Los servicios corren como UID **10001**. Después de importar o copiar los Parquet,
-concede lectura a ese UID, manteniendo la privacidad para los demás usuarios:
-
-```bash
-# En Ubuntu/Debian, si no está disponible setfacl:
-sudo apt-get install acl
-setfacl -Rm u:10001:rX gazetteers
-```
-
-Repite la ACL tras una nueva importación, porque el importador aplica permisos
-privados. En ejecución normal `gazetteers/` se monta **solo para lectura**. Las
-terminologías no entran en las imágenes.
-
-## 4. Arranque
-
-Si conservas cuentas/documentos de Conda, realiza primero la migración del último
-apartado. Después, con los certificados preparados:
-
-```bash
-docker compose run --rm --no-deps --entrypoint caddy proxy validate --config /etc/caddy/Caddyfile
-docker compose up -d
 docker compose ps
-docker compose logs --tail=100 web worker proxy
+docker compose logs --tail=100 web worker
 ```
 
-Abre **https://temu.bsc.es:18443**. El registro solicita acceso: el administrador
-debe aprobar cada cuenta nueva en `/admin`. No requiere correo de verificación.
-El primer job descarga los modelos seleccionados; luego reutiliza la caché.
-Fuzzy match no construye un índice neuronal.
+**No ejecutes `down -v`, `volume rm`, `volume prune` ni cambies el nombre del
+volumen/proyecto.** `up` puede sustituir los contenedores para aplicar las imágenes;
+el volumen `ner-data:/data` y los directorios privados montados se conservan.
+No se utiliza `--remove-orphans`, que podría afectar a otros servicios del proyecto.
 
-Comprueba el origen configurado, los recursos y la conexión con el worker:
+Se mantienen estos montajes:
+
+| Recurso | Uso |
+|---|---|
+| `ner-data:/data` | Base de datos, documentos, resultados, claves y cachés persistentes |
+| `./catalog:/service/catalog:ro` | Catálogo configurado por la institución |
+| `./models:/models:ro` | Recursos locales opcionales |
+| `./gazetteers:/gazetteers:ro` | Parquet e inventario privado, fuera de Git e imágenes |
+
+El primer uso de un modelo descarga sus pesos y reutiliza después la caché; no hay
+compilación ni descarga de modelos durante el build. El perfil CPU conserva
+**`numpy==2.3.5`** en `requirements-cpu.lock` para evitar la incompatibilidad X86_V2
+señalada en este servidor. No lo actualices separadamente dentro del contenedor.
+Las dependencias GPU mantienen su perfil opcional independiente; no se activa aquí.
+
+## Comprobar el arranque y Apache
 
 ```bash
-docker compose exec worker \
-  python -m scripts.check_config --expect-origin https://temu.bsc.es:18443
+curl --fail http://127.0.0.1:8000/annotation-tool/health
+curl --fail https://temu.bsc.es/annotation-tool/health
+curl --fail https://temu.bsc.es/annotation-tool/ready
+
+docker compose exec worker python -m scripts.check_config --expect-origin https://temu.bsc.es
 docker compose logs -f worker
 ```
 
-El worker debe registrar `worker_ready`. La aplicación publica resultados
-progresivamente por modelo/categoría. Solo se publica el puerto **18443**: el
-8000 del backend queda dentro de la red Docker, así que no colisiona con un
-servicio que ya lo esté usando en el host. El proxy fija las cabeceras de cliente
-y esquema; el backend las acepta únicamente desde su red privada sin puerto
-público. Mantén esa separación al modificar el despliegue.
+`/ready` exige un heartbeat reciente del worker. La comprobación de origen recibe
+solo esquema/dominio/puerto; APP_PREFIX se comprueba por separado en la configuración.
+Abre **https://temu.bsc.es/annotation-tool/** y entra con tu administrador. En
+**Administración → Todos los proyectos** encontrarás el árbol por usuario,
+proyecto, documento y anotaciones, con estadísticas y acciones sobre otros propietarios.
 
-Si el administrador ya existe, conserva el volumen privado y su cuenta; **no lo
-crees de nuevo**. Tras actualizar, accede a `/admin` para aprobar solicitudes,
-modificar cuotas y eliminar cuentas, o a `/admin/projects` para todos los proyectos.
-La migración es automática y conserva sus credenciales y MFA. Véase
-[administración](ADMINISTRATION.md).
+Si Apache ya sirve esta ruta correctamente, **no cambies su configuración**.
+La correspondencia debe conservar el prefijo hacia el backend. Como referencia,
+estas directivas se limitan a la ruta de la aplicación dentro del vhost HTTPS
+existente; no sustituyen el vhost, certificados ni reglas WordPress:
 
-Solo para una instalación nueva, crea el primer administrador con un correo nuevo:
+```apache
+ProxyPass        "/annotation-tool/" "http://127.0.0.1:8000/annotation-tool/"
+ProxyPassReverse "/annotation-tool/" "http://127.0.0.1:8000/annotation-tool/"
+<Location "/annotation-tool/">
+    RequestHeader set X-Forwarded-Proto "https"
+</Location>
+```
+
+El perfil solicitado habilita `--proxy-headers --forwarded-allow-ips=*`; depende de
+que el puerto del backend siga ligado a loopback y Apache fije la cabecera de esquema.
+No expongas el 8000 en una interfaz pública. El TLS sigue siendo responsabilidad del
+Apache ya instalado. No hace falta abrir otro puerto ni instalar otro proxy.
+
+## Operaciones de aplicación
+
+Conserva el administrador existente: no vuelvas a ejecutar `create_admin` al
+actualizar. Solo una instalación nueva sin administrador necesita:
 
 ```bash
-docker compose exec web \
-  python -m scripts.create_admin
+docker compose exec web python -m scripts.create_admin
 ```
 
-Introduce los datos interactivamente; después inicia sesión con correo y contraseña
-y accede a la administración. MFA está desactivado por defecto (`ENABLE_MFA=false`),
-incluso para cuentas que ya lo tenían configurado; no hace falta configurar nada.
+Las nuevas solicitudes de acceso requieren aprobación administrativa. Las cuotas
+numéricas, eliminación de cuentas y proyectos, expiración y registro de auditoría
+siguen disponibles. Los originales conservados pueden descargarse mientras se
+procesa el trabajo; BRAT/TSV/estadísticas finales se ofrecen cuando su publicación
+ha terminado. Borrar un documento invalida los paquetes antiguos y el worker
+reconstruye las exportaciones restantes, sin volver a ejecutar NER.
 
-## GPU NVIDIA en el futuro
-
-Instala el driver compatible y
-[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-en el host. El perfil fijado en `requirements-nlp.lock` usa CUDA 13.2; el driver
-debe ser compatible. Comprueba `nvidia-smi` y sustituye en `.env` la línea `COMPOSE_FILE` por:
-
-```dotenv
-COMPOSE_FILE=docker-compose.yml:docker-compose.public.yml:docker-compose.gpu.yml
-```
-
-Después reconstruye y arranca:
-
-```bash
-docker compose up -d --build
-docker compose exec worker \
-  python -c 'import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))'
-```
-
-El perfil instala las dependencias GPU, pide una GPU y establece `DEVICE=cuda`.
-Web, datos y proxy siguen igual. `COMPOSE_FILE` mantiene el perfil GPU activo también en la importación y los
-comandos posteriores. El
-índice FAISS permanece en CPU FlatIP. No se ha verificado aquí un arranque en
-hardware NVIDIA.
-
-## Persistencia y actualización
-
-`ner-data` conserva cuentas, claves, documentos y cachés de Hugging Face y
-normalización. El nombre físico lleva el prefijo del proyecto Compose: mantén el
-mismo nombre de proyecto para reutilizarlo. `gazetteers/` y `certificates/` quedan
-en el host. Para parar manteniendo los datos:
-
-```bash
-docker compose down
-```
-
-No añadas `-v` si quieres conservar los volúmenes. Para actualizar, deja terminar
-el job activo o páralo de forma controlada y ejecuta:
-
-```bash
-git pull --ff-only
-docker compose up -d --build
-```
-
-Si se renueva el certificado original del host, repite la copia de ambos archivos
-y recarga el proxy:
-
-```bash
-docker compose exec proxy \
-  caddy reload --config /etc/caddy/Caddyfile
-```
-
-El ejemplo limita el worker a 8 GiB de RAM y el job a 7200 segundos. La RAM se
-ajusta con una superposición Compose y el límite de tiempo con
-`JOB_TIMEOUT_SECONDS` en `.env`. Un solo worker consume la cola; el bloqueo evita
-dos supervisores simultáneos.
-
-### Conservar una instalación Conda
-
-El volumen Docker nuevo no incorpora automáticamente `storage/` de Conda. Para
-conservar cuentas y documentos, transfiere **todo** ese directorio, incluidas las
-claves, con ambos procesos nativos parados. Con Docker parado y el volumen destino
-nuevo, antes del primer arranque:
-
-```bash
-docker compose down
-docker compose run --rm --no-deps --user 0 \
-  -v "$PWD/storage:/native-storage:ro" --entrypoint sh web \
-  -c 'cp -a /native-storage/. /data/ && chown -R 10001:10001 /data'
-```
-
-Después arranca como en el paso 4. Usa una copia coherente y un volumen destino
-vacío; copiar solo SQLite perdería claves necesarias para algunas funciones. Los
-plazos de retención iniciados se conservan.
+Los gazetteers confidenciales siguen en `gazetteers/`; para importarlos utiliza
+[las instrucciones de normalización](NORMALIZATION.md), sin subirlos al repositorio.
+Para copias/restauración y retención, consulta [despliegue](DEPLOYMENT.md) y
+[retención](RETENTION_POLICY.md). Los resultados de verificación están en
+[VERIFICATION.md](VERIFICATION.md); las pruebas locales no sustituyen la
+comprobación del Apache/certificado real en bscdspace.

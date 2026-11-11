@@ -46,7 +46,7 @@ def policy(path, method):
             "Session",
             "Approved live ADMIN; optional MFA when enabled; atomic revalidation for writes; CSRF",
             "All account and project data; audited account/project erasure",
-            "admin_workflows + real browser + revocation/upload races",
+            "admin_workflows + admin_explorer/tree browser + revocation/upload races",
         )
     if path in (
         "/api/my/documents",

@@ -6,6 +6,8 @@ const base = document.querySelector("meta[name=app-prefix]").content;
 const token = location.pathname.split("/").at(-2),
   endpoint = base + "/api/jobs/" + encodeURIComponent(token);
 const $ = (id) => document.getElementById(id);
+let requestedDocument = new URL(location.href).searchParams.get("document");
+let requestedDocumentReady;
 let records = [],
   docOffset = 0,
   docTotal = 0,
@@ -108,6 +110,14 @@ const debounce = (fn) => {
   };
 };
 async function documents() {
+  if (requestedDocument) {
+    requestedDocumentReady ||= api(
+      `/documents/${encodeURIComponent(requestedDocument)}?limit=1`,
+    ).then((original) => {
+      $("document-search").value = original.filename;
+    });
+    await requestedDocumentReady;
+  }
   const query = new URLSearchParams({
     offset: docOffset,
     limit: 50,
@@ -157,7 +167,8 @@ async function documents() {
   $("document-list").scrollTop = scroll;
   const available = records[0];
   const active = records.find((r) => r.document_id === identity);
-  if (!identity && available) await openDocument(available.document_id);
+  if (!identity && available)
+    await openDocument(requestedDocument || available.document_id);
   else if (active && active.updated_at !== documentRevision)
     await openDocument(identity, chunk?.start || 0, true);
 }
@@ -168,6 +179,7 @@ async function openDocument(id, start = 0, live = false) {
   documentRevision = records.find((row) => row.document_id === id)?.updated_at;
   const current = ++generation;
   identity = id;
+  if (id === requestedDocument) requestedDocument = null;
   if (!live) {
     selected = null;
     mentionOffset = 0;

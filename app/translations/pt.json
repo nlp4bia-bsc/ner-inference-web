@@ -575,5 +575,21 @@
   "Administrator approval required.": "É necessária aprovação do administrador.",
   "Your projects are accessible to you and authorized administrators.": "Os seus projetos estão acessíveis para si e para os administradores autorizados.",
   "Your documents are queued. You and authorized administrators can access this job.": "Os seus documentos estão em fila. O utilizador e os administradores autorizados podem aceder a este trabalho.",
-  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Os resultados permanecem disponíveis durante {count} horas após o processamento. O utilizador e os administradores autorizados podem aceder-lhes."
+  "Results remain available for {count} hours after processing. You and authorized administrators can access them.": "Os resultados permanecem disponíveis durante {count} horas após o processamento. O utilizador e os administradores autorizados podem aceder-lhes.",
+  "Project explorer": "Explorador de projetos",
+  "All users": "Todos os utilizadores",
+  "Global statistics": "Estatísticas globais",
+  "Expand a user to browse projects, documents and annotations.": "Expanda um utilizador para explorar projetos, documentos e anotações.",
+  "Available projects": "Projetos disponíveis",
+  "Expired projects": "Projetos expirados",
+  "Normalizations": "Normalizações",
+  "Annotations by model": "Anotações por modelo",
+  "Documents by language": "Documentos por idioma",
+  "Load more": "Carregar mais",
+  "Partial statistics": "Estatísticas parciais",
+  "Annotations": "Anotações",
+  "Text statistics": "Estatísticas do texto",
+  "Characters": "Caracteres",
+  "Annotations by language": "Anotações por idioma",
+  "Normalization languages": "Idiomas de normalização"
 }

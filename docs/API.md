@@ -301,3 +301,11 @@ annotations must restart when revisions differ. `mentions` and
 finished documents. This intentionally changes the old 409 response for
 unannotated retained documents to a readable text/empty-annotation response.
 See [phase and checkpoint contracts](INCREMENTAL_PROCESSING.md).
+
+## Administrator explorer (0.12)
+
+The protected, paginated hierarchy and exact statistics definitions are documented
+in [ADMIN_EXPLORER.md](ADMIN_EXPLORER.md). Four GET routes under
+`/api/admin/explorer` expose global/user/project/document metadata. Existing
+annotation/text/download/delete endpoints are reused, including partial publications.
+Viewer `?document=<id>` selects that document rather than defaulting to the first.

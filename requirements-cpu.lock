@@ -128,7 +128,7 @@ networkx==3.7
     #   torch
 nltk==3.10.4
     # via lab
-numpy==2.5.4
+numpy==2.3.5
     # via
     #   accelerate
     #   datasets

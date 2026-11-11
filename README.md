@@ -11,6 +11,14 @@ requires an approved account. Owners and authorized administrators can
 access projects; a private link alone grants no access. Files remain available
 for **72 hours after completion**.
 
+Version **0.12.0** adds the lazy administrator tree: users → projects → documents
+→ annotations, with real aggregate statistics, existing viewer/export links and
+confirmed foreign-document erasure. See [explorer definitions](docs/ADMIN_EXPLORER.md).
+Production on **bscdspace** uses the existing Apache proxy at
+**https://temu.bsc.es/annotation-tool/** through `docker-compose.apache.yml`.
+The persistent volumes remain unchanged and the CPU lock pins NumPy2.3.5.
+See the [Apache deployment quickstart](docs/DOCKER_QUICKSTART.md).
+
 Version **0.11.1** disables MFA by default, including for previously enrolled
 accounts. Administrators sign in with email/password and can use all administrative
 features immediately. OTP inputs, MFA links and enrollment endpoints are unavailable.

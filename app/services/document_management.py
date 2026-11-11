@@ -112,6 +112,16 @@ def delete_documents(service, token, document_id=None, *, document_ids=None):
                     "SELECT * FROM documents WHERE job_id=?", (job["id"],)
                 )
             ]
+            if not rows and current["status"] in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                from app.services.legacy_documents import prepare_legacy_documents
+
+                prepare_legacy_documents(service, current, connection)
+                rows = [
+                    dict(row)
+                    for row in connection.execute(
+                        "SELECT * FROM documents WHERE job_id=?", (job["id"],)
+                    )
+                ]
             selected = [
                 row for row in rows if identities is None or row["document_id"] in identities
             ]
@@ -198,7 +208,11 @@ def delete_documents(service, token, document_id=None, *, document_ids=None):
                     account["id"],
                     current["owner_user_id"],
                     "ADMIN_PROJECT_DOCUMENTS_DELETED",
-                    {"job_id": job["id"], "documents": len(selected)},
+                    {
+                        "job_id": job["id"],
+                        "documents": len(selected),
+                        "document_ids": sorted(row["document_id"] for row in selected),
+                    },
                 )
     return {"deleted": len(selected), "quota": quota(service.db, account)}
 
